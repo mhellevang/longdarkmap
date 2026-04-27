@@ -25,7 +25,7 @@ The script fetches both difficulty variants for each region into `maps/` and ski
 
 All map artwork is community-made and hosted on Steam. The images bundled here are mirrored solely so the static site is usable; full credit and ownership belong to the creators below. Please visit, rate, and follow their work on Steam — and if either creator would prefer the images not be re-hosted, open an issue and they'll be removed.
 
-- **World map** (`2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg`) — preview image from [*[spoilers] Tales from the Far Territory map locations*](https://steamcommunity.com/sharedfiles/filedetails/?id=2899955301) by **Krueger**.
+- **World map** (`maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg`) — preview image from [*[spoilers] Tales from the Far Territory map locations*](https://steamcommunity.com/sharedfiles/filedetails/?id=2899955301) by **Krueger**.
 - **Region maps** — from [*Updated Region Maps [2025]*](https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617) by **HokuOwl**. Each region has two difficulty variants: Pilgrim/Voyageur/Stalker (saved as `<region>.jpg`) and Interloper/Misery (saved as `<region>_loper.jpg`). Exact image URLs are listed in `download_maps.py`.
 - **Region label positions** — adapted from [*TLD-Interactive-Map*](https://github.com/Elektronixx/TLD-Interactive-Map) by **Elektronixx**, whose image-map hotspot coordinates were converted to percentages and used as the `pos` values in `index.html`.
 
@@ -36,8 +36,7 @@ All map artwork is community-made and hosted on Steam. The images bundled here a
 ```
 index.html         # The entire app — HTML, CSS, region data, and JS
 download_maps.py   # Fetches region maps into maps/
-maps/              # Per-region map images (committed; refresh via the script)
-2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg   # World map background
+maps/              # Map images: per-region detail maps + the world map (committed; refresh via the script)
 ```
 
 Region positions on the world map are defined in the `REGIONS` array inside `index.html` as `[x%, y%]` coordinates. Press **D** in the browser to display live coordinates while hovering, which makes adjusting label positions straightforward.
