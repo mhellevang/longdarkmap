@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Long Dark — Kart</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0d1117;
+  color: #c9d1d9;
+  font-family: 'Georgia', serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── World view ──────────────────────────────────────────────────────────── */
+#world-view {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1117;
+}
+
+#map-container {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#world-map {
+  display: block;
+  user-select: none;
+}
+
+/* ── Region labels ───────────────────────────────────────────────────────── */
+#label-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* layer itself is transparent; buttons handle events */
+}
+
+.region-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: all;
+  background: transparent;
+  border: none;
+  color: transparent;
+  padding: 3px 9px;
+  border-radius: 3px;
+  font-family: Georgia, serif;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.region-btn:hover {
+  background: rgba(90, 150, 220, 0.18);
+  border-radius: 3px;
+}
+
+/* ── Coord display (dev mode, press D) ──────────────────────────────────── */
+#coord-display {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  font-size: 11px;
+  color: rgba(180, 200, 220, 0.5);
+  pointer-events: none;
+  z-index: 300;
+  display: none;
+  background: rgba(8,12,18,0.7);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+
+/* ── Detail view (modal) ─────────────────────────────────────────────────── */
+#detail-view {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+#detail-dialog {
+  width: 90vw;
+  height: 90vh;
+  background: #0d1117;
+  border: 1px solid rgba(110, 170, 230, 0.25);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+}
+
+#detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background: rgba(8, 12, 18, 0.97);
+  border-bottom: 1px solid rgba(110, 170, 230, 0.22);
+  flex-shrink: 0;
+}
+
+#back-btn {
+  background: none;
+  border: 1px solid rgba(110, 170, 230, 0.42);
+  color: #8bb8e8;
+  padding: 5px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#back-btn:hover {
+  background: rgba(110, 170, 230, 0.15);
+  border-color: rgba(110, 170, 230, 0.8);
+}
+
+#region-title {
+  font-size: 19px;
+  font-weight: normal;
+  color: #e6edf3;
+  letter-spacing: 0.4px;
+}
+
+#zoom-controls {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+  background: rgba(8, 12, 18, 0.75);
+  padding: 5px 8px;
+  border-radius: 5px;
+  backdrop-filter: blur(4px);
+}
+
+#zoom-level {
+  font-size: 11px;
+  color: rgba(180, 200, 220, 0.6);
+  min-width: 36px;
+  text-align: center;
+  font-family: Georgia, serif;
+}
+
+.zoom-btn {
+  background: none;
+  border: 1px solid rgba(110, 170, 230, 0.42);
+  color: #8bb8e8;
+  width: 28px;
+  height: 28px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: background 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.zoom-btn:hover {
+  background: rgba(110, 170, 230, 0.15);
+  border-color: rgba(110, 170, 230, 0.8);
+}
+.zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+#map-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  background: none;
+  border: 1px solid rgba(110, 170, 230, 0.28);
+  color: #8bb8e8;
+  padding: 4px 11px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: Georgia, serif;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tab-btn:hover { background: rgba(110, 170, 230, 0.13); }
+.tab-btn.active {
+  background: rgba(110, 170, 230, 0.22);
+  border-color: rgba(110, 170, 230, 0.72);
+  color: #c9d8f0;
+}
+
+#map-canvas {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+}
+#map-canvas:active { cursor: grabbing; }
+
+#detail-img {
+  position: absolute;
+  transform-origin: 0 0;
+  user-select: none;
+  max-width: none;
+}
+
+#zoom-hint {
+  position: absolute;
+  bottom: 60px;
+  right: 16px;
+  font-size: 11px;
+  color: rgba(180, 200, 220, 0.3);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ WORLD VIEW ══════════ -->
+<div id="world-view">
+  <div id="map-container">
+    <img id="world-map" src="2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg" alt="Great Bear Island">
+    <div id="label-layer"></div>
+  </div>
+  <div id="coord-display"></div>
+</div>
+
+<!-- ══════════ DETAIL VIEW (modal) ══════════ -->
+<div id="detail-view">
+  <div id="detail-dialog">
+    <div id="detail-header">
+      <button id="back-btn">✕</button>
+      <h1 id="region-title"></h1>
+      <div id="map-tabs"></div>
+    </div>
+    <div id="map-canvas">
+      <img id="detail-img" alt="">
+      <div id="zoom-controls">
+        <button class="zoom-btn" id="zoom-out">−</button>
+        <span id="zoom-level">100%</span>
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <button class="zoom-btn" id="zoom-fit" title="Tilpass til vindu">⊡</button>
+      </div>
+      <div id="zoom-hint">Scroll for å zoome · Dra for å panorere · Dobbel-klikk for å nullstille</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// REGION DATA
+// pos: [cx%, cy%]  — senterposisjon i prosent av verdenskartets størrelse
+//                    (4017 × 2048 px).  Trykk D for å se koordinater.
+// ════════════════════════════════════════════════════════════════════════════
+const REGIONS = [
+  {
+    id: 'mystery_lake',
+    name: 'Mystery Lake',
+    maps: ['maps/mystery_lake.jpg', 'maps/mystery_lake_loper.jpg'],
+    pos: [54, 51],
+  },
+  {
+    id: 'coastal_highway',
+    name: 'Coastal Highway',
+    maps: ['maps/coastal_highway.jpg', 'maps/coastal_highway_loper.jpg'],
+    pos: [76, 68],
+  },
+  {
+    id: 'pleasant_valley',
+    name: 'Pleasant Valley',
+    maps: ['maps/pleasant_valley.jpg', 'maps/pleasant_valley_loper.jpg'],
+    pos: [71.8, 37],
+  },
+  {
+    id: 'desolation_point',
+    name: 'Desolation Point',
+    maps: ['maps/desolation_point.jpg', 'maps/desolation_point_loper.jpg'],
+    pos: [84, 77],
+  },
+  {
+    id: 'timberwolf_mountain',
+    name: 'Timberwolf Mountain',
+    maps: ['maps/timberwolf_mountain.jpg', 'maps/timberwolf_mountain_loper.jpg'],
+    pos: [78, 23],
+  },
+  {
+    id: 'forlorn_muskeg',
+    name: 'Forlorn Muskeg',
+    maps: ['maps/forlorn_muskeg.jpg', 'maps/forlorn_muskeg_loper.jpg'],
+    pos: [47, 67],
+  },
+  {
+    id: 'broken_railroad',
+    name: 'Broken Railroad',
+    maps: ['maps/broken_railroad.jpg', 'maps/broken_railroad_loper.jpg'],
+    pos: [37, 63],
+  },
+  {
+    id: 'bleak_inlet',
+    name: 'Bleak Inlet',
+    maps: ['maps/bleak_inlet.jpg', 'maps/bleak_inlet_loper.jpg'],
+    pos: [62, 78],
+  },
+  {
+    id: 'hushed_river_valley',
+    name: 'Hushed River Valley',
+    maps: ['maps/hushed_river_valley.jpg', 'maps/hushed_river_valley_loper.jpg'],
+    pos: [39, 20],
+  },
+  {
+    id: 'mountain_town',
+    name: 'Mountain Town',
+    maps: ['maps/mountain_town.jpg', 'maps/mountain_town_loper.jpg'],
+    pos: [43, 41],
+  },
+  {
+    id: 'ash_canyon',
+    name: 'Ash Canyon',
+    maps: ['maps/ash_canyon.jpg', 'maps/ash_canyon_loper.jpg'],
+    pos: [88, 16],
+  },
+  {
+    id: 'blackrock',
+    name: 'Blackrock',
+    maps: ['maps/blackrock.jpg', 'maps/blackrock_loper.jpg'],
+    pos: [68, 12],
+  },
+  {
+    id: 'forsaken_airfield',
+    name: 'Forsaken Airfield',
+    maps: ['maps/forsaken_airfield.jpg', 'maps/forsaken_airfield_loper.jpg'],
+    pos: [9, 69],
+  },
+  {
+    id: 'sundered_pass',
+    name: 'Sundered Pass',
+    maps: ['maps/sundered_pass.jpg', 'maps/sundered_pass_loper.jpg'],
+    pos: [18, 48],
+  },
+  {
+    id: 'zone_of_contamination',
+    name: 'Zone of Contamination',
+    maps: ['maps/zone_of_contamination.jpg', 'maps/zone_of_contamination_loper.jpg'],
+    pos: [24, 60],
+  },
+  {
+    id: 'crumbling_highway',
+    name: 'Crumbling Highway',
+    maps: ['maps/crumbling_highway.jpg'],
+    pos: [80, 90],
+  },
+  {
+    id: 'far_range',
+    name: 'Far Range Branch Line',
+    maps: ['maps/far_range_branch_line.jpg', 'maps/far_range_branch_line_loper.jpg'],
+    pos: [23, 79],
+  },
+  {
+    id: 'transfer_pass',
+    name: 'Transfer Pass',
+    maps: ['maps/transfer_pass.jpg', 'maps/transfer_pass_loper.jpg'],
+    pos: [20, 65],
+  },
+  {
+    id: 'ravine',
+    name: 'Ravine',
+    maps: ['maps/ravine.jpg', 'maps/ravine_loper.jpg'],
+    pos: [64, 62],
+  },
+  {
+    id: 'winding_river',
+    name: 'Winding River & Carter Hydro Dam',
+    maps: ['maps/winding_river_and_carter_hydro_dam.jpg', 'maps/winding_river_and_carter_hydro_dam_loper.jpg'],
+    pos: [65, 57],
+  },
+  {
+    id: 'keepers_pass',
+    name: "Keeper's Pass",
+    maps: ['maps/keepers_pass.jpg', 'maps/keepers_pass_loper.jpg'],
+    pos: [58, 30],
+  },
+];
+
+// ════════════════════════════════════════════════════════════════════════════
+// WORLD VIEW
+// ════════════════════════════════════════════════════════════════════════════
+const WORLD_W = 4017, WORLD_H = 2048;
+
+const worldView    = document.getElementById('world-view');
+const mapContainer = document.getElementById('map-container');
+const worldMapImg  = document.getElementById('world-map');
+const labelLayer   = document.getElementById('label-layer');
+const coordDisplay = document.getElementById('coord-display');
+
+let devMode = false;
+
+function layoutWorldMap() {
+  const scale = Math.min(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
+  const w = Math.round(WORLD_W * scale);
+  const h = Math.round(WORLD_H * scale);
+  worldMapImg.style.width  = w + 'px';
+  worldMapImg.style.height = h + 'px';
+  mapContainer.style.width  = w + 'px';
+  mapContainer.style.height = h + 'px';
+  renderLabels();
+}
+
+function renderLabels() {
+  labelLayer.innerHTML = '';
+  for (const region of REGIONS) {
+    const btn = document.createElement('button');
+    btn.className = 'region-btn';
+    btn.textContent = region.name;
+    btn.style.left = region.pos[0] + '%';
+    btn.style.top  = region.pos[1] + '%';
+    btn.addEventListener('click', () => openRegion(region));
+    labelLayer.appendChild(btn);
+  }
+}
+
+// Dev mode: press D to show % coordinates under cursor
+document.addEventListener('keydown', e => {
+  if ((e.key === 'd' || e.key === 'D') && detailView.style.display !== 'flex') {
+    devMode = !devMode;
+    coordDisplay.style.display = devMode ? 'block' : 'none';
+    if (!devMode) coordDisplay.textContent = '';
+  }
+});
+mapContainer.addEventListener('mousemove', e => {
+  if (!devMode) return;
+  const r    = mapContainer.getBoundingClientRect();
+  const xPct = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
+  const yPct = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+  coordDisplay.textContent = `pos: [${xPct}, ${yPct}]  (D for å skjule)`;
+});
+
+window.addEventListener('resize', layoutWorldMap);
+worldMapImg.addEventListener('load', layoutWorldMap);
+if (worldMapImg.complete) layoutWorldMap();
+
+// ════════════════════════════════════════════════════════════════════════════
+// DETAIL VIEW
+// ════════════════════════════════════════════════════════════════════════════
+const detailView  = document.getElementById('detail-view');
+const backBtn     = document.getElementById('back-btn');
+const regionTitle = document.getElementById('region-title');
+const mapTabsEl   = document.getElementById('map-tabs');
+const mapCanvas   = document.getElementById('map-canvas');
+const detailImg   = document.getElementById('detail-img');
+
+function mapTabLabel(path) {
+  const name = path.split('/').pop().replace(/\.[^.]+$/, '');
+  if (/annot/i.test(name))   return 'Annotert';
+  if (/in.game/i.test(name)) return 'In-game';
+  if (/loper/i.test(name))   return 'Loper';
+  if (/default/i.test(name)) return 'Standard';
+  if (/_map$/i.test(name))   return 'Kart';
+  return 'Pilgrim/Voyageur/Stalker';
+}
+
+function openRegion(region) {
+  regionTitle.textContent = region.name;
+  mapTabsEl.innerHTML = '';
+
+  if (region.maps.length > 1) {
+    region.maps.forEach((m, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+      btn.textContent = mapTabLabel(m);
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        loadDetailMap(m);
+      });
+      mapTabsEl.appendChild(btn);
+    });
+  }
+
+  loadDetailMap(region.maps[0]);
+  detailView.style.display = 'flex';
+}
+
+// ── Pan / zoom ────────────────────────────────────────────────────────────
+const MIN_ZOOM = 0.05, MAX_ZOOM = 5;
+let imgW = 1, imgH = 1, panX = 0, panY = 0, zoom = 1, fitZoom = 1;
+let dragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
+
+const zoomOutBtn  = document.getElementById('zoom-out');
+const zoomInBtn   = document.getElementById('zoom-in');
+const zoomFitBtn  = document.getElementById('zoom-fit');
+const zoomLevelEl = document.getElementById('zoom-level');
+
+function updateZoomUI() {
+  zoomLevelEl.textContent = Math.round(zoom / fitZoom * 100) + '%';
+  zoomOutBtn.disabled = zoom <= MIN_ZOOM + 0.001;
+  zoomInBtn.disabled  = zoom >= MAX_ZOOM - 0.001;
+}
+
+function applyZoom(nz, cx, cy) {
+  nz = Math.min(Math.max(nz, MIN_ZOOM), MAX_ZOOM);
+  panX = cx - (cx - panX) * (nz / zoom);
+  panY = cy - (cy - panY) * (nz / zoom);
+  zoom = nz;
+  applyTransform();
+}
+
+function loadDetailMap(src) {
+  detailImg.src = src;
+  detailImg.onload = () => {
+    imgW = detailImg.naturalWidth;
+    imgH = detailImg.naturalHeight;
+    fitMap();
+  };
+}
+
+function fitMap() {
+  const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
+  fitZoom = Math.min(cw / imgW, ch / imgH) * 0.90;
+  zoom = fitZoom;
+  panX = (cw - imgW * zoom) / 2;
+  panY = (ch - imgH * zoom) / 2;
+  applyTransform();
+}
+
+function applyTransform() {
+  detailImg.style.width  = imgW + 'px';
+  detailImg.style.height = imgH + 'px';
+  detailImg.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  updateZoomUI();
+}
+
+zoomOutBtn.addEventListener('click', () => {
+  const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
+  applyZoom(zoom / 1.4, cw / 2, ch / 2);
+});
+zoomInBtn.addEventListener('click', () => {
+  const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
+  applyZoom(zoom * 1.4, cw / 2, ch / 2);
+});
+zoomFitBtn.addEventListener('click', fitMap);
+
+mapCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r  = mapCanvas.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const f  = Math.pow(1.001, -e.deltaY);
+  applyZoom(zoom * f, mx, my);
+}, { passive: false });
+
+mapCanvas.addEventListener('mousedown', e => {
+  dragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  panStartX = panX; panStartY = panY;
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  panX = panStartX + (e.clientX - dragStartX);
+  panY = panStartY + (e.clientY - dragStartY);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+
+// Touch
+let lastTouchDist = 0;
+mapCanvas.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    dragging = true;
+    dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+    panStartX = panX; panStartY = panY;
+  } else if (e.touches.length === 2) {
+    dragging = false;
+    lastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+mapCanvas.addEventListener('touchmove', e => {
+  if (dragging && e.touches.length === 1) {
+    panX = panStartX + (e.touches[0].clientX - dragStartX);
+    panY = panStartY + (e.touches[0].clientY - dragStartY);
+    applyTransform();
+  } else if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const f  = dist / lastTouchDist;
+    lastTouchDist = dist;
+    const r  = mapCanvas.getBoundingClientRect();
+    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+    const nz = Math.min(Math.max(zoom * f, 0.04), 12);
+    panX = mx - (mx - panX) * (nz / zoom);
+    panY = my - (my - panY) * (nz / zoom);
+    zoom = nz;
+    applyTransform();
+  }
+}, { passive: true });
+mapCanvas.addEventListener('touchend', () => { dragging = false; });
+
+mapCanvas.addEventListener('dblclick', fitMap);
+
+
+function closeModal() {
+  detailView.style.display = 'none';
+}
+
+backBtn.addEventListener('click', closeModal);
+detailView.addEventListener('click', e => {
+  if (e.target === detailView) closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
