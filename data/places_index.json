@@ -1,0 +1,1422 @@
+[
+  {
+    "name": "Angler's Den",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Bitter Marsh",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Broad Falls",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cave (Ash Canyon location)",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Climber's Cave",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Fire Overlook",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Foreman's Retreat",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Gold Mine",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "High Meadow",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Homesteader's Respite",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Long Falls",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Miner's Folly",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Mining Camp",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Narrow Falls Cave",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Pillar's Footrest",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Runaway Bridge",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Shattered Cove",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Stone Shelf Cave",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Wolf's Jaw Overlook",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Bear's Bend",
+    "region": "blackrock"
+  },
+  {
+    "name": "Blackrock Prison",
+    "region": "blackrock"
+  },
+  {
+    "name": "Blocked Bridge",
+    "region": "blackrock"
+  },
+  {
+    "name": "Bricklayer's Retreat",
+    "region": "blackrock"
+  },
+  {
+    "name": "Cliff Cave",
+    "region": "blackrock"
+  },
+  {
+    "name": "Cook's Farm",
+    "region": "blackrock"
+  },
+  {
+    "name": "Creek Bed Cave",
+    "region": "blackrock"
+  },
+  {
+    "name": "Cutty's Cave",
+    "region": "blackrock"
+  },
+  {
+    "name": "Fool's Corner",
+    "region": "blackrock"
+  },
+  {
+    "name": "Forager's Remnant",
+    "region": "blackrock"
+  },
+  {
+    "name": "Foreman's Clearcut",
+    "region": "blackrock"
+  },
+  {
+    "name": "Grand Meadow",
+    "region": "blackrock"
+  },
+  {
+    "name": "Jailer's Residence",
+    "region": "blackrock"
+  },
+  {
+    "name": "Last Prospect",
+    "region": "blackrock"
+  },
+  {
+    "name": "Lineworker's Hideout",
+    "region": "blackrock"
+  },
+  {
+    "name": "Mule Bridge",
+    "region": "blackrock"
+  },
+  {
+    "name": "Narrow Bridge",
+    "region": "blackrock"
+  },
+  {
+    "name": "No Road Cave",
+    "region": "blackrock"
+  },
+  {
+    "name": "Old Substation",
+    "region": "blackrock"
+  },
+  {
+    "name": "Power Plant",
+    "region": "blackrock"
+  },
+  {
+    "name": "Steam Tunnels",
+    "region": "blackrock"
+  },
+  {
+    "name": "Wedge Cave",
+    "region": "blackrock"
+  },
+  {
+    "name": "Whistling Perch",
+    "region": "blackrock"
+  },
+  {
+    "name": "Bunker Alpha",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cabin",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cannery Pier",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cannery Worker Residences",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Coast Mountain Road",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Coastal Highway Terminus",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Echo One Radio Tower",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Fallen Lighthouse",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Frozen Delta",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Island Cave",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Landslide (Bleak Inlet)",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Last Resort Cannery",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Long Bridge",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Lower Raven Falls",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Pensive Lookout",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Radio Control Hut",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Raven Crossing",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Ravine's End Waterfall",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Secret Mountain Path",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Summit at Ravine's End",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Trailers west of the Cannery",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Washed Out Trailers",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Workshop",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Broken Bridge (Broken Railroad location)",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Hunter's Blind",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Hunting Lodge",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Landslide",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Locomotive Engine",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Maintenance Yard",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Rickety Foot Bridge",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Abandoned Lookout",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Bear Creek Campground",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Cinder Hills Coal Mine",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Coastal House",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Coastal Townsite",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Commuter's Lament",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Fishing Camp",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Fishing Hut",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Great Bear Highway",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Jackrabbit Island",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Log Sort",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Misanthrope's Homestead",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "No. 3 Coal Mine",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Quonset Garage",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Rabbit Grove",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Rockfall",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Silent Clearing",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "The Tooth",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Train Unloading",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Waterfront Cottages",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Abandoned Harris Home",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "Basement (Crumbling Highway)",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "Great Bear Highway",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "No. 3 Coal Mine",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "Road Collapse",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "The Arch (Old Island Connector location)",
+    "region": "crumbling_highway"
+  },
+  {
+    "name": "Abandoned Mine No. 5",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Blocked Highway",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Broken Bridge (Desolation Point location)",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Cave (Desolation Point location)",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Great Bear Highway",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Hibernia Processing",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Katie's Secluded Corner",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Little Island",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Lonely Lighthouse",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Matt's Truck",
+    "region": "desolation_point"
+  },
+  {
+    "name": "No. 3 Coal Mine",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Stone Church",
+    "region": "desolation_point"
+  },
+  {
+    "name": "The Riken",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Waterfall",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Foundered Track",
+    "region": "far_range"
+  },
+  {
+    "name": "Freighthopper's Rockfall",
+    "region": "far_range"
+  },
+  {
+    "name": "Oddment Falls",
+    "region": "far_range"
+  },
+  {
+    "name": "Platelayer's Shortcut",
+    "region": "far_range"
+  },
+  {
+    "name": "Remnant Cave",
+    "region": "far_range"
+  },
+  {
+    "name": "Steely Chasm",
+    "region": "far_range"
+  },
+  {
+    "name": "Surfeit Trestle",
+    "region": "far_range"
+  },
+  {
+    "name": "Abandoned Camp",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Bunkhouses",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Hat Creek",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "High Blind",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Low Blind",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Marsh Ridge",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Muskeg Overlook",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Old Bear's Den",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Old Spence Family Homestead",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Poacher's Camp",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Shortwave Tower",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Shortwave Tower East",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Shortwave Tower West",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Waterfall (Forlorn Muskeg)",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Archie's Crawlspace",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Brittle Cave",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Bunker Omega",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Cargomaster's Trailer",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Control Tower",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Cove",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Drift Island",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Field 31",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Final Approach",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Frost Cave",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Grip's Cave",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Hangar Basement",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Island Cottage",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Junker's Paddock",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Justy's Hovel",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Main Hangar",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Mindful Cabin",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Shoulder Lake",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Spotter's Blind",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Stony Passage",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Sudden Washout",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Surveyor's Memory",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Terminal",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Whealy's Turn",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Banner Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Bunker Gamma",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Cloudtop Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Hushed River",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Ice Cave",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Lake Cave",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Landslide (Hushed River Valley)",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Little Bear and Cub Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Lonely Cave",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Long Shot Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Mammoth Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Many Falls Vista",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Monolith Lake",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Moose Overlook",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Mysterious Signal Fire",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Offset Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Peak Cave",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Pensive Vista",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Quarrelling Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Reclusive Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Stairsteps Lake",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Twin Sisters Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Valley Cave",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Valley View Point",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Watchful Falls",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Builder's Bridge",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Forester's Hermitage",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Mirthless Fork",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "The Toe",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Bank Manager's House",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Cave (Mountain Town location)",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Convenience Store",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Crashed Prison Transport Bus",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Hermit's Cabin",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Mackenzie's Crashed Plane",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton Basin",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton Credit Union",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton House",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton House (Grey Mother's)",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton Park",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton Post Office",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Milton Water Tower",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Old Schoolhouse",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Orca Gas Station",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Paradise Meadows Farm",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Picnic Area",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Radio Tower",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Rocky Refuge",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Spruce Falls Bridge",
+    "region": "mountain_town"
+  },
+  {
+    "name": "St. Christopher's Church",
+    "region": "mountain_town"
+  },
+  {
+    "name": "The Arch (Mountain Town location)",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Trailer (Mountain Town Region)",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Wood Lot",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Alan's Cave",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Camp Office",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Carter Hydro Dam",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Clearcut",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Dave's Quiet Clearing",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Deadfall Area",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Derailment",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Destroyed Lookout",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Fishing Hut",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Forestry Lookout",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Frozen Creek",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Lake Cabins",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Lake Overlook",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Lake Trail",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Logging Camp",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Lone Lake Cabin",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Lookout (Mystery Lake location)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Max's Last Stand",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Mystery Lake (disambiguation)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Mystery Lake (location)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Mystery Lake (Western Access)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Rail Tunnel",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "River (Northern Access)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "River (Southern Access)",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Train Bridge",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Train Loading Area",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Trapper's Homestead",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Unnamed Pond",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Barn (Molly's)",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Bunker Beta",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Burned Ridge Cave",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Cascading Falls",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Cinder Hills Coal Mine",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Community Hall",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Contemplation Bridge",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Crash Site (Pleasant Valley)",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Crossroads House",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Derelict Cabins",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Draft Dodger's Cabin",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "End of the Road",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Forest Cave (Pleasant Valley location)",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Heartbreak Bridge",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Hilltop Cave",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Lonely Homestead",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Long Curve",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Lower Falls",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Misty Falls Cave",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Misty Falls Picnic Area",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Pensive Pond",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Picnic Spot",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Pleasant Valley Church",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Pleasant Valley Farmstead",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Pleasant Valley Outbuildings",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Point of Disagreement",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Prepper's Abandoned Cache",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Rural Store",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Signal Hill",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Skeeter's Ridge",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Thomson's Crossing",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Three Strikes Farmstead",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Upper Falls",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Raven Falls Trestle",
+    "region": "ravine"
+  },
+  {
+    "name": "Ravine Basin",
+    "region": "ravine"
+  },
+  {
+    "name": "Abandoned Mine",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Ambler's Lake",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Baneful Bridge",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Basement (Sundered Pass)",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Bolt Chopper's Haven",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Cabin (Sundered Pass)",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Cascading Gap",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Final Refuge",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Giant's Thumbprint",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "High Peak Plateau",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Idle Hideout",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Juniper Runoff",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Last Lonely House",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Lotte's Rest",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Miserable Haunt",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Ogre's Teardrop",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Old Settlement",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Perilous Crossing",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Placid Notch",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Prayerful Window",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Reluctant Shortcut",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Roamer's Cave",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Route One Waterfall",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Second Pillar",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Seedling Spring",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Station Bunkhouse",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Unyielding Inundation",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Weather Station",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Andre's Peak",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Cave (Timberwolf Mountain location 1)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Cave (Timberwolf Mountain location 2)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Chasm Cave",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Crystal Lake",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Deer Clearing",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Echo Peak East",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Echo Peak West",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Echo Ravine",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Engine (East)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Engine (West)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Eric's Falls",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Forest Cave (Timberwolf Mountain location)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Landing Gear",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Mountaineer's Hut",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Secluded Shelf",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Summit",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Tail Section",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Waterfall Cave",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Wing",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Wing (Summit)",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Broad Aerie",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Conductor's Dropoff",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Distempered Flatcars",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Feedwater Cave",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Immutable Hesitation",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Loitering Marsh",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Vacant Depot",
+    "region": "transfer_pass"
+  },
+  {
+    "name": "Boss's Settlement",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Bountiful Overlook",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Concentrator",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Conveyor Room",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Craggy Passage",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Desperate Elevation",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Dubious Overlook",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Enduring Waterfall",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Flagman's Gap",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Forgotten Exploration",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Harrowed Residence",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Headframe Building",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Idle Camp",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Indolent Hoppers",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Langston Mine",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Miner's Footpath",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Old Corral",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Overladen Pond",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Pump House",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "R\u00fcdiger's Machine",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Scaffolder's Hideout",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Smoker's Cave",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Turbulent Pasture",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Unquenched Extraction",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Welkin's Window",
+    "region": "zone_of_contamination"
+  }
+]
