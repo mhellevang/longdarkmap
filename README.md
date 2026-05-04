@@ -11,11 +11,11 @@ Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the re
 - **Click** a region label to open its detail map
 - **Scroll** to zoom, **drag** to pan, **double-click** to reset
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
-- **D** toggles a coordinate overlay — `[x%, y%]` of the world map on the world view; `[x, y]` as 0..1 of the region map on the detail view. In the detail view with D on:
-  - **All bounding boxes for the region are drawn** as labelled blue rectangles, so misplaced ones can be spotted at a glance.
-  - **Click any box** (including the search highlight) to grab it — immediately editable, drag-to-move.
+- **D** toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. In the detail view with D on:
+  - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
+  - **Click any box** (including the search highlight) to grab it for editing.
   - **Shift-drag** to draw a fresh bounding box.
-  - In editing mode, **drag the body** to translate, **drag the corner handles** to resize. Click **Save** to persist (requires the dev server, see below) or **Cancel** to dismiss.
+  - In editing mode, **drag the body** to move and **drag the corner handles** to resize. Click **Save** to persist (requires the dev server, see below) or **Cancel** to dismiss.
 
 ## Place search
 
@@ -24,7 +24,7 @@ The world view has a search box for finding any named location across all region
 - Type to filter — e.g. `carter` matches *Carter Hydro Dam* in Mystery Lake
 - Press **/** anywhere on the world view to focus the search
 - **↑ / ↓** to navigate results, **Enter** to open, **Esc** to clear / blur
-- Each result shows the location name and the region it belongs to; clicking opens that region's detail map and **highlights** the matching label — the view zooms in on the box, briefly dims the rest of the map, and leaves a glowing outline around the label
+- Each result shows the location name and the region it belongs to; clicking opens that region's detail map and **highlights** the matching label: the view zooms in on the box, briefly dims the rest of the map, and leaves a glowing outline around the label
 
 The index (~355 named locations) plus per-label bounding boxes are bundled into `index.html` so search and highlighting work fully offline, including from a static deploy.
 
@@ -70,8 +70,8 @@ The merge script writes both `data/place_boxes.json` and refreshes the `PLACE_BO
 node dev-server.js   # http://127.0.0.1:8765/  (no npm install — stdlib only)
 ```
 
-Press **D** in any region to overlay every stored bounding box at once — labelled with its place name — so misplaced boxes are easy to find without opening each one via search. Then either:
-- **Click any box** (or the brighter search highlight) to grab it — drag the body to move, drag corner handles to resize.
+Press **D** in any region to overlay every stored bounding box at once, each labelled with its place name, so the wrong ones are obvious without searching them up one by one. Then either:
+- **Click any box** (or the brighter search highlight) to grab it. Drag the body to move, drag corner handles to resize.
 - **Shift-drag** anywhere to draw a fresh bounding box from scratch.
 
 Click **Save** when the box looks right. The server writes the new bbox into `data/place_boxes_overrides.json` and re-runs `merge_boxes.py --inline` so `data/place_boxes.json` and the inlined `PLACE_BOXES` in `index.html` both reflect the change immediately. The page also updates its in-memory `PLACE_BOXES` so the highlight snaps to the new position without a reload.
