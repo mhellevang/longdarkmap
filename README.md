@@ -6,7 +6,7 @@ A single-file, offline-friendly interactive map for *The Long Dark*. The world v
 
 ## Usage
 
-Open the [live demo](https://mhellevang.github.io/longdarkmap/) — or clone the repo and open `index.html` in any modern browser. No build step, no server required.
+Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the repo and open `index.html` in any modern browser. No build step, no server required.
 
 - **Click** a region label to open its detail map
 - **Scroll** to zoom, **drag** to pan, **double-click** to reset
@@ -32,7 +32,7 @@ The map images live in `maps/` and are committed to the repo so the site works a
 python3 download_maps.py
 ```
 
-The script fetches both difficulty variants for each region into `maps/` and skips files that already exist. No third-party dependencies — only the Python standard library.
+The script fetches both difficulty variants for each region into `maps/` and skips files that already exist. No third-party dependencies, just the Python standard library.
 
 ## Refreshing the place index
 
@@ -47,7 +47,7 @@ The scraper hits the Fandom MediaWiki API for each region's `Category:Locations_
 
 ## Map sources & credits
 
-All map artwork is community-made and hosted on Steam. The images bundled here are mirrored solely so the static site is usable; full credit and ownership belong to the creators below. Please visit, rate, and follow their work on Steam — and if either creator would prefer the images not be re-hosted, open an issue and they'll be removed.
+All map artwork is community-made and hosted on Steam. The images bundled here are mirrored only so the static site is usable; full credit and ownership belong to the creators below. Please visit, rate, and follow their work on Steam. If either creator would prefer the images not be re-hosted, open an issue and they'll be removed.
 
 - **World map** (`maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg`) — preview image from [*[spoilers] Tales from the Far Territory map locations*](https://steamcommunity.com/sharedfiles/filedetails/?id=2899955301) by **Krueger**.
 - **Region maps** — from [*Updated Region Maps [2025]*](https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617) by **HokuOwl**. Each region has two difficulty variants: Pilgrim/Voyageur/Stalker (saved as `<region>.jpg`) and Interloper/Misery (saved as `<region>_loper.jpg`). Exact image URLs are listed in `download_maps.py`.
@@ -66,4 +66,4 @@ maps/                   # Map images: per-region detail maps + the world map (co
 data/places_index.json  # Flat [{name, region}] index powering the world-view search (committed)
 ```
 
-Region positions on the world map are defined in the `REGIONS` array inside `index.html` as `[x%, y%]` coordinates. Press **D** in the browser to display live coordinates while hovering, which makes adjusting label positions straightforward.
+Region positions on the world map are defined in the `REGIONS` array inside `index.html` as `[x%, y%]` coordinates. Press **D** in the browser to overlay live coordinates while hovering, so you can read off the right `[x%, y%]` for a misplaced label and update its entry in `REGIONS`.
