@@ -1,5 +1,15 @@
 # OCR prompt: locate place-name labels on a Long Dark region map
 
+> **Status: legacy / historical.** This is the v1/v2 prompt that asked a
+> vision LLM to produce both label localization AND bbox estimation in
+> one pass. It didn't work well — vision models can't produce pixel-tight
+> bboxes for small map labels (~57% of v1 boxes were on the wrong
+> feature). The current pipeline uses real text-detection OCR
+> (`ocr_run.py` / `ocrmac`) for pixel-precise bboxes, then a Haiku
+> matcher (`match_prompt.md`) to map detected text to canonical names.
+> See the README's "Refreshing the place boxes" section for the live
+> procedure.
+
 This file is the prompt template handed to each per-region OCR subagent.
 The dispatching agent substitutes `<REGION_ID>` everywhere before sending.
 

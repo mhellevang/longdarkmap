@@ -1,9 +1,15 @@
 # Place-box review checklist
 
-The OCR pipeline produced an initial bbox per place; some are misplaced and
-need a manual pass. Open each region in dev mode (press **D** in the detail
-view) and skim the labelled boxes — drag any that are wrong onto the right
-label, then click **Save** (requires `node dev-server.js`).
+The v3 pipeline (Apple Vision OCR + Haiku matcher) produces pixel-tight
+boxes for nearly every entry — typical placement is within ~30px of a
+hand-corrected reference. A handful of entries per region still need a
+manual pass: matcher slips on labels with multiple identical OCR hits
+(e.g. mid-paragraph mentions of a label), and the wiki-only entries
+that have no on-map text and end up in `not_found`.
+
+Open each region in dev mode (press **D** in the detail view), skim the
+labelled overlay, and drag any that look wrong onto the right label.
+Click **Save** to persist (requires `node dev-server.js`).
 
 Region order matches the in-app tab order; box counts come from
 `data/place_boxes.json` at the time of writing.
@@ -21,11 +27,11 @@ Region order matches the in-app tab order; box counts come from
 - [ ] Ash Canyon (19)
 - [ ] Blackrock (23)
 - [x] Forsaken Airfield (23)
-- [ ] Sundered Pass (27)
-- [ ] Zone of Contamination (24)
+- [x] Sundered Pass (27) — partial: 26 manual overrides
+- [ ] Zone of Contamination (24) — partial: 14 manual overrides
 - [ ] Crumbling Highway (5)
 - [ ] Far Range Branch Line (7)
-- [ ] Transfer Pass (7)
+- [x] Transfer Pass (7) — partial: 7 manual overrides
 - [ ] Ravine (2)
 - [ ] Winding River & Carter Hydro Dam (0)
 - [ ] Keeper's Pass (4)

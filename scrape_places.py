@@ -64,6 +64,7 @@ EXCLUDE_TITLES = {
     "Locations",
     "List of Locations",
     "Sandbox Mode",
+    "Mystery Lake (disambiguation)",  # wiki disambig page, no on-map label
 }
 
 
