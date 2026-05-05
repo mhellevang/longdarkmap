@@ -67,6 +67,14 @@ EXCLUDE_TITLES = {
     "Mystery Lake (disambiguation)",  # wiki disambig page, no on-map label
 }
 
+# Per-region exclusions — used when the same wiki name is legitimate in one
+# region but a legend-swatch artifact in another (e.g. "Fishing Hut" is a
+# real label in Coastal Highway but only appears in the legend column on the
+# Mystery Lake map).
+EXCLUDE_BY_REGION: dict[str, set[str]] = {
+    "mystery_lake": {"Fishing Hut"},
+}
+
 
 def api_get(params: dict) -> dict:
     qs = urllib.parse.urlencode({**params, "format": "json"})
@@ -140,6 +148,8 @@ def main(argv: list[str]) -> int:
                 titles = []
             for t in titles:
                 if t in seen:
+                    continue
+                if t in EXCLUDE_BY_REGION.get(region_id, set()):
                     continue
                 seen.add(t)
                 all_places.append({"name": t, "region": region_id})
