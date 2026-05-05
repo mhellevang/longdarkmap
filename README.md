@@ -51,16 +51,22 @@ The scraper hits the Fandom MediaWiki API for each region's `Category:Locations_
 
 ## Refreshing the place boxes
 
-Each named location has a bounding box on its region map so search-result clicks can frame the right label. The boxes are produced by reading each map with a vision-capable subagent.
+Each named location has a bounding box on its region map so search-result clicks can frame the right label. The boxes come from a two-stage pipeline:
+
+1. **OCR**: Apple Vision (`ocrmac`) reads each tile locally and emits pixel-precise bboxes for every text fragment it detects.
+2. **Matcher**: one Claude Haiku subagent per region maps the OCR text to canonical wiki names — handling parenthetical suffixes, `#1`/`#2` instance suffixes, multi-line label merging, and ambiguous shorthand.
 
 ```sh
-python3 build_tiles.py        # split each map into a 3×3 overlapping tile grid
-python3 build_task_files.py   # write per-region task.json (names to locate)
-# then, in Claude Code, dispatch one OCR subagent per region pointed at
-# data/tiles/<region>/ — the prompt template is checked in at ocr_prompt.md
-python3 merge_boxes.py --inline   # merge results, write data/place_boxes.json,
+python3 build_tiles.py            # split each map into a 3×3 overlapping tile grid
+python3 build_task_files.py       # write per-region task.json (names to locate)
+.venv/bin/python ocr_run.py       # Stage 1: ocrmac → data/tiles/<region>/ocr_detections.json
+# Stage 2: in Claude Code, dispatch one Haiku matcher subagent per region
+# pointed at data/tiles/<region>/, using the prompt template at match_prompt.md
+python3 merge_boxes.py --inline   # merge results + overrides, write data/place_boxes.json,
                                   # and inline into index.html
 ```
+
+Stage 1 is deterministic and free (Apple Vision runs on-device). Stage 2 is pure text-to-text matching with no image reads, so Haiku is plenty and the cost is negligible. Earlier vision-LLM-only attempts (see `ocr_prompt.md`, kept as historical reference) couldn't produce pixel-tight bboxes; switching to real OCR fixed that fundamentally.
 
 The merge script writes both `data/place_boxes.json` and refreshes the `PLACE_BOXES_START` / `PLACE_BOXES_END` block in `index.html`. Coordinates are stored as `[x1, y1, x2, y2]` fractions (0..1) of the region's full map image.
 
@@ -96,8 +102,10 @@ index.html              # The entire app — HTML, CSS, region data, place index
 download_maps.py        # Fetches region maps into maps/
 scrape_places.py        # Scrapes the place index from the Long Dark Fandom wiki
 build_tiles.py          # Splits each region map into a 3×3 overlapping tile grid for OCR
-build_task_files.py     # Writes per-region task.json (names a vision agent should locate)
-merge_boxes.py          # Merges per-region OCR results + overrides into data/place_boxes.json + index.html
+build_task_files.py     # Writes per-region task.json (names the matcher should locate)
+ocr_run.py              # Stage 1: macOS Vision OCR (ocrmac) → data/tiles/<region>/ocr_detections.json
+match_prompt.md         # Stage 2 prompt: matches OCR text fragments to canonical wiki names
+merge_boxes.py          # Merges per-region matcher results + overrides into data/place_boxes.json + index.html
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
 data/places_index.json  # Flat [{name, region}] index powering the world-view search (committed)
