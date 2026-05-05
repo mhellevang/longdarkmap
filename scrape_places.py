@@ -189,7 +189,34 @@ def main(argv: list[str]) -> int:
         else:
             print(f"warn: sentinels {START}/{END} not found in index.html — not inlined",
                   file=sys.stderr)
+
+    write_task_files(all_places)
     return 0
+
+
+def write_task_files(places: list[dict]) -> None:
+    """Drop a per-region task.json into each existing tile directory listing
+    the names the OCR matcher should locate. Cheap to re-run; used by the
+    matcher on the next OCR pass."""
+    tiles_dir = ROOT / "data" / "tiles"
+    if not tiles_dir.exists():
+        return
+    by_region: dict[str, list[str]] = {}
+    for p in places:
+        by_region.setdefault(p["region"], []).append(p["name"])
+    written = 0
+    for region_id, names in by_region.items():
+        out = tiles_dir / region_id
+        if not out.exists():
+            continue
+        names_sorted = sorted(set(names))
+        (out / "task.json").write_text(json.dumps({
+            "region_id": region_id,
+            "names": names_sorted,
+        }, indent=2) + "\n")
+        written += 1
+    if written:
+        print(f"Wrote task.json into {written} tile dir(s)")
 
 
 if __name__ == "__main__":
