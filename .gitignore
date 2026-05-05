@@ -3,3 +3,4 @@
 .claude/
 .venv/
 data/tiles/
+data/unclaimed_candidates.json

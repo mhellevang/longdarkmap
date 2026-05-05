@@ -208,6 +208,10 @@
     "region": "bleak_inlet"
   },
   {
+    "name": "Kitchen",
+    "region": "bleak_inlet"
+  },
+  {
     "name": "Landslide (Bleak Inlet)",
     "region": "bleak_inlet"
   },
@@ -309,6 +313,10 @@
   },
   {
     "name": "Commuter's Lament",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Fishing Cabins",
     "region": "coastal_highway"
   },
   {
@@ -448,6 +456,10 @@
     "region": "desolation_point"
   },
   {
+    "name": "Whale Processing",
+    "region": "desolation_point"
+  },
+  {
     "name": "Foundered Track",
     "region": "far_range"
   },
@@ -557,6 +569,10 @@
   },
   {
     "name": "Drift Island",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Fallow",
     "region": "forsaken_airfield"
   },
   {
@@ -736,6 +752,14 @@
     "region": "keepers_pass"
   },
   {
+    "name": "Keeper's Pass North",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Keeper's Pass South",
+    "region": "keepers_pass"
+  },
+  {
     "name": "Mirthless Fork",
     "region": "keepers_pass"
   },
@@ -757,6 +781,10 @@
   },
   {
     "name": "Crashed Prison Transport Bus",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Graveyard",
     "region": "mountain_town"
   },
   {
@@ -833,6 +861,10 @@
   },
   {
     "name": "The Arch (Mountain Town location)",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Tractor",
     "region": "mountain_town"
   },
   {
@@ -936,6 +968,10 @@
     "region": "mystery_lake"
   },
   {
+    "name": "Trailers",
+    "region": "mystery_lake"
+  },
+  {
     "name": "Train Bridge",
     "region": "mystery_lake"
   },
@@ -997,6 +1033,10 @@
   },
   {
     "name": "End of the Road",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Farmhouse",
     "region": "pleasant_valley"
   },
   {
@@ -1409,6 +1449,10 @@
   },
   {
     "name": "Unquenched Extraction",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Warehouses",
     "region": "zone_of_contamination"
   },
   {

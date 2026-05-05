@@ -147,11 +147,28 @@ def main(argv: list[str]) -> int:
         summary.append((region_id, len(seen)))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
+
+    # Layer manual additions on top of the wiki scrape. data/places_extra.json
+    # holds places that exist on the maps but aren't listed on the wiki —
+    # written by hand, never overwritten by this script.
+    extras_path = OUT.parent / "places_extra.json"
+    extras = json.loads(extras_path.read_text()) if extras_path.exists() else []
+    seen_pairs = {(p["name"], p["region"]) for p in all_places}
+    extras_added = 0
+    for e in extras:
+        key = (e["name"], e["region"])
+        if key in seen_pairs:
+            continue
+        seen_pairs.add(key)
+        all_places.append({"name": e["name"], "region": e["region"]})
+        extras_added += 1
+
     all_places.sort(key=lambda p: (p["region"], p["name"].lower()))
     OUT.write_text(json.dumps(all_places, indent=2) + "\n")
 
     total = len(all_places)
-    print(f"Wrote {total} places across {len(REGIONS)} regions -> {OUT.relative_to(ROOT)}")
+    extras_note = f"  ({extras_added} from places_extra.json)" if extras_added else ""
+    print(f"Wrote {total} places across {len(REGIONS)} regions -> {OUT.relative_to(ROOT)}{extras_note}")
     for region_id, n in summary:
         marker = " " if n else "·"
         print(f"  {marker} {region_id:<24} {n:>3}")

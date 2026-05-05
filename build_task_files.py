@@ -12,6 +12,9 @@ TILES_DIR = ROOT / "data" / "tiles"
 
 def main() -> int:
     places = json.loads((ROOT / "data" / "places_index.json").read_text())
+    extras_path = ROOT / "data" / "places_extra.json"
+    if extras_path.exists():
+        places = places + json.loads(extras_path.read_text())
     by_region: dict[str, list[str]] = {}
     for p in places:
         by_region.setdefault(p["region"], []).append(p["name"])

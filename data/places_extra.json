@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Kitchen",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Fishing Cabins",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Whale Processing",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Fallow",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Keeper's Pass North",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Keeper's Pass South",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Graveyard",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Tractor",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Trailers",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Farmhouse",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Warehouses",
+    "region": "zone_of_contamination"
+  }
+]
