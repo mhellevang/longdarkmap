@@ -57,7 +57,7 @@ Each named location has a bounding box on its region map so search-result clicks
 python3 build_tiles.py        # split each map into a 3×3 overlapping tile grid
 python3 build_task_files.py   # write per-region task.json (names to locate)
 # then, in Claude Code, dispatch one OCR subagent per region pointed at
-# data/tiles/<region>/ — see the inline prompt template in the chat history
+# data/tiles/<region>/ — the prompt template is checked in at ocr_prompt.md
 python3 merge_boxes.py --inline   # merge results, write data/place_boxes.json,
                                   # and inline into index.html
 ```
