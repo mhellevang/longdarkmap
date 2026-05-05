@@ -9,7 +9,7 @@ Source: https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617
 import os
 import urllib.request
 
-OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maps")
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "maps")
 
 HEADERS = {
     "User-Agent": (

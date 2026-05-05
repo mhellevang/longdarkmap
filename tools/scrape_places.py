@@ -24,7 +24,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 OUT = ROOT / "data" / "places_index.json"
 INDEX_HTML = ROOT / "index.html"
 

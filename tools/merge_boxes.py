@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
 OUT = ROOT / "data" / "place_boxes.json"
 # Manual overrides written by the dev server's save endpoint. Layered over

@@ -23,7 +23,7 @@ from pathlib import Path
 
 from ocrmac import ocrmac
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
 
 # Vision returns occasional very-low-confidence noise (random pixel artefacts

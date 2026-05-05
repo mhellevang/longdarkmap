@@ -28,7 +28,7 @@ const HOST = '127.0.0.1';
 
 const BOXES_FILE     = path.join(ROOT, 'data', 'place_boxes.json');
 const OVERRIDES_FILE = path.join(ROOT, 'data', 'place_boxes_overrides.json');
-const MERGE_SCRIPT   = path.join(ROOT, 'merge_boxes.py');
+const MERGE_SCRIPT   = path.join(ROOT, 'tools', 'merge_boxes.py');
 const PYTHON         = path.join(ROOT, '.venv', 'bin', 'python');
 const HTML_FILE      = path.join(ROOT, 'index.html');
 const SENTINEL_START = '// PLACE_BOXES_START';

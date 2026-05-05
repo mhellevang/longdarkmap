@@ -18,7 +18,7 @@ from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
 
 # Regions to tile (id -> primary map path). We OCR the standard variant only;

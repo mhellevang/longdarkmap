@@ -33,7 +33,7 @@ The index (~355 named locations) plus per-label bounding boxes are bundled into 
 The map images live in `maps/` and are committed to the repo so the site works as a static deploy (e.g. GitHub Pages). To pull the latest versions from the source guide, run:
 
 ```sh
-python3 download_maps.py
+python3 tools/download_maps.py
 ```
 
 The script fetches both difficulty variants for each region into `maps/` and skips files that already exist. No third-party dependencies, just the Python standard library.
@@ -43,8 +43,8 @@ The script fetches both difficulty variants for each region into `maps/` and ski
 To re-scrape the location list from the Long Dark wiki:
 
 ```sh
-python3 scrape_places.py            # writes data/places_index.json
-python3 scrape_places.py --inline   # also bundles the result into index.html
+python3 tools/scrape_places.py            # writes data/places_index.json
+python3 tools/scrape_places.py --inline   # also bundles the result into index.html
 ```
 
 The scraper hits the Fandom MediaWiki API for each region's `Category:Locations_in_<Region>` page. Use `--inline` after the scrape to bake the new index into `index.html` between the `PLACES_INDEX_START` / `PLACES_INDEX_END` sentinels — that's what the runtime search reads. Stdlib only.
@@ -57,13 +57,13 @@ Each named location has a bounding box on its region map so search-result clicks
 2. **Matcher**: one Claude Haiku subagent per region maps the OCR text to canonical wiki names — handling parenthetical suffixes, `#1`/`#2` instance suffixes, multi-line label merging, and ambiguous shorthand.
 
 ```sh
-python3 build_tiles.py            # split each map into a 3×3 overlapping tile grid
-python3 scrape_places.py          # writes places_index.json AND task.json per region
-.venv/bin/python ocr_run.py       # Stage 1: ocrmac → data/tiles/<region>/ocr_detections.json
+python3 tools/build_tiles.py            # split each map into a 3×3 overlapping tile grid
+python3 tools/scrape_places.py          # writes places_index.json AND task.json per region
+.venv/bin/python tools/ocr_run.py       # Stage 1: ocrmac → data/tiles/<region>/ocr_detections.json
 # Stage 2: in Claude Code, dispatch one Haiku matcher subagent per region
-# pointed at data/tiles/<region>/, using the prompt template at match_prompt.md
-python3 merge_boxes.py --inline   # merge results + overrides, write data/place_boxes.json,
-                                  # and inline into index.html
+# pointed at data/tiles/<region>/, using the prompt template at tools/match_prompt.md
+python3 tools/merge_boxes.py --inline   # merge results + overrides, write data/place_boxes.json,
+                                        # and inline into index.html
 ```
 
 Stage 1 is deterministic and free (Apple Vision runs on-device). Stage 2 is pure text-to-text matching with no image reads, so Haiku is plenty and the cost is negligible. (An earlier vision-LLM-only flow couldn't produce pixel-tight bboxes; switching to real OCR fixed that fundamentally — git history has the deprecated prompt template if you ever want to compare.)
@@ -99,13 +99,14 @@ All map artwork is community-made and hosted on Steam. The images bundled here a
 
 ```
 index.html              # The entire app — HTML, CSS, region data, place index, place boxes, and JS
-download_maps.py        # Fetches region maps into maps/
-scrape_places.py        # Scrapes the place index from the Long Dark Fandom wiki
-build_tiles.py          # Splits each region map into a 3×3 overlapping tile grid for OCR
-ocr_run.py              # Stage 1: macOS Vision OCR (ocrmac) → data/tiles/<region>/ocr_detections.json
-match_prompt.md         # Stage 2 prompt: matches OCR text fragments to canonical wiki names
-merge_boxes.py          # Merges per-region matcher results + overrides into data/place_boxes.json + index.html
-find_unclaimed.py       # Discovery tool: surfaces OCR labels not claimed by the wiki for review
+tools/                  # Build-time scripts — only needed when refreshing the data:
+  download_maps.py      #   Fetches region maps into maps/
+  scrape_places.py      #   Scrapes the place index from the Long Dark Fandom wiki
+  build_tiles.py        #   Splits each region map into a 3×3 overlapping tile grid for OCR
+  ocr_run.py            #   Stage 1: macOS Vision OCR (ocrmac) → data/tiles/<region>/ocr_detections.json
+  match_prompt.md       #   Stage 2 prompt: matches OCR text fragments to canonical wiki names
+  merge_boxes.py        #   Merges per-region matcher results + overrides into data/place_boxes.json + index.html
+  find_unclaimed.py     #   Discovery tool: surfaces OCR labels not claimed by the wiki for review
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
 data/places_index.json  # Flat [{name, region}] index powering the world-view search (committed)

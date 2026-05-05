@@ -23,7 +23,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
 PLACES_INDEX = ROOT / "data" / "places_index.json"
 EXTRAS = ROOT / "data" / "places_extra.json"
