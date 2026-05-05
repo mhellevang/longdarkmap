@@ -2957,8 +2957,8 @@ const PLACE_BOXES = {
     "Reclusive Falls": [
       0.26223,
       0.41812,
-      0.29925,
-      0.42353
+      0.29803,
+      0.4306
     ],
     "Bunker Gamma": [
       0.03896,
@@ -4202,6 +4202,12 @@ const worldMapImg  = document.getElementById('world-map');
 const labelLayer   = document.getElementById('label-layer');
 const coordDisplay = document.getElementById('coord-display');
 
+// Dev mode (D toggle: coordinate overlay + all-boxes overlay + bbox editor)
+// is only available when the page is served by the local dev server. On
+// file:// or the public deploy the D key is a no-op so end users don't
+// stumble into the editor.
+const DEV_MODE_ENABLED =
+  location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 let devMode = false;
 
 function layoutWorldMap() {
@@ -4239,6 +4245,7 @@ const drawBox            = document.getElementById('draw-box');
 
 document.addEventListener('keydown', e => {
   if (e.key !== 'd' && e.key !== 'D') return;
+  if (!DEV_MODE_ENABLED) return;
   if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   devMode = !devMode;
   const inDetail = detailView.style.display === 'flex';

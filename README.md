@@ -11,7 +11,7 @@ Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the re
 - **Click** a region label to open its detail map
 - **Scroll** to zoom, **drag** to pan, **double-click** to reset
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
-- **D** toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. In the detail view with D on:
+- **D** (dev server only) toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. The key is a no-op when the page is opened directly or from the public deploy. In the detail view with D on:
   - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
   - **Click any box** (including the search highlight) to grab it for editing.
   - **Shift-drag** to draw a fresh bounding box.
