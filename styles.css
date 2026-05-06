@@ -54,6 +54,13 @@ body {
 .region-btn:hover {
   background: transparent;
 }
+/* Reveal the label when keyboard-focused so tab-through users can see
+   which region they're on. region-btn text is otherwise transparent. */
+.region-btn:focus-visible {
+  color: #c9d8f0;
+  outline: 1px dotted rgba(110, 170, 230, 0.78);
+  outline-offset: 2px;
+}
 
 /* ── Coord display (dev mode, press D) ──────────────────────────────────── */
 #coord-display, #detail-coord-display {

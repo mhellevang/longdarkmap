@@ -22,10 +22,10 @@
 </div>
 
 <!-- ══════════ DETAIL VIEW (modal) ══════════ -->
-<div id="detail-view">
+<div id="detail-view" role="dialog" aria-modal="true" aria-labelledby="region-title" aria-hidden="true">
   <div id="detail-dialog">
     <div id="detail-header">
-      <button id="back-btn">✕</button>
+      <button id="back-btn" aria-label="Close region view">✕</button>
       <h1 id="region-title"></h1>
       <div id="map-tabs"></div>
     </div>
@@ -47,12 +47,12 @@
       </div>
       <div id="detail-coord-display"></div>
       <div id="zoom-controls">
-        <button class="zoom-btn" id="zoom-out">−</button>
+        <button class="zoom-btn" id="zoom-out" aria-label="Zoom out">−</button>
         <span id="zoom-level">100%</span>
-        <button class="zoom-btn" id="zoom-in">+</button>
-        <button class="zoom-btn" id="zoom-fit" title="Fit to window">⊡</button>
+        <button class="zoom-btn" id="zoom-in" aria-label="Zoom in">+</button>
+        <button class="zoom-btn" id="zoom-fit" title="Fit to window" aria-label="Fit to window">⊡</button>
       </div>
-      <div id="zoom-hint">Scroll to zoom · Drag to pan · Double-click to reset</div>
+      <div id="zoom-hint">Scroll or +/− to zoom · Drag or arrows to pan · Double-click or 0 to reset</div>
     </div>
   </div>
 </div>
@@ -4335,7 +4335,12 @@ function mapTabLabel(path) {
   return 'Pilgrim/Voyageur/Stalker';
 }
 
+// Element that had focus before the modal opened, so we can return focus
+// there on close (e.g. the search result the user activated).
+let lastFocusBeforeModal = null;
+
 function openRegion(region, target) {
+  lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
   mapTabsEl.innerHTML = '';
   currentRegion = region;
@@ -4361,7 +4366,13 @@ function openRegion(region, target) {
   renderAllBoxes();
   setAllBoxesVisible(devMode);
   detailView.style.display = 'flex';
+  detailView.setAttribute('aria-hidden', 'false');
+  // inert prevents Tab from reaching the world view's region buttons and
+  // search input while the modal is up. Combined with role="dialog" +
+  // aria-modal this gives keyboard users a proper modal experience.
+  worldView.setAttribute('inert', '');
   document.body.classList.add('detail-open');
+  backBtn.focus();
 }
 
 // ── Pan / zoom ────────────────────────────────────────────────────────────
@@ -4887,6 +4898,8 @@ mapCanvas.addEventListener('dblclick', fitMap);
 
 function closeModal() {
   detailView.style.display = 'none';
+  detailView.setAttribute('aria-hidden', 'true');
+  worldView.removeAttribute('inert');
   document.body.classList.remove('detail-open');
   clearHighlight();
   exitEditing();
@@ -4894,6 +4907,12 @@ function closeModal() {
   detailCoordDisplay.style.display = 'none';
   detailCoordDisplay.classList.remove('has-bbox');
   currentRegion = null;
+  // Return focus to whatever opened the modal (search result, region label)
+  // so keyboard users don't get dumped at the top of the document.
+  if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) {
+    lastFocusBeforeModal.focus();
+  }
+  lastFocusBeforeModal = null;
 }
 
 backBtn.addEventListener('click', closeModal);
@@ -4902,6 +4921,43 @@ detailView.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
+});
+
+// Keyboard pan/zoom in the detail view. Arrows pan (Shift = larger step);
+// +/-/0 zoom in/out/fit. Skipped when an input has focus (so search and
+// the bbox editor's text fields keep normal behaviour) or when a modifier
+// is held (avoid clashing with browser shortcuts like Ctrl+= page zoom).
+document.addEventListener('keydown', e => {
+  if (detailView.style.display !== 'flex') return;
+  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const step = e.shiftKey ? 200 : 60;
+  const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
+
+  switch (e.key) {
+    // Arrow direction follows the "explore the map" model: pressing →
+    // reveals more of the right side of the image, which translates the
+    // image left (panX decreases).
+    case 'ArrowLeft':  panX += step; applyTransform(); break;
+    case 'ArrowRight': panX -= step; applyTransform(); break;
+    case 'ArrowUp':    panY += step; applyTransform(); break;
+    case 'ArrowDown':  panY -= step; applyTransform(); break;
+    case '+':
+    case '=':
+      applyZoom(zoom * 1.4, cw / 2, ch / 2);
+      break;
+    case '-':
+    case '_':
+      applyZoom(zoom / 1.4, cw / 2, ch / 2);
+      break;
+    case '0':
+      fitMap();
+      break;
+    default:
+      return;
+  }
+  e.preventDefault();
 });
 </script>
 </body>
