@@ -26,37 +26,18 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 OUT = ROOT / "data" / "places_index.json"
+REGIONS_FILE = ROOT / "data" / "regions.json"
 INDEX_HTML = ROOT / "index.html"
 
 API = "https://thelongdark.fandom.com/api.php"
 USER_AGENT = "longdarkmap-scraper/1.0 (https://github.com/mathiashellevang/longdarkmap)"
 
-# (id, display name, wiki category titles). One region can pull from multiple
-# categories (e.g. Keeper's Pass North + South). Empty list means no wiki
-# coverage — fine; the region just won't contribute to the search index.
-REGIONS: list[tuple[str, str, list[str]]] = [
-    ("mystery_lake",          "Mystery Lake",           ["Locations in Mystery Lake"]),
-    ("coastal_highway",       "Coastal Highway",        ["Locations in Coastal Highway"]),
-    ("pleasant_valley",       "Pleasant Valley",        ["Locations in Pleasant Valley"]),
-    ("desolation_point",      "Desolation Point",       ["Locations in Desolation Point"]),
-    ("timberwolf_mountain",   "Timberwolf Mountain",    ["Locations in Timberwolf Mountain"]),
-    ("forlorn_muskeg",        "Forlorn Muskeg",         ["Locations in Forlorn Muskeg"]),
-    ("broken_railroad",       "Broken Railroad",        ["Locations in Broken Railroad"]),
-    ("bleak_inlet",           "Bleak Inlet",            ["Locations in Bleak Inlet"]),
-    ("hushed_river_valley",   "Hushed River Valley",    ["Locations in Hushed River Valley"]),
-    ("mountain_town",         "Mountain Town",          ["Locations in Mountain Town"]),
-    ("ash_canyon",            "Ash Canyon",             ["Locations in Ash Canyon"]),
-    ("blackrock",             "Blackrock",              ["Locations in Blackrock"]),
-    ("forsaken_airfield",     "Forsaken Airfield",      ["Locations in Forsaken Airfield"]),
-    ("sundered_pass",         "Sundered Pass",          ["Locations in Sundered Pass"]),
-    ("zone_of_contamination", "Zone of Contamination",  ["Locations in Zone of Contamination"]),
-    ("crumbling_highway",     "Crumbling Highway",      ["Locations in Crumbling Highway"]),
-    ("far_range",             "Far Range Branch Line",  ["Locations in Far Range Branch Line"]),
-    ("transfer_pass",         "Transfer Pass",          ["Locations in Transfer Pass"]),
-    ("ravine",                "Ravine",                 ["Locations in The Ravine"]),
-    ("winding_river",         "Winding River & Carter Hydro Dam", []),
-    ("keepers_pass",          "Keeper's Pass",          ["Locations in Keeper's Pass North",
-                                                         "Locations in Keeper's Pass South"]),
+# (id, wiki category titles). One region can pull from multiple categories
+# (e.g. Keeper's Pass North + South). Empty list means no wiki coverage —
+# fine; the region just won't contribute to the search index.
+REGIONS: list[tuple[str, list[str]]] = [
+    (r["id"], r["wiki_categories"])
+    for r in json.loads(REGIONS_FILE.read_text())
 ]
 
 # Wiki pages that aren't real in-game locations (collection / index pages).
@@ -132,7 +113,7 @@ def main(argv: list[str]) -> int:
     all_places: list[dict] = []
     summary: list[tuple[str, int]] = []
 
-    for region_id, _, categories in REGIONS:
+    for region_id, categories in REGIONS:
         seen: set[str] = set()
         for category in categories:
             try:

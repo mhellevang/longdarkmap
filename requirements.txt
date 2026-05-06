@@ -1,0 +1,9 @@
+# Python dependencies for the build-time tooling in tools/.
+# The frontend (index.html + dev-server.js) has no Python deps.
+#
+# ocrmac wraps the macOS Vision framework and only works on macOS.
+# Linux/Windows contributors can still run merge_boxes.py / scrape_places.py
+# (which need no third-party deps) but not the OCR or tile-build steps.
+
+Pillow>=10.0
+ocrmac>=0.1.8 ; sys_platform == "darwin"

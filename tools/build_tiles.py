@@ -20,31 +20,13 @@ from PIL import Image
 
 ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
+REGIONS_FILE = ROOT / "data" / "regions.json"
 
-# Regions to tile (id -> primary map path). We OCR the standard variant only;
-# loper variants share layout.
+# Regions to tile (id -> primary map path). We OCR the standard variant only
+# (maps[0]); loper variants share layout.
 REGION_MAPS: dict[str, str] = {
-    "mystery_lake":          "maps/mystery_lake.jpg",
-    "coastal_highway":       "maps/coastal_highway.jpg",
-    "pleasant_valley":       "maps/pleasant_valley.jpg",
-    "desolation_point":      "maps/desolation_point.jpg",
-    "timberwolf_mountain":   "maps/timberwolf_mountain.jpg",
-    "forlorn_muskeg":        "maps/forlorn_muskeg.jpg",
-    "broken_railroad":       "maps/broken_railroad.jpg",
-    "bleak_inlet":           "maps/bleak_inlet.jpg",
-    "hushed_river_valley":   "maps/hushed_river_valley.jpg",
-    "mountain_town":         "maps/mountain_town.jpg",
-    "ash_canyon":            "maps/ash_canyon.jpg",
-    "blackrock":             "maps/blackrock.jpg",
-    "forsaken_airfield":     "maps/forsaken_airfield.jpg",
-    "sundered_pass":         "maps/sundered_pass.jpg",
-    "zone_of_contamination": "maps/zone_of_contamination.jpg",
-    "crumbling_highway":     "maps/crumbling_highway.jpg",
-    "far_range":             "maps/far_range_branch_line.jpg",
-    "transfer_pass":         "maps/transfer_pass.jpg",
-    "ravine":                "maps/ravine.jpg",
-    "winding_river":         "maps/winding_river_and_carter_hydro_dam.jpg",
-    "keepers_pass":          "maps/keepers_pass.jpg",
+    r["id"]: r["maps"][0]
+    for r in json.loads(REGIONS_FILE.read_text())
 }
 
 # Grid size and overlap. Overlap helps with labels that straddle a seam.

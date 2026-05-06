@@ -2,5 +2,6 @@
 .idea/
 .claude/
 .venv/
+__pycache__/
 data/tiles/
 data/unclaimed_candidates.json

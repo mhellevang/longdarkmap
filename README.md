@@ -89,8 +89,8 @@ The overrides file is the source of manual fixes; running `merge_boxes.py` on it
 All map artwork is community-made and hosted on Steam. The images bundled here are mirrored only so the static site is usable; full credit and ownership belong to the creators below. Please visit, rate, and follow their work on Steam. If either creator would prefer the images not be re-hosted, open an issue and they'll be removed.
 
 - **World map** (`maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg`) — preview image from [*[spoilers] Tales from the Far Territory map locations*](https://steamcommunity.com/sharedfiles/filedetails/?id=2899955301) by **Krueger**.
-- **Region maps** — from [*Updated Region Maps [2025]*](https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617) by **HokuOwl**. Each region has two difficulty variants: Pilgrim/Voyageur/Stalker (saved as `<region>.jpg`) and Interloper/Misery (saved as `<region>_loper.jpg`). Exact image URLs are listed in `tools/download_maps.py`.
-- **Region label positions** — adapted from [*TLD-Interactive-Map*](https://github.com/Elektronixx/TLD-Interactive-Map) by **Elektronixx**, whose image-map hotspot coordinates were converted to percentages and used as the `pos` values in `index.html`.
+- **Region maps** — from [*Updated Region Maps [2025]*](https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617) by **HokuOwl**. Each region has two difficulty variants: Pilgrim/Voyageur/Stalker (saved as `<region>.jpg`) and Interloper/Misery (saved as `<region>_loper.jpg`). Exact image URLs are listed in `data/regions.json`.
+- **Region label positions** — adapted from [*TLD-Interactive-Map*](https://github.com/Elektronixx/TLD-Interactive-Map) by **Elektronixx**, whose image-map hotspot coordinates were converted to percentages and used as the `pos` values in `data/regions.json`.
 - **Place names** — most are scraped from the per-region `Category:Locations_in_*` pages on the [Long Dark Fandom wiki](https://thelongdark.fandom.com/wiki/Locations) (CC-BY-SA 3.0). A handful in `data/places_extra.json` were read off the printed labels on HokuOwl's maps where the wiki had no matching entry.
 - **Per-place bounding boxes** (`data/place_boxes.json`) — derived locally from Apple Vision OCR run over HokuOwl's region maps via `tools/ocr_run.py`, then matched to the wiki names by a Haiku subagent (`tools/match_prompt.md`). Manual fixes from the in-browser editor live in `data/place_boxes_overrides.json`. No external attribution is needed for the box coordinates themselves; the underlying labels they frame are the map artists' work.
 
@@ -99,7 +99,8 @@ All map artwork is community-made and hosted on Steam. The images bundled here a
 ## Project structure
 
 ```
-index.html              # The entire app — HTML, CSS, region data, place index, place boxes, and JS
+index.html              # App shell, HTML markup, JS, and inlined data (place index + place boxes + regions)
+styles.css              # All app styling, loaded by index.html
 tools/                  # Build-time scripts — only needed when refreshing the data:
   download_maps.py      #   Fetches region maps into maps/
   scrape_places.py      #   Scrapes the place index from the Long Dark Fandom wiki
@@ -108,12 +109,14 @@ tools/                  # Build-time scripts — only needed when refreshing the
   match_prompt.md       #   Stage 2 prompt: matches OCR text fragments to canonical wiki names
   merge_boxes.py        #   Merges per-region matcher results + overrides into data/place_boxes.json + index.html
   find_unclaimed.py     #   Discovery tool: surfaces OCR labels not claimed by the wiki for review
+  inline_regions.py     #   Inlines data/regions.json into index.html between REGIONS_START/END sentinels
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
+data/regions.json       # Canonical region list (id, display name, world-map pos, map paths, wiki + Steam URLs)
 data/places_index.json  # Flat [{name, region}] index powering the world-view search (committed)
 data/place_boxes.json   # {region: {name: [x1,y1,x2,y2]}} bounding boxes (committed; merge of OCR results + overrides)
 data/place_boxes_overrides.json  # Manual edits from the dev server's Save button (committed)
 data/tiles/             # Per-region tiled maps + OCR results (intermediate; gitignored)
 ```
 
-Region positions on the world map are defined in the `REGIONS` array inside `index.html` as `[x%, y%]` coordinates. Press **D** in the browser to overlay live coordinates while hovering, so you can read off the right `[x%, y%]` for a misplaced label and update its entry in `REGIONS`.
+Region positions on the world map live in `data/regions.json` as `pos: [x%, y%]`, consumed by every Python tool and inlined into `index.html` by `tools/inline_regions.py`. Press **D** in the browser to overlay live coordinates while hovering, then update the matching entry in `data/regions.json` and re-run the inliner.

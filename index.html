@@ -4,460 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Long Dark — Map</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  background: #0d1117;
-  color: #c9d1d9;
-  font-family: 'Georgia', serif;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* ── World view ──────────────────────────────────────────────────────────── */
-#world-view {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0d1117;
-}
-
-#map-container {
-  position: relative;
-  flex-shrink: 0;
-}
-
-#world-map {
-  display: block;
-  user-select: none;
-}
-
-/* ── Region labels ───────────────────────────────────────────────────────── */
-#label-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none; /* layer itself is transparent; buttons handle events */
-}
-
-.region-btn {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  pointer-events: all;
-  background: transparent;
-  border: none;
-  color: transparent;
-  padding: 3px 9px;
-  border-radius: 3px;
-  font-family: Georgia, serif;
-  font-size: 11px;
-  line-height: 1.3;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.region-btn:hover {
-  background: transparent;
-}
-
-/* ── Coord display (dev mode, press D) ──────────────────────────────────── */
-#coord-display, #detail-coord-display {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-  font-size: 11px;
-  color: rgba(180, 200, 220, 0.6);
-  pointer-events: none;
-  z-index: 300;
-  display: none;
-  background: rgba(8,12,18,0.78);
-  padding: 4px 10px;
-  border-radius: 3px;
-  font-family: ui-monospace, Menlo, monospace;
-  white-space: pre;
-  max-width: calc(100vw - 24px);
-}
-#detail-coord-display.has-bbox { color: #60a5fa; }
-
-/* Box being drawn while shift-dragging in detail dev mode. */
-#draw-box {
-  position: absolute;
-  border: 2px dashed #60a5fa;
-  background: rgba(96, 165, 250, 0.10);
-  pointer-events: none;
-  display: none;
-  z-index: 6;
-}
-#draw-box.editing {
-  border-style: solid;
-  background: rgba(96, 165, 250, 0.06);
-  pointer-events: all;
-  cursor: move;
-}
-.resize-handle {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #60a5fa;
-  border: 1px solid #0d1117;
-  border-radius: 2px;
-  pointer-events: all;
-  display: none;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-}
-#draw-box.editing .resize-handle { display: block; }
-.resize-handle[data-corner="nw"] { left: -7px; top:    -7px; cursor: nwse-resize; }
-.resize-handle[data-corner="ne"] { right:-7px; top:    -7px; cursor: nesw-resize; }
-.resize-handle[data-corner="sw"] { left: -7px; bottom: -7px; cursor: nesw-resize; }
-.resize-handle[data-corner="se"] { right:-7px; bottom: -7px; cursor: nwse-resize; }
-
-#bbox-editor {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  align-items: center;
-  gap: 10px;
-  background: rgba(8, 12, 18, 0.92);
-  border: 1px solid rgba(96, 165, 250, 0.55);
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 12px;
-  color: #e6edf3;
-  z-index: 7;
-  backdrop-filter: blur(4px);
-}
-#bbox-editor.visible { display: flex; }
-#bbox-editor-target {
-  color: #60a5fa;
-  max-width: 320px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#bbox-editor button {
-  background: none;
-  border: 1px solid rgba(96, 165, 250, 0.55);
-  color: #60a5fa;
-  padding: 4px 12px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
-  transition: background 0.12s, border-color 0.12s;
-}
-#bbox-editor button:hover { background: rgba(96, 165, 250, 0.16); }
-#bbox-editor button.cancel {
-  border-color: rgba(180, 200, 220, 0.45);
-  color: #b8c2cc;
-}
-#bbox-editor button:disabled { opacity: 0.45; cursor: default; }
-#bbox-editor .status { color: rgba(180, 200, 220, 0.65); }
-#bbox-editor .status.ok    { color: #6ee7b7; }
-#bbox-editor .status.error { color: #f4a4a4; }
-
-/* ── All-boxes overlay (dev mode) ────────────────────────────────────────── */
-/* Renders every PLACE_BOXES entry for the current region as a labelled
-   translucent rectangle so misplaced boxes can be spotted at a glance. */
-#all-boxes-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  display: none;
-  z-index: 4;
-  overflow: hidden;
-}
-#all-boxes-layer.visible { display: block; }
-.all-box {
-  position: absolute;
-  border: 1px solid rgba(96, 165, 250, 0.55);
-  background: rgba(96, 165, 250, 0.06);
-  border-radius: 2px;
-  pointer-events: all;
-  cursor: pointer;
-  box-sizing: border-box;
-}
-.all-box:hover {
-  background: rgba(96, 165, 250, 0.22);
-  border-color: #60a5fa;
-  z-index: 6;
-}
-.all-box-label {
-  position: absolute;
-  left: 0;
-  bottom: 100%;
-  margin-bottom: 2px;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
-  line-height: 1.2;
-  color: #e2eeff;
-  background: rgba(8, 12, 18, 0.78);
-  padding: 1px 4px;
-  white-space: nowrap;
-  border-radius: 2px;
-  pointer-events: none;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.all-box:hover .all-box-label {
-  color: #fff;
-  background: rgba(96, 165, 250, 0.92);
-}
-
-/* ── Global place search (world view) ────────────────────────────────────── */
-#search-wrap {
-  position: fixed;
-  top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  width: min(420px, calc(100vw - 32px));
-  font-family: Georgia, serif;
-}
-#place-search {
-  width: 100%;
-  background: rgba(8, 12, 18, 0.92);
-  border: 1px solid rgba(110, 170, 230, 0.32);
-  color: #e6edf3;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.12s;
-  backdrop-filter: blur(4px);
-}
-#place-search::placeholder { color: rgba(180, 200, 220, 0.45); }
-#place-search:focus { border-color: rgba(110, 170, 230, 0.78); }
-
-#search-results {
-  margin-top: 4px;
-  background: rgba(8, 12, 18, 0.96);
-  border: 1px solid rgba(110, 170, 230, 0.28);
-  border-radius: 4px;
-  max-height: 60vh;
-  overflow-y: auto;
-  display: none;
-  backdrop-filter: blur(4px);
-}
-.search-result {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  width: 100%;
-  background: none;
-  border: none;
-  border-bottom: 1px solid rgba(110, 170, 230, 0.10);
-  color: #c9d1d9;
-  padding: 7px 12px;
-  font-family: inherit;
-  font-size: 13px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.search-result:last-child { border-bottom: none; }
-.search-result:hover,
-.search-result.active {
-  background: rgba(110, 170, 230, 0.16);
-  color: #f0f6ff;
-}
-.search-result .result-region {
-  font-size: 11px;
-  color: rgba(180, 200, 220, 0.55);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-#search-empty {
-  padding: 8px 12px;
-  font-size: 12px;
-  color: rgba(180, 200, 220, 0.45);
-  font-style: italic;
-}
-
-/* Hide search whenever the detail modal is up */
-body.detail-open #search-wrap { display: none; }
-
-/* ── Detail view (modal) ─────────────────────────────────────────────────── */
-#detail-view {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: #0d1117;
-  z-index: 100;
-}
-
-#detail-dialog {
-  width: 100%;
-  height: 100%;
-  background: #0d1117;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-#detail-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 18px;
-  background: rgba(8, 12, 18, 0.97);
-  border-bottom: 1px solid rgba(110, 170, 230, 0.22);
-  flex-shrink: 0;
-}
-
-#back-btn {
-  background: none;
-  border: 1px solid rgba(110, 170, 230, 0.42);
-  color: #8bb8e8;
-  padding: 5px 14px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-family: Georgia, serif;
-  font-size: 14px;
-  transition: background 0.12s, border-color 0.12s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-#back-btn:hover {
-  background: rgba(110, 170, 230, 0.15);
-  border-color: rgba(110, 170, 230, 0.8);
-}
-
-#region-title {
-  font-size: 19px;
-  font-weight: normal;
-  color: #e6edf3;
-  letter-spacing: 0.4px;
-}
-
-#zoom-controls {
-  position: absolute;
-  bottom: 14px;
-  right: 16px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  z-index: 10;
-  background: rgba(8, 12, 18, 0.75);
-  padding: 5px 8px;
-  border-radius: 5px;
-  backdrop-filter: blur(4px);
-}
-
-#zoom-level {
-  font-size: 11px;
-  color: rgba(180, 200, 220, 0.6);
-  min-width: 36px;
-  text-align: center;
-  font-family: Georgia, serif;
-}
-
-.zoom-btn {
-  background: none;
-  border: 1px solid rgba(110, 170, 230, 0.42);
-  color: #8bb8e8;
-  width: 28px;
-  height: 28px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-  transition: background 0.12s, border-color 0.12s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.zoom-btn:hover {
-  background: rgba(110, 170, 230, 0.15);
-  border-color: rgba(110, 170, 230, 0.8);
-}
-.zoom-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-#map-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  background: none;
-  border: 1px solid rgba(110, 170, 230, 0.28);
-  color: #8bb8e8;
-  padding: 4px 11px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  font-family: Georgia, serif;
-  transition: background 0.12s, border-color 0.12s;
-}
-.tab-btn:hover { background: rgba(110, 170, 230, 0.13); }
-.tab-btn.active {
-  background: rgba(110, 170, 230, 0.22);
-  border-color: rgba(110, 170, 230, 0.72);
-  color: #c9d8f0;
-}
-
-#map-canvas {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  cursor: grab;
-}
-#map-canvas:active { cursor: grabbing; }
-
-#detail-img {
-  position: absolute;
-  transform-origin: 0 0;
-  user-select: none;
-  max-width: none;
-}
-
-/* ── Highlighted-place overlay (search target) ───────────────────────────── */
-/* The pulse fades a dim spotlight in and out, then settles to a plain glowing
-   border so the box stays as a "you searched for this" marker without dimming
-   the rest of the map. */
-#highlight-box {
-  position: absolute;
-  border: 3px solid #60a5fa;
-  border-radius: 4px;
-  box-shadow: 0 0 14px rgba(96, 165, 250, 0.7);
-  pointer-events: none;
-  display: none;
-  z-index: 5;
-  animation: highlight-pulse 1.4s ease-in-out 2 forwards;
-}
-/* In dev mode the highlight is grabbable: click it to start editing the
-   stored bbox without having to shift-drag a fresh one. */
-#highlight-box.dev-grab {
-  pointer-events: all;
-  cursor: grab;
-}
-#highlight-box.dev-grab:active { cursor: grabbing; }
-@keyframes highlight-pulse {
-  0%   { box-shadow: 0 0 0 9999px rgba(8,12,18,0.55), 0 0 6px  rgba(96,165,250,0.6); }
-  50%  { box-shadow: 0 0 0 9999px rgba(8,12,18,0.30), 0 0 22px rgba(96,165,250,1.0); }
-  100% { box-shadow: 0 0 0 9999px rgba(8,12,18,0.00), 0 0 14px rgba(96,165,250,0.7); }
-}
-
-#zoom-hint {
-  position: absolute;
-  bottom: 60px;
-  right: 16px;
-  font-size: 11px;
-  color: rgba(180, 200, 220, 0.3);
-  pointer-events: none;
-}
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
@@ -4159,137 +3706,410 @@ const PLACE_BOXES = {
 
 // ════════════════════════════════════════════════════════════════════════════
 // REGION DATA
+// Inlined from data/regions.json by tools/inline_regions.py.
 // pos: [cx%, cy%]  — centre position as percent of the world map size
 //                    (4017 × 2048 px). Press D to see coordinates.
 // ════════════════════════════════════════════════════════════════════════════
+// REGIONS_START
 const REGIONS = [
   {
-    id: 'mystery_lake',
-    name: 'Mystery Lake',
-    maps: ['maps/mystery_lake.jpg', 'maps/mystery_lake_loper.jpg'],
-    pos: [53.50, 50.61],
+    "id": "mystery_lake",
+    "name": "Mystery Lake",
+    "pos": [
+      53.5,
+      50.61
+    ],
+    "maps": [
+      "maps/mystery_lake.jpg",
+      "maps/mystery_lake_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Mystery Lake"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/15476628118068146896/964E7DB3A8CF5601A727E12FAC153C8DEB0884AC/",
+      "https://images.steamusercontent.com/ugc/12181171108607855328/BB9FA07418F10BAE5DA9748A27FD9CB8E1C9AE02/"
+    ]
   },
   {
-    id: 'coastal_highway',
-    name: 'Coastal Highway',
-    maps: ['maps/coastal_highway.jpg', 'maps/coastal_highway_loper.jpg'],
-    pos: [75.97, 67.51],
+    "id": "coastal_highway",
+    "name": "Coastal Highway",
+    "pos": [
+      75.97,
+      67.51
+    ],
+    "maps": [
+      "maps/coastal_highway.jpg",
+      "maps/coastal_highway_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Coastal Highway"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/9516403236853107764/7C78444F11075F0CA7801155D89B604BEA222670/",
+      "https://images.steamusercontent.com/ugc/9475295296023591018/8FA0642300D3597E7E2EB050545003226E35316F/"
+    ]
   },
   {
-    id: 'pleasant_valley',
-    name: 'Pleasant Valley',
-    maps: ['maps/pleasant_valley.jpg', 'maps/pleasant_valley_loper.jpg'],
-    pos: [71.82, 37.43],
+    "id": "pleasant_valley",
+    "name": "Pleasant Valley",
+    "pos": [
+      71.82,
+      37.43
+    ],
+    "maps": [
+      "maps/pleasant_valley.jpg",
+      "maps/pleasant_valley_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Pleasant Valley"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/9495851414846658845/BF9179F621AD5200996B7A4EE8F3BD7309B37470/",
+      "https://images.steamusercontent.com/ugc/17407195001097129457/5D4565517DAE352E7A400A381BD9FE14DF5E54C9/"
+    ]
   },
   {
-    id: 'desolation_point',
-    name: 'Desolation Point',
-    maps: ['maps/desolation_point.jpg', 'maps/desolation_point_loper.jpg'],
-    pos: [84.20, 77.12],
+    "id": "desolation_point",
+    "name": "Desolation Point",
+    "pos": [
+      84.2,
+      77.12
+    ],
+    "maps": [
+      "maps/desolation_point.jpg",
+      "maps/desolation_point_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Desolation Point"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/16057301526255972814/3A4FB4945D272F27EEBCEAFF483C452374C935CE/",
+      "https://images.steamusercontent.com/ugc/17555198380887569827/EBDC7B329B52AF9B8F6F0A907F90EAAFFB8ED230/"
+    ]
   },
   {
-    id: 'timberwolf_mountain',
-    name: 'Timberwolf Mountain',
-    maps: ['maps/timberwolf_mountain.jpg', 'maps/timberwolf_mountain_loper.jpg'],
-    pos: [77.81, 22.63],
+    "id": "timberwolf_mountain",
+    "name": "Timberwolf Mountain",
+    "pos": [
+      77.81,
+      22.63
+    ],
+    "maps": [
+      "maps/timberwolf_mountain.jpg",
+      "maps/timberwolf_mountain_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Timberwolf Mountain"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/18019470743317950368/FE3E7A2C5308EDFB4C43A5B8BB8230426A9D19A1/",
+      "https://images.steamusercontent.com/ugc/16015738267194102941/276C79D3CAE76AA15CBC3C55021299B5A7A13956/"
+    ]
   },
   {
-    id: 'forlorn_muskeg',
-    name: 'Forlorn Muskeg',
-    maps: ['maps/forlorn_muskeg.jpg', 'maps/forlorn_muskeg_loper.jpg'],
-    pos: [47.21, 66.55],
+    "id": "forlorn_muskeg",
+    "name": "Forlorn Muskeg",
+    "pos": [
+      47.21,
+      66.55
+    ],
+    "maps": [
+      "maps/forlorn_muskeg.jpg",
+      "maps/forlorn_muskeg_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Forlorn Muskeg"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/15190933220557313885/B5B3BC2BABBF9E90336E0AF50BC7379E197410A9/",
+      "https://images.steamusercontent.com/ugc/13120278709304539605/D8F929B355A896EBCA2F5EA01775F6B56A395D5E/"
+    ]
   },
   {
-    id: 'broken_railroad',
-    name: 'Broken Railroad',
-    maps: ['maps/broken_railroad.jpg', 'maps/broken_railroad_loper.jpg'],
-    pos: [36.60, 63.36],
+    "id": "broken_railroad",
+    "name": "Broken Railroad",
+    "pos": [
+      36.6,
+      63.36
+    ],
+    "maps": [
+      "maps/broken_railroad.jpg",
+      "maps/broken_railroad_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Broken Railroad"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/37819645136703055/8674195A3C3098E9878C83512BF03B9CF9488AA9/",
+      "https://images.steamusercontent.com/ugc/37819645136703248/C355359C5487B23BF2BBD00EFE4CEA054573F085/"
+    ]
   },
   {
-    id: 'bleak_inlet',
-    name: 'Bleak Inlet',
-    maps: ['maps/bleak_inlet.jpg', 'maps/bleak_inlet_loper.jpg'],
-    pos: [61.53, 78.10],
+    "id": "bleak_inlet",
+    "name": "Bleak Inlet",
+    "pos": [
+      61.53,
+      78.1
+    ],
+    "maps": [
+      "maps/bleak_inlet.jpg",
+      "maps/bleak_inlet_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Bleak Inlet"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/15963475340427975657/8F8932D34BDB1AEECBD81F0DF0D4FF0A8F9B895F/",
+      "https://images.steamusercontent.com/ugc/12747202571525077315/F6C8FEC4B25C2DCD7FF82D5D8E0DC38C35D43C68/"
+    ]
   },
   {
-    id: 'hushed_river_valley',
-    name: 'Hushed River Valley',
-    maps: ['maps/hushed_river_valley.jpg', 'maps/hushed_river_valley_loper.jpg'],
-    pos: [39.51, 19.41],
+    "id": "hushed_river_valley",
+    "name": "Hushed River Valley",
+    "pos": [
+      39.51,
+      19.41
+    ],
+    "maps": [
+      "maps/hushed_river_valley.jpg",
+      "maps/hushed_river_valley_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Hushed River Valley"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/11738172134438972729/9DB6EBD8279EB82FA9041ACF286CFF8F51C280D0/",
+      "https://images.steamusercontent.com/ugc/11458033074726588907/497E67C51FD94E97E14086322E2DFDBC5E8BA64F/"
+    ]
   },
   {
-    id: 'mountain_town',
-    name: 'Mountain Town',
-    maps: ['maps/mountain_town.jpg', 'maps/mountain_town_loper.jpg'],
-    pos: [43.10, 40.28],
+    "id": "mountain_town",
+    "name": "Mountain Town",
+    "pos": [
+      43.1,
+      40.28
+    ],
+    "maps": [
+      "maps/mountain_town.jpg",
+      "maps/mountain_town_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Mountain Town"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/17330490373698343471/CDCE98E29CE9BD56C91A8C7A290564ECD6757783/",
+      "https://images.steamusercontent.com/ugc/16875759404303424817/0F18A56018496256E69826BF10AFA67B4B80F838/"
+    ]
   },
   {
-    id: 'ash_canyon',
-    name: 'Ash Canyon',
-    maps: ['maps/ash_canyon.jpg', 'maps/ash_canyon_loper.jpg'],
-    pos: [88.06, 16.11],
+    "id": "ash_canyon",
+    "name": "Ash Canyon",
+    "pos": [
+      88.06,
+      16.11
+    ],
+    "maps": [
+      "maps/ash_canyon.jpg",
+      "maps/ash_canyon_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Ash Canyon"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/12423718121825641694/1436C3EE25819AC99F2765E65FF87EB91FEE82C7/",
+      "https://images.steamusercontent.com/ugc/11775972934425462577/06F5B6240C384475FA96DE6B3D656E9B51CB5D38/"
+    ]
   },
   {
-    id: 'blackrock',
-    name: 'Blackrock',
-    maps: ['maps/blackrock.jpg', 'maps/blackrock_loper.jpg'],
-    pos: [67.78, 11.47],
+    "id": "blackrock",
+    "name": "Blackrock",
+    "pos": [
+      67.78,
+      11.47
+    ],
+    "maps": [
+      "maps/blackrock.jpg",
+      "maps/blackrock_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Blackrock"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/13725529750150141786/377C02F990FA45DF8EBAC15FFFA435457554996A/",
+      "https://images.steamusercontent.com/ugc/13819165643333898105/D35F9682041D607CC43CEF91ECBF28A57F5F2098/"
+    ]
   },
   {
-    id: 'forsaken_airfield',
-    name: 'Forsaken Airfield',
-    maps: ['maps/forsaken_airfield.jpg', 'maps/forsaken_airfield_loper.jpg'],
-    pos: [8.92, 68.82],
+    "id": "forsaken_airfield",
+    "name": "Forsaken Airfield",
+    "pos": [
+      8.92,
+      68.82
+    ],
+    "maps": [
+      "maps/forsaken_airfield.jpg",
+      "maps/forsaken_airfield_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Forsaken Airfield"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/16913663260970933264/FB109BD04EA8ED996F248F237F7DDD07BB98CF4B/",
+      "https://images.steamusercontent.com/ugc/10851226945735149924/44743CB450B469D5596D322623AAC3DF36CAAC04/"
+    ]
   },
   {
-    id: 'sundered_pass',
-    name: 'Sundered Pass',
-    maps: ['maps/sundered_pass.jpg', 'maps/sundered_pass_loper.jpg'],
-    pos: [18.04, 47.68],
+    "id": "sundered_pass",
+    "name": "Sundered Pass",
+    "pos": [
+      18.04,
+      47.68
+    ],
+    "maps": [
+      "maps/sundered_pass.jpg",
+      "maps/sundered_pass_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Sundered Pass"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/13234845787225905708/3CCD158148CAF4F6E5651269D63AA378F2C7B361/",
+      "https://images.steamusercontent.com/ugc/16979676319684412643/EE2D7A9F25D9742C4F9256678705F0A0B8286A48/"
+    ]
   },
   {
-    id: 'zone_of_contamination',
-    name: 'Zone of Contamination',
-    maps: ['maps/zone_of_contamination.jpg', 'maps/zone_of_contamination_loper.jpg'],
-    pos: [23.74, 59.69],
+    "id": "zone_of_contamination",
+    "name": "Zone of Contamination",
+    "pos": [
+      23.74,
+      59.69
+    ],
+    "maps": [
+      "maps/zone_of_contamination.jpg",
+      "maps/zone_of_contamination_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Zone of Contamination"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/10376660445325975268/BCF107D90B0B9E2D6D301731D0DFC0975F8E7EDB/",
+      "https://images.steamusercontent.com/ugc/10958718653805267230/55045BF44ACECE678A21417948002A17C0AC973A/"
+    ]
   },
   {
-    id: 'crumbling_highway',
-    name: 'Crumbling Highway',
-    maps: ['maps/crumbling_highway.jpg'],
-    pos: [79.84, 90.02],
+    "id": "crumbling_highway",
+    "name": "Crumbling Highway",
+    "pos": [
+      79.84,
+      90.02
+    ],
+    "maps": [
+      "maps/crumbling_highway.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Crumbling Highway"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/37819645136723139/6CF8012DCBEE7E4C21BAA1373D076B13C8D2E545/"
+    ]
   },
   {
-    id: 'far_range',
-    name: 'Far Range Branch Line',
-    maps: ['maps/far_range_branch_line.jpg', 'maps/far_range_branch_line_loper.jpg'],
-    pos: [23.25, 79.54],
+    "id": "far_range",
+    "name": "Far Range Branch Line",
+    "pos": [
+      23.25,
+      79.54
+    ],
+    "maps": [
+      "maps/far_range_branch_line.jpg",
+      "maps/far_range_branch_line_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Far Range Branch Line"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/12967305776514005370/390463FA1E9F539BCB876BF25E3065276D75DED2/",
+      "https://images.steamusercontent.com/ugc/10893453294679762817/2CC6706F93D63DD60EF48511CB98A2B27EF149A9/"
+    ]
   },
   {
-    id: 'transfer_pass',
-    name: 'Transfer Pass',
-    maps: ['maps/transfer_pass.jpg', 'maps/transfer_pass_loper.jpg'],
-    pos: [19.65, 64.70],
+    "id": "transfer_pass",
+    "name": "Transfer Pass",
+    "pos": [
+      19.65,
+      64.7
+    ],
+    "maps": [
+      "maps/transfer_pass.jpg",
+      "maps/transfer_pass_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Transfer Pass"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/37819645136731165/2F143B1F4452AE9F9688686307AEAFE77D64CD0C/",
+      "https://images.steamusercontent.com/ugc/37819645136731499/1A9515074C6E2DFE5960A3886C0534BB20265B41/"
+    ]
   },
   {
-    id: 'ravine',
-    name: 'Ravine',
-    maps: ['maps/ravine.jpg', 'maps/ravine_loper.jpg'],
-    pos: [63.74, 61.18],
+    "id": "ravine",
+    "name": "Ravine",
+    "pos": [
+      63.74,
+      61.18
+    ],
+    "maps": [
+      "maps/ravine.jpg",
+      "maps/ravine_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in The Ravine"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/37819645136730001/C7DC749F7E776CAA177FC3B5A0E679D01CF8B63C/",
+      "https://images.steamusercontent.com/ugc/37819645136730182/3961F5EF2C43A79B7F730CD52F7EE1B8554EB1C6/"
+    ]
   },
   {
-    id: 'winding_river',
-    name: 'Winding River & Carter Hydro Dam',
-    maps: ['maps/winding_river_and_carter_hydro_dam.jpg', 'maps/winding_river_and_carter_hydro_dam_loper.jpg'],
-    pos: [64.40, 56.74],
+    "id": "winding_river",
+    "name": "Winding River & Carter Hydro Dam",
+    "pos": [
+      64.4,
+      56.74
+    ],
+    "maps": [
+      "maps/winding_river_and_carter_hydro_dam.jpg",
+      "maps/winding_river_and_carter_hydro_dam_loper.jpg"
+    ],
+    "wiki_categories": [],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/37819645136732320/2F95CDD280AF1BD5D52072DD0B242519C099F433/",
+      "https://images.steamusercontent.com/ugc/37819645136732699/CD74A44711B35D34DC967262E7E90ECAA227B999/"
+    ]
   },
   {
-    id: 'keepers_pass',
-    name: "Keeper's Pass",
-    maps: ['maps/keepers_pass.jpg', 'maps/keepers_pass_loper.jpg'],
-    pos: [58.59, 29.54],
-  },
+    "id": "keepers_pass",
+    "name": "Keeper's Pass",
+    "pos": [
+      58.59,
+      29.54
+    ],
+    "maps": [
+      "maps/keepers_pass.jpg",
+      "maps/keepers_pass_loper.jpg"
+    ],
+    "wiki_categories": [
+      "Locations in Keeper's Pass North",
+      "Locations in Keeper's Pass South"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/15159145128947408591/484B84DD777B5E0742837BB86857EAA524315342/",
+      "https://images.steamusercontent.com/ugc/16055965560201475697/BF5677731E7CEA8A282819D01C96AB5486A6E478/"
+    ]
+  }
 ];
+// REGIONS_END
 
 // ════════════════════════════════════════════════════════════════════════════
 // WORLD VIEW
