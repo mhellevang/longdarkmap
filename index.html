@@ -4339,7 +4339,80 @@ function mapTabLabel(path) {
 // there on close (e.g. the search result the user activated).
 let lastFocusBeforeModal = null;
 
+// ── Hash routing ───────────────────────────────────────────────────────────
+// The URL fragment is the canonical "what's open" state, so views are
+// shareable and browser back/forward navigates between open and closed:
+//   #mystery_lake                       — open Mystery Lake
+//   #mystery_lake/Carter%20Hydro%20Dam  — open + highlight a place
+// Public openRegion/closeModal push to the hash; a hashchange listener
+// (or applyHashState() called inline) drives the actual modal work.
+
+function parseHash() {
+  const raw = location.hash.slice(1);
+  if (!raw) return null;
+  const slash = raw.indexOf('/');
+  if (slash < 0) {
+    return { regionId: decodeURIComponent(raw), placeName: null };
+  }
+  return {
+    regionId: decodeURIComponent(raw.slice(0, slash)),
+    placeName: decodeURIComponent(raw.slice(slash + 1)),
+  };
+}
+
+function makeHash(regionId, placeName) {
+  if (!regionId) return '';
+  return placeName
+    ? '#' + encodeURIComponent(regionId) + '/' + encodeURIComponent(placeName)
+    : '#' + encodeURIComponent(regionId);
+}
+
+function pushHash(regionId, placeName) {
+  const newHash = makeHash(regionId, placeName);
+  if (newHash === location.hash) return;
+  if (newHash) {
+    history.pushState(null, '', newHash);
+  } else if (location.hash) {
+    // Drop the '#' from the URL bar entirely on close.
+    history.pushState(null, '', location.pathname + location.search);
+  }
+}
+
+function applyHashState() {
+  const parsed = parseHash();
+  if (!parsed) {
+    if (detailView.style.display === 'flex') _closeModal();
+    return;
+  }
+  const region = REGIONS_BY_ID[parsed.regionId];
+  if (!region) return;  // unknown region in hash — leave the world view up
+  let target = null;
+  if (parsed.placeName) {
+    const box = (PLACE_BOXES[region.id] || {})[parsed.placeName];
+    if (box) target = { name: parsed.placeName, bbox: box };
+  }
+  // Already on this region/place? Don't tear down + re-open.
+  const currentPlace = highlightTarget ? highlightTarget.name : null;
+  const wantedPlace  = target ? target.name : null;
+  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace) return;
+  _openRegion(region, target);
+}
+
+window.addEventListener('hashchange', applyHashState);
+
+// Public APIs: callers (region-button click, search result, ✕, Escape)
+// update the hash. pushState doesn't fire hashchange, so we apply
+// synchronously after each push — the listener handles browser back/forward.
 function openRegion(region, target) {
+  pushHash(region.id, target ? target.name : null);
+  applyHashState();
+}
+function closeModal() {
+  pushHash(null, null);
+  applyHashState();
+}
+
+function _openRegion(region, target) {
   lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
   mapTabsEl.innerHTML = '';
@@ -4425,7 +4498,7 @@ function fitMap() {
   applyTransform();
 }
 
-// Frame the highlighted box: pick a zoom that fills ~30% of the canvas with
+// Frame the highlighted box: pick a zoom that fills ~15% of the canvas with
 // the box, centre it. Box is in 0..1 image coords. We still compute fitZoom
 // so the zoom % readout (zoom / fitZoom) makes sense.
 function focusHighlight() {
@@ -4434,7 +4507,7 @@ function focusHighlight() {
   const [x1, y1, x2, y2] = highlightTarget.bbox;
   const boxW = Math.max(1, (x2 - x1) * imgW);
   const boxH = Math.max(1, (y2 - y1) * imgH);
-  const target = 0.3;  // box occupies ~30% of the smaller canvas dim
+  const target = 0.15;  // box occupies ~15% of the smaller canvas dim
   const wantedZoom = Math.min(cw * target / boxW, ch * target / boxH);
   zoom = Math.min(MAX_ZOOM, Math.max(fitZoom, wantedZoom));
   const cxImg = ((x1 + x2) / 2) * imgW;
@@ -4896,7 +4969,7 @@ mapCanvas.addEventListener('touchend', () => { dragging = false; });
 mapCanvas.addEventListener('dblclick', fitMap);
 
 
-function closeModal() {
+function _closeModal() {
   detailView.style.display = 'none';
   detailView.setAttribute('aria-hidden', 'true');
   worldView.removeAttribute('inert');
@@ -4959,6 +5032,10 @@ document.addEventListener('keydown', e => {
   }
   e.preventDefault();
 });
+
+// Apply any hash already present in the URL on first load (e.g. when the
+// page is opened via a shared deep link).
+applyHashState();
 </script>
 </body>
 </html>
