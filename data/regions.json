@@ -41,7 +41,6 @@
     "adjacencies": [
       "ravine",
       "pleasant_valley",
-      "desolation_point",
       "crumbling_highway"
     ],
     "download_urls": [
@@ -89,7 +88,6 @@
       "Locations in Desolation Point"
     ],
     "adjacencies": [
-      "coastal_highway",
       "crumbling_highway"
     ],
     "download_urls": [
