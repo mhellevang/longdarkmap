@@ -28,6 +28,48 @@ The world view has a search box for finding any named location across all region
 
 The index (~355 named locations) plus per-label bounding boxes are bundled into `index.html` so search and highlighting work fully offline, including from a static deploy.
 
+### Crafting-tool keywords
+
+The search also recognises crafting-tool keywords:
+
+- `forge`, `arrowheads`, `smithing` → the 6 in-game forges
+- `workbench`, `wb`, `crafting` → the 42 wiki-tagged workbenches
+- `ammo`, `ammunition`, `reloading` → the ammunition workbench at Last Resort Cannery
+
+Each result row shows a small badge for the tools at that place (F/W/A). Opening a tool result accents the matching badges in the detail view and dims the rest, so you can see at a glance "I'm at Field 31, and there are two more forges (Hangar Basement, Main Hangar) here too." Deep links carry the filter — share a URL like `index.html#forsaken_airfield/Field%2031/forge` and the filter activates on load.
+
+The tool data is scraped from the Long Dark wiki's structured categories ([Locations with a forge](https://thelongdark.fandom.com/wiki/Category:Locations_with_a_forge), [Locations with a workbench](https://thelongdark.fandom.com/wiki/Category:Locations_with_a_workbench)) by `tools/scrape_tools.py`, layered with:
+
+- manual entries from `data/crafting_tools_extra.json` for tools the wiki doesn't categorise (e.g. the ammunition workbench at Last Resort Cannery), and
+- vision-LLM amenity passes (per region, optional) that pick up amenities printed only as map pictograms — bed, stove, first-aid kit, ice fishing hut. These layer on top of the wiki tags and never remove them.
+
+Output: `data/crafting_tools.json` plus an inlined `PLACE_TOOLS` block in `index.html`.
+
+### Vision-LLM amenity pass (per region)
+
+```sh
+.venv/bin/python tools/amenity_prep.py coastal_highway   # crops + task.json + legend.jpg
+# Then in Claude Code, dispatch one vision subagent per region using
+# tools/amenity_prompt.md as the prompt template. Each subagent reads
+# data/tiles/<region>/amenities/ and writes result.json there.
+python3 tools/scrape_tools.py --inline                   # merges all result.json files
+```
+
+The prep step (`amenity_prep.py`) crops each `PLACE_BOXES` entry from the region's standard map with generous padding (the icons sit *next to* the place's label, not on top), saves them under `data/tiles/<region>/amenities/<slug>.jpg`, plus a `legend.jpg` strip from the bottom of the map and a `task.json` listing the canonical tag set the subagent is allowed to emit.
+
+The subagent prompt (`amenity_prompt.md`) constrains the output to a fixed canonical-tag set — `forge`, `workbench`, `ammunition_workbench`, `milling_machine`, `bed`, `stove`, `first_aid`, `ice_fishing_hut`, `ice_fishing_hole` — and instructs the agent to ignore loot icons, animal areas, foraging markers, and DLC trinkets, since those are visible on the map already. False positives are worse than false negatives: the wiki layer authoritatively covers `forge` and `workbench`.
+
+Recall is uneven by map style: regions where amenities cluster in styled "info chips" next to each label (e.g. Quonset Garage in Coastal Highway) come back well-tagged; regions where amenity icons are drawn at their actual workshop building inside a building cluster (e.g. Coastal Townsite) often produce empty crops because the icon is outside the label-centred crop window. The wiki layer is what catches those.
+
+### Nearest-tool lookup
+
+Every region in `data/regions.json` carries an `adjacencies` field — a list of region IDs reachable via in-game transition zones, seeded from the Long Dark wiki's `connections` infobox field. The detail view shows a small pill row in its header for each rare crafting tool (forge, workbench, ammunition workbench, milling machine):
+
+- If the open region has the tool, the pill shows the count and a `here` accent. Click it to jump to the first instance with the tool filter active.
+- If not, the pill shows the closest place that does, with the hop count via BFS over the adjacency graph (e.g. *"Forge → The Riken (Desolation Point) · 1 hop"* from Coastal Highway). Click to navigate.
+
+The graph is undirected and seeded once. To regenerate after wiki changes, run `python3 tools/scrape_connections.py` to dump each region's parsed connections to `data/regions_connections_raw.json`; the symmetric union is hand-merged into `data/regions.json` and re-inlined via `python3 tools/inline_regions.py`.
+
 ## Refreshing the region maps
 
 The map images live in `maps/` and are committed to the repo so the site works as a static deploy (e.g. GitHub Pages). To pull the latest versions from the source guide, run:
@@ -110,13 +152,20 @@ tools/                  # Build-time scripts — only needed when refreshing the
   merge_boxes.py        #   Merges per-region matcher results + overrides into data/place_boxes.json + index.html
   find_unclaimed.py     #   Discovery tool: surfaces OCR labels not claimed by the wiki for review
   inline_regions.py     #   Inlines data/regions.json into index.html between REGIONS_START/END sentinels
+  scrape_tools.py       #   Scrapes Locations_with_a_forge / _workbench wiki categories + extras → crafting_tools.json
+  scrape_connections.py #   Scrapes per-region `connections` infobox → regions_connections_raw.json (audit trail)
+  amenity_prep.py       #   Crops each PLACE_BOXES entry into per-place .jpg + legend.jpg for vision-LLM amenity tagging
+  amenity_prompt.md     #   Subagent prompt template for the vision-LLM amenity pass
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
-data/regions.json       # Canonical region list (id, display name, world-map pos, map paths, wiki + Steam URLs)
+data/regions.json       # Canonical region list (id, display name, world-map pos, map paths, wiki + Steam URLs, adjacencies)
 data/places_index.json  # Flat [{name, region}] index powering the world-view search (committed)
 data/place_boxes.json   # {region: {name: [x1,y1,x2,y2]}} bounding boxes (committed; merge of OCR results + overrides)
 data/place_boxes_overrides.json  # Manual edits from the dev server's Save button (committed)
-data/tiles/             # Per-region tiled maps + OCR results (intermediate; gitignored)
+data/crafting_tools.json         # {region: {name: [tool, ...]}} merge of wiki + extras + vision-LLM amenities (committed)
+data/crafting_tools_extra.json   # Manual seed for tools the wiki doesn't categorise — ammo workbench, milling machine (committed)
+data/regions_connections_raw.json # Wiki connections audit trail from scrape_connections.py (committed; small)
+data/tiles/             # Per-region tiled maps + OCR/amenity intermediates (intermediate; gitignored)
 ```
 
 Region positions on the world map live in `data/regions.json` as `pos: [x%, y%]`, consumed by every Python tool and inlined into `index.html` by `tools/inline_regions.py`. Press **D** in the browser to overlay live coordinates while hovering, then update the matching entry in `data/regions.json` and re-run the inliner.

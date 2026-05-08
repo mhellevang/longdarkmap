@@ -1,0 +1,203 @@
+{
+  "ash_canyon": {
+    "Angler's Den": [
+      "workbench"
+    ],
+    "Gold Mine": [
+      "workbench"
+    ],
+    "Miner's Folly": [
+      "workbench"
+    ]
+  },
+  "blackrock": {
+    "Blackrock Prison": [
+      "ammunition_workbench",
+      "milling_machine"
+    ],
+    "Bricklayer's Retreat": [
+      "workbench"
+    ],
+    "Cook's Farm": [
+      "workbench"
+    ],
+    "Forager's Remnant": [
+      "workbench"
+    ],
+    "Old Substation": [
+      "workbench"
+    ]
+  },
+  "bleak_inlet": {
+    "Last Resort Cannery": [
+      "ammunition_workbench",
+      "milling_machine",
+      "workbench"
+    ],
+    "Workshop": [
+      "workbench"
+    ]
+  },
+  "broken_railroad": {
+    "Hunting Lodge": [
+      "workbench"
+    ],
+    "Maintenance Yard": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "coastal_highway": {
+    "Abandoned Lookout": [
+      "bed",
+      "first_aid",
+      "stove"
+    ],
+    "Cinder Hills Coal Mine": [
+      "workbench"
+    ],
+    "Coastal House": [
+      "bed",
+      "first_aid"
+    ],
+    "Coastal Townsite": [
+      "workbench"
+    ],
+    "Fishing Cabins": [
+      "bed"
+    ],
+    "Fishing Camp": [
+      "workbench"
+    ],
+    "Fishing Hut": [
+      "ice_fishing_hut"
+    ],
+    "No. 3 Coal Mine": [
+      "workbench"
+    ],
+    "Quonset Garage": [
+      "bed",
+      "first_aid",
+      "stove",
+      "workbench"
+    ]
+  },
+  "crumbling_highway": {
+    "No. 3 Coal Mine": [
+      "workbench"
+    ]
+  },
+  "desolation_point": {
+    "Hibernia Processing": [
+      "workbench"
+    ],
+    "No. 3 Coal Mine": [
+      "workbench"
+    ],
+    "The Riken": [
+      "forge"
+    ]
+  },
+  "forlorn_muskeg": {
+    "Old Spence Family Homestead": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "forsaken_airfield": {
+    "Bunker Omega": [
+      "workbench"
+    ],
+    "Field 31": [
+      "forge",
+      "workbench"
+    ],
+    "Hangar Basement": [
+      "forge",
+      "workbench"
+    ],
+    "Island Cottage": [
+      "workbench"
+    ],
+    "Junker's Paddock": [
+      "workbench"
+    ],
+    "Main Hangar": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "hushed_river_valley": {
+    "Bunker Gamma": [
+      "workbench"
+    ]
+  },
+  "keepers_pass": {
+    "Mirthless Fork": [
+      "workbench"
+    ]
+  },
+  "mountain_town": {
+    "Paradise Meadows Farm": [
+      "workbench"
+    ],
+    "Trailer (Mountain Town Region)": [
+      "workbench"
+    ]
+  },
+  "mystery_lake": {
+    "Camp Office": [
+      "workbench"
+    ],
+    "Carter Hydro Dam": [
+      "workbench"
+    ],
+    "Trapper's Homestead": [
+      "workbench"
+    ]
+  },
+  "pleasant_valley": {
+    "Cinder Hills Coal Mine": [
+      "workbench"
+    ],
+    "Pleasant Valley Farmstead": [
+      "workbench"
+    ],
+    "Pleasant Valley Outbuildings": [
+      "workbench"
+    ],
+    "Prepper's Abandoned Cache": [
+      "workbench"
+    ],
+    "Signal Hill": [
+      "workbench"
+    ]
+  },
+  "sundered_pass": {
+    "Last Lonely House": [
+      "workbench"
+    ],
+    "Weather Station": [
+      "workbench"
+    ]
+  },
+  "timberwolf_mountain": {
+    "Mountaineer's Hut": [
+      "workbench"
+    ]
+  },
+  "zone_of_contamination": {
+    "Concentrator": [
+      "workbench"
+    ],
+    "Headframe Building": [
+      "workbench"
+    ],
+    "Indolent Hoppers": [
+      "workbench"
+    ],
+    "Langston Mine": [
+      "workbench"
+    ]
+  }
+}

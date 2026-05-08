@@ -1,0 +1,327 @@
+{
+  "mystery_lake": {
+    "title": "Mystery Lake (region)",
+    "connections_raw": "[[Forlorn Muskeg]],<br />[[Bleak Inlet]] ''(via [[The Ravine]])'',<br />[[Coastal Highway]] ''(via [[The Ravine]])''<br />[[Pleasant Valley]] ''(via [[Winding River]])'',<br />[[Mountain Town]] ''",
+    "parsed": [
+      [
+        "Forlorn Muskeg",
+        null
+      ],
+      [
+        "Bleak Inlet",
+        "The Ravine"
+      ],
+      [
+        "Coastal Highway",
+        "The Ravine"
+      ],
+      [
+        "Pleasant Valley",
+        "Winding River"
+      ],
+      [
+        "Mountain Town",
+        null
+      ]
+    ]
+  },
+  "coastal_highway": {
+    "title": "Coastal Highway",
+    "connections_raw": "[[Mystery Lake (region)|Mystery Lake]] (via [[The Ravine]])<br />[[Bleak Inlet]] (via [[The Ravine]])<br /> [[Pleasant Valley]] (via [[Cinder Hills Coal Mine]])<br />[[Desolation Point]] (via [[Old Island Connector]])",
+    "parsed": [
+      [
+        "Mystery Lake (region)",
+        "The Ravine"
+      ],
+      [
+        "Bleak Inlet",
+        "The Ravine"
+      ],
+      [
+        "Pleasant Valley",
+        "Cinder Hills Coal Mine"
+      ],
+      [
+        "Desolation Point",
+        "Old Island Connector"
+      ]
+    ]
+  },
+  "pleasant_valley": {
+    "title": "Pleasant Valley",
+    "connections_raw": "[[Timberwolf Mountain]],<br />[[Coastal Highway]],<br />[[Mystery Lake (region)|Mystery Lake]] ''(via [[Winding River]])'', <br> [[Blackrock]] ''(via [[Keeper's Pass South]])''",
+    "parsed": [
+      [
+        "Timberwolf Mountain",
+        null
+      ],
+      [
+        "Coastal Highway",
+        null
+      ],
+      [
+        "Mystery Lake (region)",
+        "Winding River"
+      ],
+      [
+        "Blackrock",
+        "Keeper's Pass South"
+      ]
+    ]
+  },
+  "desolation_point": {
+    "title": "Desolation Point",
+    "connections_raw": "[[Coastal Highway]] (via [[Old Island Connector]])",
+    "parsed": [
+      [
+        "Coastal Highway",
+        "Old Island Connector"
+      ]
+    ]
+  },
+  "timberwolf_mountain": {
+    "title": "Timberwolf Mountain",
+    "connections_raw": "[[Pleasant Valley]], [[Ash Canyon]], [[Blackrock]]",
+    "parsed": [
+      [
+        "Pleasant Valley",
+        null
+      ],
+      [
+        "Ash Canyon",
+        null
+      ],
+      [
+        "Blackrock",
+        null
+      ]
+    ]
+  },
+  "forlorn_muskeg": {
+    "title": "Forlorn Muskeg",
+    "connections_raw": "[[Mystery Lake (region)|Mystery Lake]],<br />[[Broken Railroad]],<br />[[Bleak Inlet]],<br />[[Mountain Town]]",
+    "parsed": [
+      [
+        "Mystery Lake (region)",
+        null
+      ],
+      [
+        "Broken Railroad",
+        null
+      ],
+      [
+        "Bleak Inlet",
+        null
+      ],
+      [
+        "Mountain Town",
+        null
+      ]
+    ]
+  },
+  "broken_railroad": {
+    "title": "Broken Railroad",
+    "connections_raw": "[[Forlorn Muskeg]]\n[[Transfer Pass]] (through [[Far Range Branch Line]])",
+    "parsed": [
+      [
+        "Forlorn Muskeg",
+        null
+      ],
+      [
+        "Transfer Pass",
+        null
+      ]
+    ]
+  },
+  "bleak_inlet": {
+    "title": "Bleak Inlet",
+    "connections_raw": "[[Forlorn Muskeg]], [[The Ravine]]|characters = None|difficulty = Advanced|added = Dec 10, 2019|interloper region spawn?=Yes|locations=21",
+    "parsed": [
+      [
+        "Forlorn Muskeg",
+        null
+      ],
+      [
+        "The Ravine",
+        null
+      ]
+    ]
+  },
+  "hushed_river_valley": {
+    "title": "Hushed River Valley",
+    "connections_raw": "[[Mountain Town]]",
+    "parsed": [
+      [
+        "Mountain Town",
+        null
+      ]
+    ]
+  },
+  "mountain_town": {
+    "title": "Mountain Town",
+    "connections_raw": "[[Mystery Lake (region)|Mystery Lake]], [[Forlorn Muskeg]], [[Hushed River Valley]]",
+    "parsed": [
+      [
+        "Mystery Lake (region)",
+        null
+      ],
+      [
+        "Forlorn Muskeg",
+        null
+      ],
+      [
+        "Hushed River Valley",
+        null
+      ]
+    ]
+  },
+  "ash_canyon": {
+    "title": "Ash Canyon",
+    "connections_raw": "[[Timberwolf Mountain]] (through multiple different connection points)",
+    "parsed": [
+      [
+        "Timberwolf Mountain",
+        null
+      ]
+    ]
+  },
+  "blackrock": {
+    "title": "Blackrock",
+    "connections_raw": "[[Pleasant Valley]] (via [[Keeper's Pass North]] and [[Keeper's Pass South]])\n[[Timberwolf Mountain]]",
+    "parsed": [
+      [
+        "Pleasant Valley",
+        "Keeper's Pass North"
+      ],
+      [
+        "Timberwolf Mountain",
+        null
+      ]
+    ]
+  },
+  "forsaken_airfield": {
+    "title": "Forsaken Airfield",
+    "connections_raw": "[[Transfer Pass]]\n[[Zone of Contamination]] or [[Sundered Pass]] (Through Transition Cave)|characters=None|added=Dec 5, 2022|image=Forsaken Airfield.jpg|difficulty=Advanced|locations=26|regionmap=Forsaken Airfield In-game Map.png|locatormap=Forsaken Airfield Location.png|TFTFT paid content?=Yes|interloper region spawn?=No",
+    "parsed": [
+      [
+        "Transfer Pass",
+        null
+      ],
+      [
+        "Zone of Contamination",
+        null
+      ]
+    ]
+  },
+  "sundered_pass": {
+    "title": "Sundered Pass",
+    "connections_raw": "[[Transfer Pass]]\n[[Forsaken Airfield]] or [[Zone of Contamination]] (Through Transition Cave)|locations=25|description=A rather large avalanche prone mountainous region that gets colder as one climbs.|regionmap=Sundered Pass In-game Map.png|interloper region spawn?=No",
+    "parsed": [
+      [
+        "Transfer Pass",
+        null
+      ],
+      [
+        "Forsaken Airfield",
+        null
+      ]
+    ]
+  },
+  "zone_of_contamination": {
+    "title": "Zone of Contamination",
+    "connections_raw": "[[Transfer Pass]],[[Forsaken Airfield]] and [[Sundered Pass]] (Via a transition cave)",
+    "parsed": [
+      [
+        "Transfer Pass",
+        null
+      ],
+      [
+        "Forsaken Airfield",
+        null
+      ]
+    ]
+  },
+  "crumbling_highway": {
+    "title": "Crumbling Highway",
+    "connections_raw": "[[Coastal Highway]],<br />[[Desolation Point]]",
+    "parsed": [
+      [
+        "Coastal Highway",
+        null
+      ],
+      [
+        "Desolation Point",
+        null
+      ]
+    ]
+  },
+  "far_range": {
+    "title": "Far Range Branch Line",
+    "connections_raw": "[[Broken Railroad]] and [[Transfer Pass]]|characters=None|added=Dec 5, 2022|image=Far_range_line_first_look.png|locatormap=Far Range Branch Line Location.png|TFTFT paid content?=Yes|interloper region spawn?=No|locations=9|regionmap=FarRangeBranchLine.png",
+    "parsed": [
+      [
+        "Broken Railroad",
+        null
+      ]
+    ]
+  },
+  "transfer_pass": {
+    "title": "Transfer Pass",
+    "connections_raw": "[[Far Range Branch Line]] (Leads to [[Broken Railroad]])\n[[Forsaken Airfield]]<br>\n[[Zone of Contamination]]<br>\n[[Sundered Pass]]|characters=None|added=Dec 5, 2022|difficulty=Intermediate|image=Transfer Pass Main Menu.jpg|locations=11|locatormap=Transfer Pass Location.png|TFTFT paid content?=Yes|interloper region spawn?=No|regionmap=TransferPass.png",
+    "parsed": [
+      [
+        "Far Range Branch Line",
+        null
+      ],
+      [
+        "Forsaken Airfield",
+        null
+      ],
+      [
+        "Zone of Contamination",
+        null
+      ],
+      [
+        "Sundered Pass",
+        null
+      ]
+    ]
+  },
+  "ravine": {
+    "title": "The Ravine",
+    "connections_raw": "[[Mystery Lake (region)|Mystery Lake]],<br />[[Coastal Highway]], [[Bleak Inlet]]",
+    "parsed": [
+      [
+        "Mystery Lake (region)",
+        null
+      ],
+      [
+        "Coastal Highway",
+        null
+      ],
+      [
+        "Bleak Inlet",
+        null
+      ]
+    ]
+  },
+  "winding_river": {
+    "title": "Winding River",
+    "connections_raw": "[[Mystery Lake (region)|Mystery Lake]],<br />[[Pleasant Valley]]",
+    "parsed": [
+      [
+        "Mystery Lake (region)",
+        null
+      ],
+      [
+        "Pleasant Valley",
+        null
+      ]
+    ]
+  },
+  "keepers_pass": {
+    "title": "Keeper's Pass",
+    "connections_raw": null,
+    "parsed": []
+  }
+}

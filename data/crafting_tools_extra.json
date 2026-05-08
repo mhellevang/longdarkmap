@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Last Resort Cannery",
+    "region": "bleak_inlet",
+    "tools": ["ammunition_workbench", "milling_machine"],
+    "_note": "Ammunition Forge + Milling Machine are inside the Cannery's Workshop. Wiki has no category for either; sourced from the Ammunition_Forge and Milling_Machine pages."
+  },
+  {
+    "name": "Blackrock Prison",
+    "region": "blackrock",
+    "tools": ["ammunition_workbench", "milling_machine"],
+    "_note": "Errant Pilgrim 1.64 added a second Ammunition Forge + Milling Machine pair here."
+  }
+]

@@ -28,10 +28,12 @@
       <button id="back-btn" aria-label="Close region view">✕</button>
       <h1 id="region-title"></h1>
       <div id="map-tabs"></div>
+      <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
     </div>
     <div id="map-canvas">
       <img id="detail-img" alt="">
       <div id="all-boxes-layer"></div>
+      <div id="tools-layer" aria-hidden="true"></div>
       <div id="highlight-box"></div>
       <div id="draw-box">
         <div class="resize-handle" data-corner="nw"></div>
@@ -3705,6 +3707,219 @@ const PLACE_BOXES = {
 // PLACE_BOXES_END
 
 // ════════════════════════════════════════════════════════════════════════════
+// PLACE TOOLS (per-place crafting-tool tags; populated by scrape_tools.py)
+// PLACE_TOOLS[region_id][place_name] = ["forge", "workbench", ...]
+// Joined to the wiki categories `Locations_with_a_forge` and
+// `Locations_with_a_workbench`, layered with data/crafting_tools_extra.json
+// for tools the wiki doesn't categorise (ammunition workbench, ...).
+// ════════════════════════════════════════════════════════════════════════════
+// PLACE_TOOLS_START
+const PLACE_TOOLS = {
+  "ash_canyon": {
+    "Angler's Den": [
+      "workbench"
+    ],
+    "Gold Mine": [
+      "workbench"
+    ],
+    "Miner's Folly": [
+      "workbench"
+    ]
+  },
+  "blackrock": {
+    "Blackrock Prison": [
+      "ammunition_workbench",
+      "milling_machine"
+    ],
+    "Bricklayer's Retreat": [
+      "workbench"
+    ],
+    "Cook's Farm": [
+      "workbench"
+    ],
+    "Forager's Remnant": [
+      "workbench"
+    ],
+    "Old Substation": [
+      "workbench"
+    ]
+  },
+  "bleak_inlet": {
+    "Last Resort Cannery": [
+      "ammunition_workbench",
+      "milling_machine",
+      "workbench"
+    ],
+    "Workshop": [
+      "workbench"
+    ]
+  },
+  "broken_railroad": {
+    "Hunting Lodge": [
+      "workbench"
+    ],
+    "Maintenance Yard": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "coastal_highway": {
+    "Abandoned Lookout": [
+      "bed",
+      "first_aid",
+      "stove"
+    ],
+    "Cinder Hills Coal Mine": [
+      "workbench"
+    ],
+    "Coastal House": [
+      "bed",
+      "first_aid"
+    ],
+    "Coastal Townsite": [
+      "workbench"
+    ],
+    "Fishing Cabins": [
+      "bed"
+    ],
+    "Fishing Camp": [
+      "workbench"
+    ],
+    "Fishing Hut": [
+      "ice_fishing_hut"
+    ],
+    "No. 3 Coal Mine": [
+      "workbench"
+    ],
+    "Quonset Garage": [
+      "bed",
+      "first_aid",
+      "stove",
+      "workbench"
+    ]
+  },
+  "crumbling_highway": {
+    "No. 3 Coal Mine": [
+      "workbench"
+    ]
+  },
+  "desolation_point": {
+    "Hibernia Processing": [
+      "workbench"
+    ],
+    "No. 3 Coal Mine": [
+      "workbench"
+    ],
+    "The Riken": [
+      "forge"
+    ]
+  },
+  "forlorn_muskeg": {
+    "Old Spence Family Homestead": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "forsaken_airfield": {
+    "Bunker Omega": [
+      "workbench"
+    ],
+    "Field 31": [
+      "forge",
+      "workbench"
+    ],
+    "Hangar Basement": [
+      "forge",
+      "workbench"
+    ],
+    "Island Cottage": [
+      "workbench"
+    ],
+    "Junker's Paddock": [
+      "workbench"
+    ],
+    "Main Hangar": [
+      "forge",
+      "workbench"
+    ]
+  },
+  "hushed_river_valley": {
+    "Bunker Gamma": [
+      "workbench"
+    ]
+  },
+  "keepers_pass": {
+    "Mirthless Fork": [
+      "workbench"
+    ]
+  },
+  "mountain_town": {
+    "Paradise Meadows Farm": [
+      "workbench"
+    ],
+    "Trailer (Mountain Town Region)": [
+      "workbench"
+    ]
+  },
+  "mystery_lake": {
+    "Camp Office": [
+      "workbench"
+    ],
+    "Carter Hydro Dam": [
+      "workbench"
+    ],
+    "Trapper's Homestead": [
+      "workbench"
+    ]
+  },
+  "pleasant_valley": {
+    "Cinder Hills Coal Mine": [
+      "workbench"
+    ],
+    "Pleasant Valley Farmstead": [
+      "workbench"
+    ],
+    "Pleasant Valley Outbuildings": [
+      "workbench"
+    ],
+    "Prepper's Abandoned Cache": [
+      "workbench"
+    ],
+    "Signal Hill": [
+      "workbench"
+    ]
+  },
+  "sundered_pass": {
+    "Last Lonely House": [
+      "workbench"
+    ],
+    "Weather Station": [
+      "workbench"
+    ]
+  },
+  "timberwolf_mountain": {
+    "Mountaineer's Hut": [
+      "workbench"
+    ]
+  },
+  "zone_of_contamination": {
+    "Concentrator": [
+      "workbench"
+    ],
+    "Headframe Building": [
+      "workbench"
+    ],
+    "Indolent Hoppers": [
+      "workbench"
+    ],
+    "Langston Mine": [
+      "workbench"
+    ]
+  }
+};
+// PLACE_TOOLS_END
+
+// ════════════════════════════════════════════════════════════════════════════
 // REGION DATA
 // Inlined from data/regions.json by tools/inline_regions.py.
 // pos: [cx%, cy%]  — centre position as percent of the world map size
@@ -3726,6 +3941,12 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Mystery Lake"
     ],
+    "adjacencies": [
+      "forlorn_muskeg",
+      "ravine",
+      "winding_river",
+      "mountain_town"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/15476628118068146896/964E7DB3A8CF5601A727E12FAC153C8DEB0884AC/",
       "https://images.steamusercontent.com/ugc/12181171108607855328/BB9FA07418F10BAE5DA9748A27FD9CB8E1C9AE02/"
@@ -3744,6 +3965,12 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Coastal Highway"
+    ],
+    "adjacencies": [
+      "ravine",
+      "pleasant_valley",
+      "desolation_point",
+      "crumbling_highway"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/9516403236853107764/7C78444F11075F0CA7801155D89B604BEA222670/",
@@ -3764,6 +3991,12 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Pleasant Valley"
     ],
+    "adjacencies": [
+      "timberwolf_mountain",
+      "coastal_highway",
+      "winding_river",
+      "keepers_pass"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/9495851414846658845/BF9179F621AD5200996B7A4EE8F3BD7309B37470/",
       "https://images.steamusercontent.com/ugc/17407195001097129457/5D4565517DAE352E7A400A381BD9FE14DF5E54C9/"
@@ -3782,6 +4015,10 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Desolation Point"
+    ],
+    "adjacencies": [
+      "coastal_highway",
+      "crumbling_highway"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/16057301526255972814/3A4FB4945D272F27EEBCEAFF483C452374C935CE/",
@@ -3802,6 +4039,11 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Timberwolf Mountain"
     ],
+    "adjacencies": [
+      "pleasant_valley",
+      "ash_canyon",
+      "blackrock"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/18019470743317950368/FE3E7A2C5308EDFB4C43A5B8BB8230426A9D19A1/",
       "https://images.steamusercontent.com/ugc/16015738267194102941/276C79D3CAE76AA15CBC3C55021299B5A7A13956/"
@@ -3820,6 +4062,12 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Forlorn Muskeg"
+    ],
+    "adjacencies": [
+      "mystery_lake",
+      "broken_railroad",
+      "bleak_inlet",
+      "mountain_town"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/15190933220557313885/B5B3BC2BABBF9E90336E0AF50BC7379E197410A9/",
@@ -3840,6 +4088,11 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Broken Railroad"
     ],
+    "adjacencies": [
+      "forlorn_muskeg",
+      "transfer_pass",
+      "far_range"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/37819645136703055/8674195A3C3098E9878C83512BF03B9CF9488AA9/",
       "https://images.steamusercontent.com/ugc/37819645136703248/C355359C5487B23BF2BBD00EFE4CEA054573F085/"
@@ -3858,6 +4111,10 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Bleak Inlet"
+    ],
+    "adjacencies": [
+      "forlorn_muskeg",
+      "ravine"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/15963475340427975657/8F8932D34BDB1AEECBD81F0DF0D4FF0A8F9B895F/",
@@ -3878,6 +4135,9 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Hushed River Valley"
     ],
+    "adjacencies": [
+      "mountain_town"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/11738172134438972729/9DB6EBD8279EB82FA9041ACF286CFF8F51C280D0/",
       "https://images.steamusercontent.com/ugc/11458033074726588907/497E67C51FD94E97E14086322E2DFDBC5E8BA64F/"
@@ -3896,6 +4156,11 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Mountain Town"
+    ],
+    "adjacencies": [
+      "mystery_lake",
+      "forlorn_muskeg",
+      "hushed_river_valley"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/17330490373698343471/CDCE98E29CE9BD56C91A8C7A290564ECD6757783/",
@@ -3916,6 +4181,9 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Ash Canyon"
     ],
+    "adjacencies": [
+      "timberwolf_mountain"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/12423718121825641694/1436C3EE25819AC99F2765E65FF87EB91FEE82C7/",
       "https://images.steamusercontent.com/ugc/11775972934425462577/06F5B6240C384475FA96DE6B3D656E9B51CB5D38/"
@@ -3934,6 +4202,10 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Blackrock"
+    ],
+    "adjacencies": [
+      "keepers_pass",
+      "timberwolf_mountain"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/13725529750150141786/377C02F990FA45DF8EBAC15FFFA435457554996A/",
@@ -3954,6 +4226,11 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Forsaken Airfield"
     ],
+    "adjacencies": [
+      "transfer_pass",
+      "zone_of_contamination",
+      "sundered_pass"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/16913663260970933264/FB109BD04EA8ED996F248F237F7DDD07BB98CF4B/",
       "https://images.steamusercontent.com/ugc/10851226945735149924/44743CB450B469D5596D322623AAC3DF36CAAC04/"
@@ -3972,6 +4249,10 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Sundered Pass"
+    ],
+    "adjacencies": [
+      "transfer_pass",
+      "forsaken_airfield"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/13234845787225905708/3CCD158148CAF4F6E5651269D63AA378F2C7B361/",
@@ -3992,6 +4273,10 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Zone of Contamination"
     ],
+    "adjacencies": [
+      "transfer_pass",
+      "forsaken_airfield"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/10376660445325975268/BCF107D90B0B9E2D6D301731D0DFC0975F8E7EDB/",
       "https://images.steamusercontent.com/ugc/10958718653805267230/55045BF44ACECE678A21417948002A17C0AC973A/"
@@ -4010,6 +4295,10 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Crumbling Highway"
     ],
+    "adjacencies": [
+      "coastal_highway",
+      "desolation_point"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/37819645136723139/6CF8012DCBEE7E4C21BAA1373D076B13C8D2E545/"
     ]
@@ -4027,6 +4316,10 @@ const REGIONS = [
     ],
     "wiki_categories": [
       "Locations in Far Range Branch Line"
+    ],
+    "adjacencies": [
+      "broken_railroad",
+      "transfer_pass"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/12967305776514005370/390463FA1E9F539BCB876BF25E3065276D75DED2/",
@@ -4047,6 +4340,13 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Transfer Pass"
     ],
+    "adjacencies": [
+      "far_range",
+      "forsaken_airfield",
+      "zone_of_contamination",
+      "sundered_pass",
+      "broken_railroad"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/37819645136731165/2F143B1F4452AE9F9688686307AEAFE77D64CD0C/",
       "https://images.steamusercontent.com/ugc/37819645136731499/1A9515074C6E2DFE5960A3886C0534BB20265B41/"
@@ -4066,6 +4366,11 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in The Ravine"
     ],
+    "adjacencies": [
+      "mystery_lake",
+      "coastal_highway",
+      "bleak_inlet"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/37819645136730001/C7DC749F7E776CAA177FC3B5A0E679D01CF8B63C/",
       "https://images.steamusercontent.com/ugc/37819645136730182/3961F5EF2C43A79B7F730CD52F7EE1B8554EB1C6/"
@@ -4083,6 +4388,10 @@ const REGIONS = [
       "maps/winding_river_and_carter_hydro_dam_loper.jpg"
     ],
     "wiki_categories": [],
+    "adjacencies": [
+      "mystery_lake",
+      "pleasant_valley"
+    ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/37819645136732320/2F95CDD280AF1BD5D52072DD0B242519C099F433/",
       "https://images.steamusercontent.com/ugc/37819645136732699/CD74A44711B35D34DC967262E7E90ECAA227B999/"
@@ -4102,6 +4411,10 @@ const REGIONS = [
     "wiki_categories": [
       "Locations in Keeper's Pass North",
       "Locations in Keeper's Pass South"
+    ],
+    "adjacencies": [
+      "pleasant_valley",
+      "blackrock"
     ],
     "download_urls": [
       "https://images.steamusercontent.com/ugc/15159145128947408591/484B84DD777B5E0742837BB86857EAA524315342/",
@@ -4207,12 +4520,33 @@ const REGIONS_BY_ID = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 const MAX_RESULTS = 30;
 let activeIdx = -1;
 
+// Synonyms the user might type when looking for crafting stations. Mapped to
+// the canonical tool tag used in PLACE_TOOLS / TOOL_GLYPHS.
+const TOOL_SYNONYMS = {
+  'forge': 'forge', 'forges': 'forge', 'arrowhead': 'forge', 'arrowheads': 'forge', 'smithing': 'forge',
+  'workbench': 'workbench', 'workbenches': 'workbench', 'wb': 'workbench', 'craft': 'workbench', 'crafting': 'workbench',
+  'ammo': 'ammunition_workbench', 'ammunition': 'ammunition_workbench', 'reload': 'ammunition_workbench', 'reloading': 'ammunition_workbench',
+  'milling': 'milling_machine', 'mill': 'milling_machine',
+  'bed': 'bed', 'beds': 'bed', 'sleep': 'bed', 'bedroll': 'bed',
+  'stove': 'stove', 'fireplace': 'stove', 'fire': 'stove', 'barrel': 'stove',
+  'firstaid': 'first_aid', 'first-aid': 'first_aid', 'first_aid': 'first_aid', 'medkit': 'first_aid', 'medical': 'first_aid',
+  'icefishing': 'ice_fishing_hut', 'ice-fishing': 'ice_fishing_hut',
+};
+
+function matchToolKeyword(q) {
+  // Returns a canonical tool tag if the trimmed query matches a synonym
+  // (full word, case-insensitive). Used by search to surface tool-bearing
+  // places that don't share their name with the tool.
+  const ql = q.trim().toLowerCase();
+  return TOOL_SYNONYMS[ql] || null;
+}
+
 function searchPlaces(q) {
   const ql = q.trim().toLowerCase();
   if (!ql) return [];
-  // Score: exact prefix > word-boundary > substring; ties broken by region order in REGIONS.
   const regionOrder = new Map(REGIONS.map((r, i) => [r.id, i]));
   const matches = [];
+  // Score: exact prefix > word-boundary > substring; ties broken by region order in REGIONS.
   for (const p of PLACES_INDEX) {
     const nl = p.name.toLowerCase();
     let score;
@@ -4221,13 +4555,35 @@ function searchPlaces(q) {
     else if (nl.includes(' ' + ql)) score = 2;
     else if (nl.includes(ql)) score = 3;
     else continue;
-    matches.push({ p, score });
+    matches.push({ p, score, matchedTool: null });
+  }
+  // Tool-keyword expansion: any place tagged with the matched tool joins the
+  // results, even if its name doesn't contain the query. Score 1.5 keeps tool
+  // matches above generic substring hits but below name-prefix hits.
+  const tool = matchToolKeyword(q);
+  if (tool) {
+    const seen = new Set(matches.map(m => m.p.region + '|' + m.p.name));
+    for (const [region, places] of Object.entries(PLACE_TOOLS)) {
+      for (const [name, tags] of Object.entries(places)) {
+        if (!tags.includes(tool)) continue;
+        const key = region + '|' + name;
+        if (seen.has(key)) {
+          // Same place already matched by name — annotate with the tool so
+          // the result row still gets the highlighted badge.
+          const existing = matches.find(m => m.p.region === region && m.p.name === name);
+          if (existing) existing.matchedTool = tool;
+          continue;
+        }
+        seen.add(key);
+        matches.push({ p: { name, region }, score: 1.5, matchedTool: tool });
+      }
+    }
   }
   matches.sort((a, b) =>
     a.score - b.score
     || regionOrder.get(a.p.region) - regionOrder.get(b.p.region)
     || a.p.name.localeCompare(b.p.name));
-  return matches.slice(0, MAX_RESULTS).map(m => m.p);
+  return matches.slice(0, MAX_RESULTS).map(m => ({ ...m.p, matchedTool: m.matchedTool }));
 }
 
 function renderResults(results) {
@@ -4257,6 +4613,22 @@ function renderResults(results) {
     regionEl.className = 'result-region';
     regionEl.textContent = region ? region.name : p.region;
     item.append(nameEl, regionEl);
+    // Inline tool badges on result rows so the user can see at a glance which
+    // crafting stations live there. The match (if search was a tool keyword)
+    // gets the brighter accent treatment.
+    const tags = (PLACE_TOOLS[p.region] || {})[p.name];
+    if (tags && tags.length) {
+      const badges = document.createElement('span');
+      badges.className = 'result-tools';
+      for (const tag of tags) {
+        const b = document.createElement('span');
+        b.className = 'tool-badge tool-' + tag + (tag === p.matchedTool ? ' match' : '');
+        b.textContent = TOOL_GLYPHS[tag] || tag.charAt(0).toUpperCase();
+        b.title = toolLabel(tag);
+        badges.appendChild(b);
+      }
+      item.appendChild(badges);
+    }
     item.addEventListener('click', () => openSearchResult(p));
     resultsEl.appendChild(item);
   });
@@ -4269,7 +4641,7 @@ function openSearchResult(p) {
   searchInput.value = '';
   resultsEl.style.display = 'none';
   const box = (PLACE_BOXES[p.region] || {})[p.name];
-  openRegion(region, box ? { name: p.name, bbox: box } : null);
+  openRegion(region, box ? { name: p.name, bbox: box } : null, p.matchedTool || null);
 }
 
 function setActiveResult(items, idx) {
@@ -4350,25 +4722,26 @@ let lastFocusBeforeModal = null;
 function parseHash() {
   const raw = location.hash.slice(1);
   if (!raw) return null;
-  const slash = raw.indexOf('/');
-  if (slash < 0) {
-    return { regionId: decodeURIComponent(raw), placeName: null };
-  }
+  // Format: region[/place[/tool]]. Tool segment activates setToolFilter so
+  // tool-keyword search results stay tool-filtered across deep links.
+  const parts = raw.split('/').map(decodeURIComponent);
   return {
-    regionId: decodeURIComponent(raw.slice(0, slash)),
-    placeName: decodeURIComponent(raw.slice(slash + 1)),
+    regionId: parts[0] || null,
+    placeName: parts[1] || null,
+    tool: parts[2] || null,
   };
 }
 
-function makeHash(regionId, placeName) {
+function makeHash(regionId, placeName, tool) {
   if (!regionId) return '';
-  return placeName
-    ? '#' + encodeURIComponent(regionId) + '/' + encodeURIComponent(placeName)
-    : '#' + encodeURIComponent(regionId);
+  let h = '#' + encodeURIComponent(regionId);
+  if (placeName) h += '/' + encodeURIComponent(placeName);
+  if (placeName && tool) h += '/' + encodeURIComponent(tool);
+  return h;
 }
 
-function pushHash(regionId, placeName) {
-  const newHash = makeHash(regionId, placeName);
+function pushHash(regionId, placeName, tool) {
+  const newHash = makeHash(regionId, placeName, tool);
   if (newHash === location.hash) return;
   if (newHash) {
     history.pushState(null, '', newHash);
@@ -4380,7 +4753,7 @@ function pushHash(regionId, placeName) {
 
 function applyHashState() {
   const parsed = parseHash();
-  if (!parsed) {
+  if (!parsed || !parsed.regionId) {
     if (detailView.style.display === 'flex') _closeModal();
     return;
   }
@@ -4391,11 +4764,11 @@ function applyHashState() {
     const box = (PLACE_BOXES[region.id] || {})[parsed.placeName];
     if (box) target = { name: parsed.placeName, bbox: box };
   }
-  // Already on this region/place? Don't tear down + re-open.
+  // Already on this region/place/tool? Don't tear down + re-open.
   const currentPlace = highlightTarget ? highlightTarget.name : null;
   const wantedPlace  = target ? target.name : null;
-  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace) return;
-  _openRegion(region, target);
+  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool) return;
+  _openRegion(region, target, parsed.tool);
 }
 
 window.addEventListener('hashchange', applyHashState);
@@ -4403,16 +4776,16 @@ window.addEventListener('hashchange', applyHashState);
 // Public APIs: callers (region-button click, search result, ✕, Escape)
 // update the hash. pushState doesn't fire hashchange, so we apply
 // synchronously after each push — the listener handles browser back/forward.
-function openRegion(region, target) {
-  pushHash(region.id, target ? target.name : null);
+function openRegion(region, target, tool) {
+  pushHash(region.id, target ? target.name : null, tool || null);
   applyHashState();
 }
 function closeModal() {
-  pushHash(null, null);
+  pushHash(null, null, null);
   applyHashState();
 }
 
-function _openRegion(region, target) {
+function _openRegion(region, target, tool) {
   lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
   mapTabsEl.innerHTML = '';
@@ -4437,6 +4810,13 @@ function _openRegion(region, target) {
 
   loadDetailMap(region.maps[0]);
   renderAllBoxes();
+  renderToolBadges();
+  renderToolsNearby(region);
+  // tool: optional crafting-tool tag (forge/workbench/...). When set, the
+  // matching badges in the detail view stay accented while others dim, so
+  // the user knows where in the region they're looking.
+  currentToolFilter = tool || null;
+  setToolFilter(currentToolFilter);
   setAllBoxesVisible(devMode);
   detailView.style.display = 'flex';
   detailView.setAttribute('aria-hidden', 'false');
@@ -4458,6 +4838,9 @@ let highlightTarget = null;
 // currentRegion: the REGIONS entry for the currently open detail view, used
 // by the bbox editor's Save endpoint to namespace the write.
 let currentRegion = null;
+// currentToolFilter: the tool tag carried in the URL hash, if any. Used by
+// applyHashState to decide whether a no-op short-circuit is safe.
+let currentToolFilter = null;
 const highlightBox = document.getElementById('highlight-box');
 
 const zoomOutBtn  = document.getElementById('zoom-out');
@@ -4527,6 +4910,7 @@ function applyTransform() {
   detailImg.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
   positionHighlight();
   positionAllBoxes();
+  positionToolBadges();
   if (drawBox.style.display === 'block') updateDrawBox();
   updateZoomUI();
 }
@@ -4609,6 +4993,179 @@ function positionAllBoxes() {
 function setAllBoxesVisible(visible) {
   allBoxesLayer.classList.toggle('visible', !!visible);
   if (visible) positionAllBoxes();
+}
+
+// ── Tool badges ───────────────────────────────────────────────────────────
+// Renders a small badge cluster anchored to each PLACE_BOXES entry that has
+// matching PLACE_TOOLS, e.g. F = forge, W = workbench, A = ammunition wb.
+const toolsLayer = document.getElementById('tools-layer');
+let toolBadgeItems = [];  // [{ el, bbox }]
+
+const TOOL_GLYPHS = {
+  forge: 'F',
+  workbench: 'W',
+  ammunition_workbench: 'A',
+  milling_machine: 'M',
+  bed: 'B',
+  stove: 'S',
+  first_aid: '+',
+  ice_fishing_hut: 'I',
+  ice_fishing_hole: 'i',
+};
+
+function toolLabel(tool) {
+  return tool.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function renderToolBadges() {
+  toolsLayer.innerHTML = '';
+  toolBadgeItems = [];
+  if (!currentRegion) return;
+  const boxes = PLACE_BOXES[currentRegion.id] || {};
+  const tools = PLACE_TOOLS[currentRegion.id] || {};
+  // Same dedupe as renderAllBoxes: collapse alias-name pairs that share a
+  // bbox (instance-suffix-stripped duplicates from merge_boxes.py).
+  const seen = new Map();
+  for (const [name, bbox] of Object.entries(boxes)) {
+    if (!Array.isArray(bbox) || bbox.length !== 4) continue;
+    const tags = tools[name];
+    if (!tags || !tags.length) continue;
+    const key = bbox.map(v => Number(v).toFixed(5)).join(',');
+    const prev = seen.get(key);
+    if (!prev || name.length > prev.name.length) seen.set(key, { name, bbox, tags });
+  }
+  for (const { name, bbox, tags } of seen.values()) {
+    const cluster = document.createElement('div');
+    cluster.className = 'tool-badges';
+    for (const tag of tags) {
+      const dot = document.createElement('div');
+      dot.className = 'tool-badge tool-' + tag;
+      dot.dataset.tool = tag;
+      dot.textContent = TOOL_GLYPHS[tag] || tag.charAt(0).toUpperCase();
+      dot.title = `${toolLabel(tag)} — ${name}`;
+      cluster.appendChild(dot);
+    }
+    toolsLayer.appendChild(cluster);
+    toolBadgeItems.push({ el: cluster, bbox: bbox.slice() });
+  }
+  positionToolBadges();
+}
+
+function positionToolBadges() {
+  for (const it of toolBadgeItems) {
+    const [x1, y1, x2, y2] = it.bbox;
+    // Anchor at the bbox's top-right corner; CSS translate(-100%, -100%)
+    // floats the cluster up-and-left so it sits just outside the box.
+    it.el.style.left = (panX + x2 * imgW * zoom) + 'px';
+    it.el.style.top  = (panY + y1 * imgH * zoom) + 'px';
+  }
+}
+
+function setToolFilter(tool) {
+  if (!tool) {
+    toolsLayer.classList.remove('filtered');
+    toolsLayer.querySelectorAll('.tool-badge.match').forEach(el => el.classList.remove('match'));
+    return;
+  }
+  toolsLayer.classList.add('filtered');
+  toolsLayer.querySelectorAll('.tool-badge').forEach(el => {
+    el.classList.toggle('match', el.dataset.tool === tool);
+  });
+}
+
+// ── Region adjacency / nearest-tool lookup ────────────────────────────────
+// Adjacency comes from regions.json (manually seeded from the wiki's
+// `connections` infobox field per region). BFS gives hop counts to every
+// other region from a chosen origin; nearest-tool picks the closest place
+// tagged with the requested tool.
+function bfsDistances(fromId) {
+  const dist = { [fromId]: 0 };
+  const queue = [fromId];
+  while (queue.length) {
+    const cur = queue.shift();
+    const region = REGIONS_BY_ID[cur];
+    if (!region) continue;
+    for (const neighbour of (region.adjacencies || [])) {
+      if (dist[neighbour] !== undefined) continue;
+      dist[neighbour] = dist[cur] + 1;
+      queue.push(neighbour);
+    }
+  }
+  return dist;
+}
+
+function findNearestTool(fromRegionId, tool) {
+  // Returns the closest {regionId, placeName, hops} pair, or null if no
+  // place in the graph carries the tag. Ties broken by lexical region order.
+  const dist = bfsDistances(fromRegionId);
+  let best = null;
+  for (const [regionId, places] of Object.entries(PLACE_TOOLS)) {
+    if (!(regionId in dist)) continue;
+    for (const [placeName, tags] of Object.entries(places)) {
+      if (!tags.includes(tool)) continue;
+      if (!best
+          || dist[regionId] < best.hops
+          || (dist[regionId] === best.hops && regionId < best.regionId)) {
+        best = { regionId, placeName, hops: dist[regionId] };
+      }
+    }
+  }
+  return best;
+}
+
+// Tools the strip surfaces: rare crafting stations the user might travel
+// for. Common amenities (bed/stove/first_aid) aren't worth a "nearest"
+// pill — they're everywhere.
+const NEARBY_TOOLS = ['forge', 'workbench', 'ammunition_workbench', 'milling_machine'];
+
+const toolsNearbyEl = document.getElementById('tools-nearby');
+
+function renderToolsNearby(region) {
+  toolsNearbyEl.innerHTML = '';
+  if (!region) return;
+  const placesHere = PLACE_TOOLS[region.id] || {};
+  const hereByTool = {};
+  for (const [name, tags] of Object.entries(placesHere)) {
+    for (const tag of tags) (hereByTool[tag] ||= []).push(name);
+  }
+  for (const tool of NEARBY_TOOLS) {
+    const pill = document.createElement('button');
+    pill.className = 'tool-pill';
+    pill.dataset.tool = tool;
+    const here = hereByTool[tool];
+    if (here && here.length) {
+      // Tool is present in this region → click highlights the badges.
+      pill.classList.add('here');
+      pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
+                     + `<span class="tool-pill-label">${toolLabel(tool)} here</span>`
+                     + `<span class="tool-pill-count">${here.length}</span>`;
+      pill.title = `${toolLabel(tool)}: ${here.join(', ')}`;
+      pill.addEventListener('click', () => {
+        const target = here[0];
+        const box = (PLACE_BOXES[region.id] || {})[target];
+        openRegion(region, box ? { name: target, bbox: box } : null, tool);
+      });
+    } else {
+      const nearest = findNearestTool(region.id, tool);
+      if (!nearest) {
+        // Tag isn't anywhere in the graph (probably a vocabulary tag we
+        // haven't tagged yet). Skip the pill rather than show a dead one.
+        continue;
+      }
+      const targetRegion = REGIONS_BY_ID[nearest.regionId];
+      const regionShort = targetRegion ? targetRegion.name : nearest.regionId;
+      pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
+                     + `<span class="tool-pill-label">${nearest.placeName}</span>`
+                     + `<span class="tool-pill-region">${regionShort}</span>`
+                     + `<span class="tool-pill-hops">${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}</span>`;
+      pill.title = `${toolLabel(tool)} — ${nearest.placeName} in ${regionShort} (${nearest.hops} hop${nearest.hops === 1 ? '' : 's'})`;
+      pill.addEventListener('click', () => {
+        const box = (PLACE_BOXES[nearest.regionId] || {})[nearest.placeName];
+        openRegion(targetRegion, box ? { name: nearest.placeName, bbox: box } : null, tool);
+      });
+    }
+    toolsNearbyEl.appendChild(pill);
+  }
 }
 
 function onAllBoxMouseDown(e, name, bbox) {

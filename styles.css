@@ -209,6 +209,50 @@ body {
   background: rgba(96, 165, 250, 0.92);
 }
 
+/* ── Tool badges (per-place crafting-tool tags) ──────────────────────────── */
+/* Pinned to each PLACE_BOXES entry that has matching PLACE_TOOLS. Always
+   visible in the detail view; sits below the search highlight so it doesn't
+   compete when a place is being framed. */
+#tools-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+.tool-badges {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+  /* Anchor at the box's top-right corner; positionToolBadges sets left/top. */
+  transform: translate(-100%, -100%);
+  margin-top: -2px;
+}
+.tool-badge {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font: 600 10px/16px ui-monospace, Menlo, monospace;
+  text-align: center;
+  color: #0b1018;
+  background: #f5d36b;
+  border: 1px solid rgba(8, 12, 18, 0.85);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.tool-badge.tool-forge             { background: #f5996b; }
+.tool-badge.tool-workbench         { background: #9ec5ff; }
+.tool-badge.tool-ammunition_workbench { background: #c9a3ff; }
+.tool-badge.tool-milling_machine   { background: #ff9ec5; }
+.tool-badge.tool-bed               { background: #b5e8a3; }
+.tool-badge.tool-stove             { background: #ffb070; }
+.tool-badge.tool-first_aid         { background: #f4a4a4; }
+.tool-badge.tool-ice_fishing_hut   { background: #a3e0ff; }
+.tool-badge.tool-ice_fishing_hole  { background: #cce8ff; }
+/* Filtered mode: dim non-matching badges, accent matching ones. */
+#tools-layer.filtered .tool-badge { opacity: 0.18; }
+#tools-layer.filtered .tool-badge.match { opacity: 1; outline: 2px solid #fff; }
+
 /* ── Global place search (world view) ────────────────────────────────────── */
 #search-wrap {
   position: fixed;
@@ -247,7 +291,6 @@ body {
 }
 .search-result {
   display: flex;
-  justify-content: space-between;
   align-items: baseline;
   gap: 12px;
   width: 100%;
@@ -262,6 +305,14 @@ body {
   cursor: pointer;
   transition: background 0.1s;
 }
+.search-result .result-name {
+  /* Soak up the remaining width so region + tools sit flush right. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .search-result:last-child { border-bottom: none; }
 .search-result:hover,
 .search-result.active {
@@ -274,6 +325,23 @@ body {
   flex-shrink: 0;
   white-space: nowrap;
 }
+.search-result .result-tools {
+  display: inline-flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.search-result .result-tools .tool-badge {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  line-height: 14px;
+  border-width: 1px;
+  box-shadow: none;
+  opacity: 0.55;
+}
+.search-result .result-tools .tool-badge.match { opacity: 1; }
+.search-result:hover .result-tools .tool-badge,
+.search-result.active .result-tools .tool-badge { opacity: 1; }
 #search-empty {
   padding: 8px 12px;
   font-size: 12px;
@@ -387,6 +455,71 @@ body.detail-open #search-wrap { display: none; }
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* ── Tools nearby (detail-view header strip) ────────────────────────────── */
+/* One pill per rare crafting tool (forge / workbench / ammo / milling).
+   If the open region has the tool: shows count + a "here" hint, click jumps
+   to the first instance with the tool filter active. If not: shows the
+   nearest place + hop count via BFS over region adjacencies. */
+#tools-nearby {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;       /* push to the right edge of the header */
+  flex-wrap: wrap;
+  align-items: center;
+}
+.tool-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  background: rgba(20, 28, 40, 0.72);
+  border: 1px solid rgba(110, 170, 230, 0.22);
+  border-radius: 14px;
+  cursor: pointer;
+  color: #c9d1d9;
+  font: 11px/1.2 inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tool-pill:hover {
+  background: rgba(110, 170, 230, 0.18);
+  border-color: rgba(110, 170, 230, 0.55);
+  color: #f0f6ff;
+}
+.tool-pill.here {
+  border-color: rgba(150, 220, 150, 0.45);
+}
+.tool-pill .tool-badge {
+  width: 14px;
+  height: 14px;
+  font-size: 9px;
+  line-height: 14px;
+  border-width: 1px;
+  box-shadow: none;
+}
+.tool-pill-label {
+  font-weight: 500;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-pill-region {
+  color: rgba(180, 200, 220, 0.6);
+  font-size: 10px;
+}
+.tool-pill-hops {
+  color: #8bb8e8;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  padding-left: 4px;
+  border-left: 1px solid rgba(110, 170, 230, 0.22);
+}
+.tool-pill-count {
+  color: rgba(180, 220, 180, 0.85);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
 }
 
 .tab-btn {
