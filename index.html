@@ -26,9 +26,18 @@
   <div id="detail-dialog">
     <div id="detail-header">
       <button id="back-btn" aria-label="Close region view">✕</button>
+      <button id="back-to-origin-btn" hidden></button>
       <h1 id="region-title"></h1>
       <div id="map-tabs"></div>
       <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
+    </div>
+    <div id="route-popover" role="dialog" aria-label="Route preview" hidden>
+      <div id="route-popover-header">
+        <div id="route-popover-title"></div>
+        <button id="route-popover-close" aria-label="Close route preview">✕</button>
+      </div>
+      <ol id="route-popover-steps"></ol>
+      <button id="route-popover-travel"></button>
     </div>
     <div id="map-canvas">
       <img id="detail-img" alt="">
@@ -4808,6 +4817,13 @@ function _openRegion(region, target, tool) {
     });
   }
 
+  // Pill navigation stashes the origin so we can render a back-breadcrumb;
+  // any other entry path (search, region label click, hash, ✕) clears it.
+  cameFromRegion = pendingPillOrigin;
+  pendingPillOrigin = null;
+  hideRoutePopover();
+  renderBackToOrigin();
+
   loadDetailMap(region.maps[0]);
   renderAllBoxes();
   renderToolBadges();
@@ -5075,42 +5091,54 @@ function setToolFilter(tool) {
 
 // ── Region adjacency / nearest-tool lookup ────────────────────────────────
 // Adjacency comes from regions.json (manually seeded from the wiki's
-// `connections` infobox field per region). BFS gives hop counts to every
-// other region from a chosen origin; nearest-tool picks the closest place
-// tagged with the requested tool.
-function bfsDistances(fromId) {
-  const dist = { [fromId]: 0 };
+// `connections` infobox field per region). BFS gives hop counts AND the
+// shortest path from a chosen origin to every reachable region, so the
+// route popover can let the user step through the path one region at a time
+// instead of teleporting straight to the destination.
+function bfsPaths(fromId) {
+  const visited = { [fromId]: { hops: 0, path: [fromId] } };
   const queue = [fromId];
   while (queue.length) {
     const cur = queue.shift();
     const region = REGIONS_BY_ID[cur];
     if (!region) continue;
     for (const neighbour of (region.adjacencies || [])) {
-      if (dist[neighbour] !== undefined) continue;
-      dist[neighbour] = dist[cur] + 1;
+      if (neighbour in visited) continue;
+      visited[neighbour] = {
+        hops: visited[cur].hops + 1,
+        path: [...visited[cur].path, neighbour],
+      };
       queue.push(neighbour);
     }
   }
-  return dist;
+  return visited;
 }
 
 function findNearestTool(fromRegionId, tool) {
-  // Returns the closest {regionId, placeName, hops} pair, or null if no
-  // place in the graph carries the tag. Ties broken by lexical region order.
-  const dist = bfsDistances(fromRegionId);
+  // Returns { regionId, placeName, hops, path } or null. Ties broken by
+  // lexical region order so results are deterministic.
+  const reachable = bfsPaths(fromRegionId);
   let best = null;
   for (const [regionId, places] of Object.entries(PLACE_TOOLS)) {
-    if (!(regionId in dist)) continue;
+    if (!(regionId in reachable)) continue;
+    const { hops, path } = reachable[regionId];
     for (const [placeName, tags] of Object.entries(places)) {
       if (!tags.includes(tool)) continue;
       if (!best
-          || dist[regionId] < best.hops
-          || (dist[regionId] === best.hops && regionId < best.regionId)) {
-        best = { regionId, placeName, hops: dist[regionId] };
+          || hops < best.hops
+          || (hops === best.hops && regionId < best.regionId)) {
+        best = { regionId, placeName, hops, path };
       }
     }
   }
   return best;
+}
+
+function pathSummary(path) {
+  // "via Ravine, Mystery Lake" for an intermediate-only summary; "" if direct.
+  if (path.length <= 2) return '';
+  const middle = path.slice(1, -1).map(id => (REGIONS_BY_ID[id] || {}).name || id);
+  return 'via ' + middle.join(', ');
 }
 
 // Tools the strip surfaces: rare crafting stations the user might travel
@@ -5158,15 +5186,169 @@ function renderToolsNearby(region) {
                      + `<span class="tool-pill-label">${nearest.placeName}</span>`
                      + `<span class="tool-pill-region">${regionShort}</span>`
                      + `<span class="tool-pill-hops">${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}</span>`;
-      pill.title = `${toolLabel(tool)} — ${nearest.placeName} in ${regionShort} (${nearest.hops} hop${nearest.hops === 1 ? '' : 's'})`;
-      pill.addEventListener('click', () => {
-        const box = (PLACE_BOXES[nearest.regionId] || {})[nearest.placeName];
-        openRegion(targetRegion, box ? { name: nearest.placeName, bbox: box } : null, tool);
+      const summary = pathSummary(nearest.path);
+      pill.title = `${toolLabel(tool)} — ${nearest.placeName} in ${regionShort}`
+                 + ` (${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}${summary ? ', ' + summary : ''})`
+                 + `\nClick to preview the route.`;
+      // First click previews; the popover's Travel button commits.
+      pill.addEventListener('click', e => {
+        e.stopPropagation();
+        showRoutePopover(pill, region, tool, nearest);
       });
     }
     toolsNearbyEl.appendChild(pill);
   }
 }
+
+// ── Route preview popover ─────────────────────────────────────────────────
+// Opened by the nearest-tool pills. Lists each region in the path between
+// origin and destination so the user can step-into any region one hop at a
+// time, instead of teleporting straight to the destination and losing the
+// trail home. The Travel button commits to the destination directly.
+const routePopover = document.getElementById('route-popover');
+const routePopoverTitle = document.getElementById('route-popover-title');
+const routePopoverSteps = document.getElementById('route-popover-steps');
+const routePopoverTravel = document.getElementById('route-popover-travel');
+const routePopoverClose = document.getElementById('route-popover-close');
+
+let routePopoverState = null;  // { tool, origin, nearest } when open
+
+function hideRoutePopover() {
+  routePopover.hidden = true;
+  routePopoverState = null;
+  document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
+}
+
+function showRoutePopover(anchorPill, originRegion, tool, nearest) {
+  // Toggle: clicking the same pill twice closes the popover.
+  if (routePopoverState
+      && routePopoverState.tool === tool
+      && routePopoverState.origin.id === originRegion.id) {
+    hideRoutePopover();
+    return;
+  }
+  routePopoverState = { tool, origin: originRegion, nearest };
+  document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
+  anchorPill.classList.add('expanded');
+
+  const targetRegion = REGIONS_BY_ID[nearest.regionId];
+  routePopoverTitle.innerHTML =
+      `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
+    + `<span>Route to ${toolLabel(tool)}</span>`;
+  routePopoverSteps.innerHTML = '';
+  // Each hop becomes a step. The origin step is a non-button "you are here"
+  // marker; intermediate + destination steps are buttons that open that
+  // region with the same tool filter, so the user can navigate one
+  // transition at a time.
+  nearest.path.forEach((regionId, i) => {
+    const stepRegion = REGIONS_BY_ID[regionId];
+    const li = document.createElement('li');
+    li.className = 'route-step';
+    if (i === 0) li.classList.add('route-step-origin');
+    if (i === nearest.path.length - 1) li.classList.add('route-step-dest');
+
+    const dot = document.createElement('span');
+    dot.className = 'route-step-dot';
+    dot.textContent = i === 0 ? '●' : (i === nearest.path.length - 1 ? '◉' : '○');
+    li.appendChild(dot);
+
+    const meta = document.createElement('div');
+    meta.className = 'route-step-meta';
+    const name = document.createElement('div');
+    name.className = 'route-step-name';
+    name.textContent = stepRegion ? stepRegion.name : regionId;
+    meta.appendChild(name);
+    if (i === 0) {
+      const note = document.createElement('div');
+      note.className = 'route-step-note';
+      note.textContent = 'you are here';
+      meta.appendChild(note);
+    } else if (i === nearest.path.length - 1) {
+      const note = document.createElement('div');
+      note.className = 'route-step-note';
+      note.textContent = nearest.placeName;
+      meta.appendChild(note);
+    }
+    li.appendChild(meta);
+
+    if (i > 0) {
+      const stepBtn = document.createElement('button');
+      stepBtn.className = 'route-step-btn';
+      stepBtn.textContent = i === nearest.path.length - 1 ? 'Open here' : 'Step here';
+      stepBtn.addEventListener('click', () => {
+        hideRoutePopover();
+        const isDest = i === nearest.path.length - 1;
+        const placeName = isDest ? nearest.placeName : null;
+        const box = placeName ? (PLACE_BOXES[regionId] || {})[placeName] : null;
+        navigateFromPill(originRegion, stepRegion,
+          box ? { name: placeName, bbox: box } : null, tool);
+      });
+      li.appendChild(stepBtn);
+    }
+    routePopoverSteps.appendChild(li);
+  });
+
+  routePopoverTravel.textContent = `Travel to ${nearest.placeName}`;
+  routePopoverTravel.onclick = () => {
+    hideRoutePopover();
+    const box = (PLACE_BOXES[nearest.regionId] || {})[nearest.placeName];
+    navigateFromPill(originRegion, targetRegion,
+      box ? { name: nearest.placeName, bbox: box } : null, tool);
+  };
+
+  // Anchor below the pill, right-aligned to it.
+  const rect = anchorPill.getBoundingClientRect();
+  routePopover.style.top  = (rect.bottom + 6) + 'px';
+  routePopover.style.right = (window.innerWidth - rect.right) + 'px';
+  routePopover.hidden = false;
+}
+
+routePopoverClose.addEventListener('click', hideRoutePopover);
+document.addEventListener('click', e => {
+  if (routePopover.hidden) return;
+  if (e.target.closest('#route-popover')) return;
+  if (e.target.closest('.tool-pill')) return;
+  hideRoutePopover();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !routePopover.hidden) {
+    e.stopPropagation();
+    hideRoutePopover();
+  }
+});
+
+// ── Back-to-origin breadcrumb ─────────────────────────────────────────────
+// Surfaces a "← {origin}" button in the destination region's header after
+// the user navigates via a tool pill, so they can return without using
+// browser history. `pendingPillOrigin` is the handoff between
+// navigateFromPill and the next _openRegion run; cameFromRegion is the
+// committed value the breadcrumb reads.
+let cameFromRegion = null;
+let pendingPillOrigin = null;
+
+function navigateFromPill(originRegion, targetRegion, target, tool) {
+  pendingPillOrigin = originRegion && originRegion.id !== targetRegion.id ? originRegion : null;
+  openRegion(targetRegion, target, tool);
+}
+
+const backToOriginBtn = document.getElementById('back-to-origin-btn');
+
+function renderBackToOrigin() {
+  if (!cameFromRegion) {
+    backToOriginBtn.hidden = true;
+    return;
+  }
+  backToOriginBtn.hidden = false;
+  backToOriginBtn.textContent = `← ${cameFromRegion.name}`;
+  backToOriginBtn.title = `Return to ${cameFromRegion.name}`;
+}
+
+backToOriginBtn.addEventListener('click', () => {
+  if (!cameFromRegion) return;
+  // Plain openRegion clears pendingPillOrigin → cameFromRegion goes null on
+  // the next _openRegion. Simple single-step return.
+  openRegion(cameFromRegion, null, null);
+});
 
 function onAllBoxMouseDown(e, name, bbox) {
   if (!devMode) return;
