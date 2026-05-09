@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://mhellevang.github.io/longdarkmap/sitemap.xml

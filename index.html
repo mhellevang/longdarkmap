@@ -3,7 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Long Dark — Map</title>
+
+<title>The Long Dark Interactive Map — Great Bear Island</title>
+<meta name="description" content="Explore Great Bear Island with this interactive map for The Long Dark. Search 364 locations across 21 regions, find forges, workbenches, ammunition benches, and nearest crafting stations. Fan-made, works offline.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://mhellevang.github.io/longdarkmap/">
+
+<!-- Open Graph (Facebook, Discord, etc.) -->
+<meta property="og:title" content="The Long Dark Interactive Map — Great Bear Island Regions, Locations, Forges &amp; Workbenches">
+<meta property="og:description" content="Search 364 locations across 21 regions. Find forges, workbenches, ammunition benches, and the nearest crafting station from any region.">
+<meta property="og:image" content="https://mhellevang.github.io/longdarkmap/maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg">
+<meta property="og:url" content="https://mhellevang.github.io/longdarkmap/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Long Dark Map">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Long Dark Interactive Map — All Regions, Locations &amp; Crafting Stations">
+<meta name="twitter:description" content="Search 364 locations across 21 regions. Find forges, workbenches, ammunition benches, and route to the nearest crafting station. Fan-made, works offline.">
+<meta name="twitter:image" content="https://mhellevang.github.io/longdarkmap/maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg">
+
+<!-- Structured data (Schema.org WebApplication) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "The Long Dark Interactive Map",
+  "url": "https://mhellevang.github.io/longdarkmap/",
+  "description": "Interactive map for The Long Dark survival game. Search 364 named locations across all 21 regions of Great Bear Island, find forges, workbenches, ammunition workbenches, and discover the nearest crafting station from any region.",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "about": { "@type": "VideoGame", "name": "The Long Dark", "url": "https://www.thelongdark.com/" }
+}
+</script>
+
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -27,7 +62,7 @@
     <div id="detail-header">
       <button id="back-btn" aria-label="Close region view">✕</button>
       <button id="back-to-origin-btn" hidden></button>
-      <h1 id="region-title"></h1>
+      <h2 id="region-title"></h2>
       <div id="map-tabs"></div>
       <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
     </div>
@@ -5962,5 +5997,13 @@ document.addEventListener('keydown', e => {
 // page is opened via a shared deep link).
 applyHashState();
 </script>
+
+<section class="sr-only" aria-label="About this map">
+  <h1>The Long Dark Interactive Map</h1>
+  <p>An interactive map for The Long Dark survival game by Hinterland Studio. Explore all 21 regions of Great Bear Island including Mystery Lake, Coastal Highway, Pleasant Valley, Desolation Point, Timberwolf Mountain, Forlorn Muskeg, Broken Railroad, Bleak Inlet, Hushed River Valley, Mountain Town, Ash Canyon, Blackrock, Forsaken Airfield, Sundered Pass, Zone of Contamination, Crumbling Highway, Far Range Branch Line, Transfer Pass, Ravine, Winding River &amp; Carter Hydro Dam, and Keeper's Pass.</p>
+  <p>Features: search 364 named locations across all regions, zoomable and pannable detail maps for every region, find the nearest forge, workbench, or ammunition workbench from any region, deep-link sharing, and full offline support. No server required — works as a single HTML file.</p>
+  <p>Crafting stations: 6 forges, 45 workbenches, and 2 ammunition workbenches mapped across all regions.</p>
+  <p>Map artwork by community creators Krueger and HokuOwl, hosted on Steam. This is a fan-made project, not affiliated with Hinterland Studio.</p>
+</section>
 </body>
 </html>
