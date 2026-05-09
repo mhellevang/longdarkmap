@@ -27,6 +27,13 @@ body {
 #world-map {
   display: block;
   user-select: none;
+  /* Cap the natural 4017×2048 size before layoutWorldMap() runs — otherwise
+     a brief layout pass at natural size pushes the body wider than the
+     viewport, and on mobile that bloats window.innerWidth for the rest of
+     the session (every layoutWorldMap re-fits to the inflated value, never
+     shrinking back). */
+  max-width: 100vw;
+  max-height: 100vh;
 }
 
 /* ── Region labels ───────────────────────────────────────────────────────── */
@@ -745,4 +752,130 @@ body.detail-open #search-wrap { display: none; }
   font-size: 11px;
   color: rgba(180, 200, 220, 0.3);
   pointer-events: none;
+}
+
+/* ── Mobile / narrow viewport ────────────────────────────────────────────── */
+/* Phone-sized layout: stack the detail header into rows, turn the tab and
+   tool-pill rows into horizontally scrollable strips, dock the route popover
+   as a bottom sheet, and grow tap targets to ~44px. The world map and detail
+   map already pinch-zoom; this block fixes the chrome around them. */
+@media (max-width: 640px) {
+  /* Search: 16px font prevents iOS auto-zoom on focus. */
+  #search-wrap {
+    top: 10px;
+    width: calc(100vw - 16px);
+  }
+  #place-search {
+    font-size: 16px;
+    padding: 11px 14px;
+  }
+  #search-results {
+    max-height: 70vh;
+  }
+  .search-result {
+    padding: 12px 14px;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .search-result .result-region { font-size: 12px; }
+
+  /* World labels: grow the (transparent) tap area so a finger can hit them. */
+  .region-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  /* Drop flex centring so the map sits at world-view's top-left; JS centres
+     it via worldPanX/worldPanY and pinches around (0,0) of the element. */
+  #world-view {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  #map-container {
+    transform-origin: 0 0;
+    /* Disable browser-managed gestures (e.g. iOS double-tap-zoom) so our
+       touchstart/move handlers fully own pan + pinch. */
+    touch-action: none;
+  }
+
+  /* Detail header: stack title row, then tabs strip, then tools strip.
+     Each strip scrolls horizontally instead of wrapping into a tall pile. */
+  #detail-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
+    align-items: center;
+  }
+  #region-title {
+    font-size: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #back-btn {
+    padding: 8px 12px;
+    font-size: 16px;
+    min-width: 40px;
+  }
+  #back-to-origin-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  /* Map-variant tabs: scroll horizontally instead of wrapping. */
+  #map-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex-basis: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #map-tabs::-webkit-scrollbar { display: none; }
+  .tab-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
+
+  /* Tools-nearby: same treatment — keep all 4 pills reachable via scroll. */
+  #tools-nearby {
+    margin-left: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex-basis: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #tools-nearby::-webkit-scrollbar { display: none; }
+  .tool-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
+
+  /* Route popover: dock as a bottom sheet. The !important overrides override
+     the inline top/right that anchorRoutePopover() sets relative to a pill —
+     on a phone-width viewport that anchor would push the popover off-screen. */
+  #route-popover {
+    top: auto !important;
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    max-width: none;
+    min-width: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom)) 16px;
+    border-bottom: none;
+    /* dvh tracks the visible viewport (excludes iOS Safari's URL bar)
+       so the sheet's edges aren't tucked under browser chrome. */
+    max-height: 70dvh;
+    overflow-y: auto;
+  }
+  .route-step { padding: 10px 0; }
+  .route-step-btn { padding: 8px 12px; font-size: 13px; }
+  #route-popover-travel { padding: 12px; font-size: 14px; }
+
+  /* Zoom controls: 40px hit area, easier to tap than 28px. */
+  .zoom-btn { width: 40px; height: 40px; font-size: 20px; }
+  #zoom-controls { padding: 4px 6px; gap: 6px; }
+  #zoom-level { min-width: 42px; font-size: 12px; }
+
+  /* The hint references scroll wheels and arrow keys — not useful on touch. */
+  #zoom-hint { display: none; }
 }

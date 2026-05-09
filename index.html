@@ -4452,6 +4452,29 @@ const DEV_MODE_ENABLED =
   location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 let devMode = false;
 
+// Touch pan/zoom state for the world view (phone/tablet). Desktop keeps
+// the flex-centred layout with identity transform; mobile drops flex
+// centring (CSS) and centres via initial pan so transform-origin: 0 0 keeps
+// the pinch math identical to the detail view.
+const WORLD_MIN_ZOOM = 1;
+const WORLD_MAX_ZOOM = 8;
+let worldZoom = 1, worldPanX = 0, worldPanY = 0;
+
+function applyWorldTransform() {
+  // Keep the map's centre inside the viewport so a panic-pan can't lose
+  // the map off-screen. At zoom 1 with initial pan this is a no-op.
+  const w = mapContainer.offsetWidth;
+  const h = mapContainer.offsetHeight;
+  if (w && h) {
+    const halfW = (w * worldZoom) / 2;
+    const halfH = (h * worldZoom) / 2;
+    worldPanX = Math.min(Math.max(worldPanX, -halfW), window.innerWidth - halfW);
+    worldPanY = Math.min(Math.max(worldPanY, -halfH), window.innerHeight - halfH);
+  }
+  mapContainer.style.transform =
+    `translate(${worldPanX}px, ${worldPanY}px) scale(${worldZoom})`;
+}
+
 function layoutWorldMap() {
   const scale = Math.min(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
   const w = Math.round(WORLD_W * scale);
@@ -4461,6 +4484,16 @@ function layoutWorldMap() {
   mapContainer.style.width  = w + 'px';
   mapContainer.style.height = h + 'px';
   renderLabels();
+  worldZoom = 1;
+  if (window.innerWidth <= 640) {
+    // Mobile: world-view drops flex-centring; we centre via initial pan.
+    worldPanX = (window.innerWidth - w) / 2;
+    worldPanY = (window.innerHeight - h) / 2;
+  } else {
+    worldPanX = 0;
+    worldPanY = 0;
+  }
+  applyWorldTransform();
 }
 
 function renderLabels() {
@@ -4519,6 +4552,94 @@ mapContainer.addEventListener('mousemove', e => {
 window.addEventListener('resize', layoutWorldMap);
 worldMapImg.addEventListener('load', layoutWorldMap);
 if (worldMapImg.complete) layoutWorldMap();
+
+// World-view touch: drag to pan, pinch to zoom. Bound on map-container so
+// touches on the search-wrap (also a child of #world-view) aren't captured.
+// transform-origin: 0 0 (set in CSS for mobile) makes the pinch-around-focal
+// math identical to the detail view. Pan is in viewport coords because
+// #world-view fills 100vw/100vh and starts at viewport (0,0).
+let worldDragging = false, worldDragMoved = false;
+let worldDragStartX = 0, worldDragStartY = 0;
+let worldPanStartX = 0, worldPanStartY = 0;
+let worldLastTouchDist = 0;
+const WORLD_TAP_THRESHOLD = 8;
+let worldLastTapTime = 0;
+
+mapContainer.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    worldDragging = true;
+    worldDragMoved = false;
+    worldDragStartX = e.touches[0].clientX;
+    worldDragStartY = e.touches[0].clientY;
+    worldPanStartX = worldPanX;
+    worldPanStartY = worldPanY;
+  } else if (e.touches.length === 2) {
+    worldDragging = false;
+    worldLastTouchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+  }
+}, { passive: true });
+
+mapContainer.addEventListener('touchmove', (e) => {
+  if (worldDragging && e.touches.length === 1) {
+    const dx = e.touches[0].clientX - worldDragStartX;
+    const dy = e.touches[0].clientY - worldDragStartY;
+    if (!worldDragMoved && Math.hypot(dx, dy) > WORLD_TAP_THRESHOLD) {
+      worldDragMoved = true;
+    }
+    if (worldDragMoved) {
+      worldPanX = worldPanStartX + dx;
+      worldPanY = worldPanStartY + dy;
+      applyWorldTransform();
+    }
+  } else if (e.touches.length === 2) {
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    if (worldLastTouchDist === 0) { worldLastTouchDist = dist; return; }
+    const f = dist / worldLastTouchDist;
+    worldLastTouchDist = dist;
+    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const nz = Math.min(Math.max(worldZoom * f, WORLD_MIN_ZOOM), WORLD_MAX_ZOOM);
+    worldPanX = mx - (mx - worldPanX) * (nz / worldZoom);
+    worldPanY = my - (my - worldPanY) * (nz / worldZoom);
+    worldZoom = nz;
+    worldDragMoved = true;  // pinch counts as a drag → suppress tap-open
+    applyWorldTransform();
+  }
+}, { passive: true });
+
+mapContainer.addEventListener('touchend', (e) => {
+  worldDragging = false;
+  worldLastTouchDist = 0;
+  // Double-tap to reset to centred fit.
+  if (e.changedTouches.length === 1 && !worldDragMoved) {
+    const now = Date.now();
+    if (now - worldLastTapTime < 300) {
+      layoutWorldMap();
+      worldLastTapTime = 0;
+    } else {
+      worldLastTapTime = now;
+    }
+  } else {
+    worldLastTapTime = 0;
+  }
+});
+
+// Suppress the synthetic click that follows a drag/pinch so the user
+// doesn't accidentally open a region while panning. Capture phase so we
+// run before the region-btn's listener.
+mapContainer.addEventListener('click', (e) => {
+  if (worldDragMoved) {
+    e.preventDefault();
+    e.stopPropagation();
+    worldDragMoved = false;
+  }
+}, true);
 
 // ════════════════════════════════════════════════════════════════════════════
 // GLOBAL PLACE SEARCH
@@ -5296,10 +5417,22 @@ function showRoutePopover(anchorPill, originRegion, tool, nearest) {
       box ? { name: nearest.placeName, bbox: box } : null, tool);
   };
 
-  // Anchor below the pill, right-aligned to it.
-  const rect = anchorPill.getBoundingClientRect();
-  routePopover.style.top  = (rect.bottom + 6) + 'px';
-  routePopover.style.right = (window.innerWidth - rect.right) + 'px';
+  // Position. On phone-width the popover docks as a bottom sheet (CSS
+  // handles bottom/left/right); we clear inline anchors so they don't fight
+  // the stylesheet. matchMedia tracks the true layout viewport — using
+  // window.innerWidth here was wrong because content can inflate it.
+  if (matchMedia('(max-width: 640px)').matches) {
+    routePopover.style.top    = '';
+    routePopover.style.right  = '';
+    routePopover.style.left   = '';
+    routePopover.style.bottom = '';
+  } else {
+    const rect = anchorPill.getBoundingClientRect();
+    routePopover.style.top    = (rect.bottom + 6) + 'px';
+    routePopover.style.right  = (window.innerWidth - rect.right) + 'px';
+    routePopover.style.left   = '';
+    routePopover.style.bottom = '';
+  }
   routePopover.hidden = false;
 }
 
