@@ -5596,7 +5596,13 @@ function applyHashState() {
   // Already on this region/place/tool? Don't tear down + re-open.
   const currentPlace = highlightTarget ? highlightTarget.name : null;
   const wantedPlace  = target ? target.name : null;
-  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool) return;
+  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool) {
+    // Drop any handoff state that the no-op would otherwise leak into the
+    // next openRegion call.
+    pendingPillOrigin = null;
+    pendingHistoryPop = false;
+    return;
+  }
   _openRegion(region, target, parsed.tool);
 }
 
@@ -5637,9 +5643,17 @@ function _openRegion(region, target, tool) {
     });
   }
 
-  // Pill navigation stashes the origin so we can render a back-breadcrumb;
-  // any other entry path (search, region label click, hash, ✕) clears it.
-  cameFromRegion = pendingPillOrigin;
+  // History stack handoff. Three cases:
+  //   pop  — the back-button popped already, just render and continue.
+  //   pill — push the origin so the chain extends.
+  //   else — fresh entry (search, world-map click, hash); clear history.
+  if (pendingHistoryPop) {
+    pendingHistoryPop = false;
+  } else if (pendingPillOrigin) {
+    regionHistory.push(pendingPillOrigin);
+  } else {
+    regionHistory = [];
+  }
   pendingPillOrigin = null;
   hideRoutePopover();
   renderBackToOrigin();
@@ -6211,13 +6225,18 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Back-to-origin breadcrumb ─────────────────────────────────────────────
-// Surfaces a "← {origin}" button in the destination region's header after
-// the user navigates via a tool pill, so they can return without using
-// browser history. `pendingPillOrigin` is the handoff between
-// navigateFromPill and the next _openRegion run; cameFromRegion is the
-// committed value the breadcrumb reads.
-let cameFromRegion = null;
+// Tracks the chain of regions the user hopped through via tool pills, route
+// steps, and region-link overlays so they can step back through the whole
+// path without using browser history. The stack is cleared on a fresh entry
+// (search, world-map click, direct hash) and on modal close.
+//
+// Handoff to _openRegion is via two flags set by navigateFromPill /
+// the back button:
+//   pendingPillOrigin — region to push if the next _openRegion is a hop
+//   pendingHistoryPop — true if the next _openRegion is a back-step
+let regionHistory = [];
 let pendingPillOrigin = null;
+let pendingHistoryPop = false;
 
 function navigateFromPill(originRegion, targetRegion, target, tool) {
   pendingPillOrigin = originRegion && originRegion.id !== targetRegion.id ? originRegion : null;
@@ -6227,20 +6246,21 @@ function navigateFromPill(originRegion, targetRegion, target, tool) {
 const backToOriginBtn = document.getElementById('back-to-origin-btn');
 
 function renderBackToOrigin() {
-  if (!cameFromRegion) {
+  if (!regionHistory.length) {
     backToOriginBtn.hidden = true;
     return;
   }
+  const prev = regionHistory[regionHistory.length - 1];
   backToOriginBtn.hidden = false;
-  backToOriginBtn.textContent = `← ${cameFromRegion.name}`;
-  backToOriginBtn.title = `Return to ${cameFromRegion.name}`;
+  backToOriginBtn.textContent = `← ${prev.name}`;
+  backToOriginBtn.title = `Return to ${prev.name}`;
 }
 
 backToOriginBtn.addEventListener('click', () => {
-  if (!cameFromRegion) return;
-  // Plain openRegion clears pendingPillOrigin → cameFromRegion goes null on
-  // the next _openRegion. Simple single-step return.
-  openRegion(cameFromRegion, null, null);
+  if (!regionHistory.length) return;
+  const prev = regionHistory.pop();
+  pendingHistoryPop = true;
+  openRegion(prev, null, null);
 });
 
 function onAllBoxMouseDown(e, name, bbox) {
@@ -6612,6 +6632,9 @@ function _closeModal() {
   detailCoordDisplay.style.display = 'none';
   detailCoordDisplay.classList.remove('has-bbox');
   currentRegion = null;
+  regionHistory = [];
+  pendingPillOrigin = null;
+  pendingHistoryPop = false;
   // Return focus to whatever opened the modal (search result, region label)
   // so keyboard users don't get dumped at the top of the document.
   if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) {
