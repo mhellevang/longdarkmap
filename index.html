@@ -5714,12 +5714,26 @@ function applyZoom(nz, cx, cy) {
 }
 
 function loadDetailMap(src) {
+  // Hide the canvas content until the new image is decoded AND the new
+  // transform has been applied. Without this, swapping src reveals the new
+  // image painted at the previous region's pan/zoom for one frame, then
+  // jumps to focus — looks like two flickers.
+  const absSrc = new URL(src, location.href).href;
+  if (detailImg.src === absSrc && imgW > 1) {
+    // Same map already loaded (e.g. searching for another place in the
+    // same region); just re-apply transform synchronously, no reload.
+    if (highlightTarget) focusHighlight();
+    else fitMap();
+    return;
+  }
+  mapCanvas.classList.add('map-loading');
   detailImg.src = src;
   detailImg.onload = () => {
     imgW = detailImg.naturalWidth;
     imgH = detailImg.naturalHeight;
     if (highlightTarget) focusHighlight();
     else fitMap();
+    mapCanvas.classList.remove('map-loading');
   };
 }
 
@@ -5732,18 +5746,22 @@ function fitMap() {
   applyTransform();
 }
 
-// Frame the highlighted box: pick a zoom that fills ~15% of the canvas with
-// the box, centre it. Box is in 0..1 image coords. We still compute fitZoom
-// so the zoom % readout (zoom / fitZoom) makes sense.
+// Frame the highlighted box: pick a zoom that fills the canvas with enough
+// surrounding context so the user can orient, then centre. Box is in 0..1
+// image coords. We still compute fitZoom so the zoom % readout
+// (zoom / fitZoom) makes sense.
 function focusHighlight() {
   const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
   fitZoom = Math.min(cw / imgW, ch / imgH);
   const [x1, y1, x2, y2] = highlightTarget.bbox;
   const boxW = Math.max(1, (x2 - x1) * imgW);
   const boxH = Math.max(1, (y2 - y1) * imgH);
-  const target = 0.15;  // box occupies ~15% of the smaller canvas dim
+  // Aim for the box to occupy ~5% of the smaller canvas dim, giving the
+  // user ~20× as much surrounding context as box. Cap at 3× fitZoom so a
+  // very small place name doesn't slingshot us in too tight.
+  const target = 0.05;
   const wantedZoom = Math.min(cw * target / boxW, ch * target / boxH);
-  zoom = Math.min(MAX_ZOOM, Math.max(fitZoom, wantedZoom));
+  zoom = Math.min(MAX_ZOOM, fitZoom * 3, Math.max(fitZoom, wantedZoom));
   const cxImg = ((x1 + x2) / 2) * imgW;
   const cyImg = ((y1 + y2) / 2) * imgH;
   panX = cw / 2 - cxImg * zoom;
@@ -5774,10 +5792,20 @@ function positionHighlight() {
     return;
   }
   const [x1, y1, x2, y2] = highlightTarget.bbox;
-  const left   = panX + x1 * imgW * zoom;
-  const top    = panY + y1 * imgH * zoom;
-  const width  = (x2 - x1) * imgW * zoom;
-  const height = (y2 - y1) * imgH * zoom;
+  let left   = panX + x1 * imgW * zoom;
+  let top    = panY + y1 * imgH * zoom;
+  let width  = (x2 - x1) * imgW * zoom;
+  let height = (y2 - y1) * imgH * zoom;
+  // A small constant pad around the label so the halo has a few pixels of
+  // breathing room beyond the OCR text bbox. Scales with zoom only because
+  // the label scales with zoom — fixed-pixel min sizes felt detached when
+  // zoomed out. Dev mode skips padding so the bbox editor grabs the real
+  // stored coords.
+  if (!devMode) {
+    const PAD = 10;
+    left -= PAD; top -= PAD;
+    width += PAD * 2; height += PAD * 2;
+  }
   highlightBox.style.left   = left + 'px';
   highlightBox.style.top    = top + 'px';
   highlightBox.style.width  = width + 'px';
@@ -5963,12 +5991,18 @@ function renderToolBadges() {
 }
 
 function positionToolBadges() {
+  // Scale badges with the map so they always look the same size relative
+  // to the labels they sit above. The 0.25 factor is a global size dial —
+  // at fit-zoom this lands the badges at ~4px (small dots beside the
+  // label), and they grow proportionally as the user zooms in.
+  // transform-origin at bottom-centre keeps the cluster pinned to the
+  // bbox top-centre while it scales.
+  const scale = (fitZoom > 0 ? zoom / fitZoom : 1) * 0.25;
   for (const it of toolBadgeItems) {
     const [x1, y1, x2, y2] = it.bbox;
-    // Anchor at the bbox's top-right corner; CSS translate(-100%, -100%)
-    // floats the cluster up-and-left so it sits just outside the box.
-    it.el.style.left = (panX + x2 * imgW * zoom) + 'px';
+    it.el.style.left = (panX + ((x1 + x2) / 2) * imgW * zoom) + 'px';
     it.el.style.top  = (panY + y1 * imgH * zoom) + 'px';
+    it.el.style.transform = `translate(-50%, -100%) scale(${scale})`;
   }
 }
 

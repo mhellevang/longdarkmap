@@ -289,8 +289,11 @@ body {
   display: flex;
   gap: 2px;
   pointer-events: none;
-  /* Anchor at the box's top-right corner; positionToolBadges sets left/top. */
-  transform: translate(-100%, -100%);
+  /* Anchor at the box's top-centre; positionToolBadges writes the live
+     transform (translate + scale-with-zoom) and the transform-origin keeps
+     the cluster pinned to the bbox top while it scales up with the map. */
+  transform: translate(-50%, -100%);
+  transform-origin: 50% 100%;
   margin-top: -2px;
 }
 .tool-badge {
@@ -779,31 +782,67 @@ body.detail-open #search-wrap { display: none; }
   max-width: none;
 }
 
+/* While loadDetailMap is swapping the source for a different region, hide
+   the image and every overlay that's positioned against the old transform.
+   Removed the moment focusHighlight/fitMap repositions everything, so the
+   user sees the destination scene fully composed instead of catching the
+   intermediate frame. visibility (not display) keeps zoom-controls /
+   coord-display hit-tested and prevents layout shifts. */
+#map-canvas.map-loading #detail-img,
+#map-canvas.map-loading #region-links-layer,
+#map-canvas.map-loading #tools-layer,
+#map-canvas.map-loading #all-boxes-layer,
+#map-canvas.map-loading #highlight-box {
+  visibility: hidden;
+}
+
 /* ── Highlighted-place overlay (search target) ───────────────────────────── */
 /* The pulse fades a dim spotlight in and out, then settles to a plain glowing
    border so the box stays as a "you searched for this" marker without dimming
    the rest of the map. */
 #highlight-box {
   position: absolute;
-  border: 3px solid #60a5fa;
-  border-radius: 4px;
-  box-shadow: 0 0 14px rgba(96, 165, 250, 0.7);
+  /* No hard border or fill — only a soft radial halo via stacked shadows.
+     The bbox is wiki text, often irregular; a tight rectangle made it look
+     like a placeholder. The halo radiates outward from the bbox edges,
+     drawing the eye without caging the label. */
+  border-radius: 6px;
   pointer-events: none;
   display: none;
   z-index: 5;
-  animation: highlight-pulse 1.4s ease-in-out 2 forwards;
+  animation: highlight-pulse 1.1s ease-out 1 forwards;
 }
 /* In dev mode the highlight is grabbable: click it to start editing the
-   stored bbox without having to shift-drag a fresh one. */
+   stored bbox without having to shift-drag a fresh one. A faint outline
+   makes the grab affordance visible since there's no border in normal
+   mode. */
 #highlight-box.dev-grab {
   pointer-events: all;
   cursor: grab;
+  outline: 2px dashed rgba(96, 165, 250, 0.85);
+  outline-offset: 2px;
 }
 #highlight-box.dev-grab:active { cursor: grabbing; }
+/* Single smooth fade: the rest of the map dims briefly so the eye lands on
+   the highlight, then the vignette fades out leaving a soft halo around
+   the place. The halo is a stack of three blurred shadows — tight bright
+   core, medium falloff, and wide soft glow — so it reads as light, not as
+   a hard outline. */
 @keyframes highlight-pulse {
-  0%   { box-shadow: 0 0 0 9999px rgba(8,12,18,0.55), 0 0 6px  rgba(96,165,250,0.6); }
-  50%  { box-shadow: 0 0 0 9999px rgba(8,12,18,0.30), 0 0 22px rgba(96,165,250,1.0); }
-  100% { box-shadow: 0 0 0 9999px rgba(8,12,18,0.00), 0 0 14px rgba(96,165,250,0.7); }
+  0% {
+    box-shadow:
+      0 0  0  9999px rgba(8, 12, 18, 0.55),
+      0 0 22px  6px  rgba(96, 165, 250, 0.9),
+      0 0 50px 18px  rgba(96, 165, 250, 0.55),
+      0 0 96px 32px  rgba(96, 165, 250, 0.3);
+  }
+  100% {
+    box-shadow:
+      0 0  0  9999px rgba(8, 12, 18, 0),
+      0 0 18px  4px  rgba(96, 165, 250, 0.65),
+      0 0 40px 14px  rgba(96, 165, 250, 0.35),
+      0 0 80px 26px  rgba(96, 165, 250, 0.18);
+  }
 }
 
 #zoom-hint {
