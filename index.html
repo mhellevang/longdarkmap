@@ -4475,6 +4475,17 @@ function applyWorldTransform() {
     `translate(${worldPanX}px, ${worldPanY}px) scale(${worldZoom})`;
 }
 
+// Apply a zoom level around a viewport-space focal point (mx, my). Same
+// formula as the detail view's applyZoom — keeps the image point that's
+// currently under (mx, my) anchored there as the scale changes.
+function applyWorldZoom(nz, mx, my) {
+  nz = Math.min(Math.max(nz, WORLD_MIN_ZOOM), WORLD_MAX_ZOOM);
+  worldPanX = mx - (mx - worldPanX) * (nz / worldZoom);
+  worldPanY = my - (my - worldPanY) * (nz / worldZoom);
+  worldZoom = nz;
+  applyWorldTransform();
+}
+
 function layoutWorldMap() {
   const scale = Math.min(window.innerWidth / WORLD_W, window.innerHeight / WORLD_H);
   const w = Math.round(WORLD_W * scale);
@@ -4484,15 +4495,12 @@ function layoutWorldMap() {
   mapContainer.style.width  = w + 'px';
   mapContainer.style.height = h + 'px';
   renderLabels();
+  // Centre via initial pan on every viewport. CSS keeps #map-container at
+  // world-view's top-left so transform-origin: 0 0 makes pinch/wheel math
+  // identical regardless of size.
   worldZoom = 1;
-  if (window.innerWidth <= 640) {
-    // Mobile: world-view drops flex-centring; we centre via initial pan.
-    worldPanX = (window.innerWidth - w) / 2;
-    worldPanY = (window.innerHeight - h) / 2;
-  } else {
-    worldPanX = 0;
-    worldPanY = 0;
-  }
+  worldPanX = (window.innerWidth - w) / 2;
+  worldPanY = (window.innerHeight - h) / 2;
   applyWorldTransform();
 }
 
@@ -4604,12 +4612,8 @@ mapContainer.addEventListener('touchmove', (e) => {
     worldLastTouchDist = dist;
     const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
     const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    const nz = Math.min(Math.max(worldZoom * f, WORLD_MIN_ZOOM), WORLD_MAX_ZOOM);
-    worldPanX = mx - (mx - worldPanX) * (nz / worldZoom);
-    worldPanY = my - (my - worldPanY) * (nz / worldZoom);
-    worldZoom = nz;
+    applyWorldZoom(worldZoom * f, mx, my);
     worldDragMoved = true;  // pinch counts as a drag → suppress tap-open
-    applyWorldTransform();
   }
 }, { passive: true });
 
@@ -4640,6 +4644,51 @@ mapContainer.addEventListener('click', (e) => {
     worldDragMoved = false;
   }
 }, true);
+
+// Wheel zoom (mouse wheel + macOS trackpad pinch, which dispatches wheel
+// with ctrlKey: true). Slightly steeper factor than the detail view —
+// the world map covers a much larger area, so zooming feels sluggish at
+// 1.001/px.
+mapContainer.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const f = Math.pow(1.0015, -e.deltaY);
+  applyWorldZoom(worldZoom * f, e.clientX, e.clientY);
+}, { passive: false });
+
+// Mouse drag to pan — same drag-vs-click discrimination as touch via the
+// shared worldDragMoved flag, so dragging across a region label doesn't
+// open it.
+let worldMouseDragging = false;
+let worldMouseDragStartX = 0, worldMouseDragStartY = 0;
+let worldMousePanStartX = 0, worldMousePanStartY = 0;
+
+mapContainer.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;  // primary only
+  worldMouseDragging = true;
+  worldDragMoved = false;
+  worldMouseDragStartX = e.clientX;
+  worldMouseDragStartY = e.clientY;
+  worldMousePanStartX = worldPanX;
+  worldMousePanStartY = worldPanY;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!worldMouseDragging) return;
+  const dx = e.clientX - worldMouseDragStartX;
+  const dy = e.clientY - worldMouseDragStartY;
+  if (!worldDragMoved && Math.hypot(dx, dy) > WORLD_TAP_THRESHOLD) {
+    worldDragMoved = true;
+  }
+  if (worldDragMoved) {
+    worldPanX = worldMousePanStartX + dx;
+    worldPanY = worldMousePanStartY + dy;
+    applyWorldTransform();
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  worldMouseDragging = false;
+});
 
 // ════════════════════════════════════════════════════════════════════════════
 // GLOBAL PLACE SEARCH

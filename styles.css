@@ -14,15 +14,26 @@ body {
   width: 100vw;
   height: 100vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  /* Anchor map at top-left; layoutWorldMap() centres it via initial pan.
+     Keeping the same anchor on every viewport makes the pinch/wheel math
+     identical (transform-origin: 0 0 of #map-container) on phone and
+     desktop alike. */
+  align-items: flex-start;
+  justify-content: flex-start;
   background: #0d1117;
+  overflow: hidden;
 }
 
 #map-container {
   position: relative;
   flex-shrink: 0;
+  transform-origin: 0 0;
+  /* JS owns pan + pinch on this element; stop the browser from doing its
+     own pinch-zoom or panning on top. */
+  touch-action: none;
+  cursor: grab;
 }
+#map-container:active { cursor: grabbing; }
 
 #world-map {
   display: block;
@@ -787,19 +798,6 @@ body.detail-open #search-wrap { display: none; }
   .region-btn {
     padding: 10px 14px;
     font-size: 13px;
-  }
-
-  /* Drop flex centring so the map sits at world-view's top-left; JS centres
-     it via worldPanX/worldPanY and pinches around (0,0) of the element. */
-  #world-view {
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-  #map-container {
-    transform-origin: 0 0;
-    /* Disable browser-managed gestures (e.g. iOS double-tap-zoom) so our
-       touchstart/move handlers fully own pan + pinch. */
-    touch-action: none;
   }
 
   /* Detail header: stack title row, then tabs strip, then tools strip.
