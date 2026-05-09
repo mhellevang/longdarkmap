@@ -191,6 +191,39 @@ body {
 #bbox-editor .status.ok    { color: #6ee7b7; }
 #bbox-editor .status.error { color: #f4a4a4; }
 
+/* ── Region-link overlays (clickable "To <region>" perimeter labels) ─────── */
+/* Each box sits over a red "To Mystery Lake" / "TO ASH CANYON" label that the
+   OCR pass detected. The button itself is invisible — we only show a soft
+   ring on hover/focus so the underlying red text in the map art keeps its
+   look. Positioned by positionRegionLinks; z-index keeps it under the search
+   highlight pulse but above the tool badges' anchor layer. */
+#region-links-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+.region-link {
+  position: absolute;
+  pointer-events: all;
+  cursor: pointer;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  padding: 0;
+  box-sizing: border-box;
+  transition: background 0.12s ease, border-color 0.12s ease,
+              box-shadow 0.12s ease;
+}
+.region-link:hover,
+.region-link:focus-visible {
+  background: rgba(244, 164, 164, 0.15);
+  border-color: rgba(244, 164, 164, 0.85);
+  box-shadow: 0 0 0 3px rgba(244, 164, 164, 0.25);
+  outline: none;
+}
+
 /* ── All-boxes overlay (dev mode) ────────────────────────────────────────── */
 /* Renders every PLACE_BOXES entry for the current region as a labelled
    translucent rectangle so misplaced boxes can be spotted at a glance. */

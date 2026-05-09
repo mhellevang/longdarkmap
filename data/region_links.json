@@ -1,0 +1,603 @@
+{
+  "mystery_lake": [
+    {
+      "target": "forlorn_muskeg",
+      "bbox": [
+        0.45003,
+        0.94473,
+        0.48727,
+        0.95943
+      ],
+      "text": "To Forlorn Muskeg"
+    },
+    {
+      "target": "mountain_town",
+      "bbox": [
+        0.1329,
+        0.93326,
+        0.17641,
+        0.93706
+      ],
+      "text": "TO MOUNTAIN TOWN"
+    },
+    {
+      "target": "ravine",
+      "bbox": [
+        0.9394,
+        0.31065,
+        0.975,
+        0.31747
+      ],
+      "text": "To Ravine"
+    },
+    {
+      "target": "winding_river",
+      "bbox": [
+        0.90295,
+        0.21326,
+        0.94403,
+        0.22086
+      ],
+      "text": "TO LOWER DAM & TO WINDING RIVER"
+    }
+  ],
+  "coastal_highway": [
+    {
+      "target": "crumbling_highway",
+      "bbox": [
+        0.79097,
+        0.94023,
+        0.82969,
+        0.95742
+      ],
+      "text": "To Crumbling Highway"
+    },
+    {
+      "target": "pleasant_valley",
+      "bbox": [
+        0.47164,
+        0.03862,
+        0.50708,
+        0.04326
+      ],
+      "text": "TO PLEASANT VALLEY"
+    },
+    {
+      "target": "ravine",
+      "bbox": [
+        0.06614,
+        0.09674,
+        0.09494,
+        0.1041
+      ],
+      "text": "To Ravine"
+    }
+  ],
+  "pleasant_valley": [
+    {
+      "target": "blackrock",
+      "bbox": [
+        0.03016,
+        0.43446,
+        0.06091,
+        0.4399
+      ],
+      "text": "To Blackrock"
+    },
+    {
+      "target": "coastal_highway",
+      "bbox": [
+        0.90286,
+        0.77303,
+        0.93379,
+        0.78358
+      ],
+      "text": "TO COASTAL HIGHWAY 088"
+    },
+    {
+      "target": "keepers_pass",
+      "bbox": [
+        0.03075,
+        0.42366,
+        0.06978,
+        0.43332
+      ],
+      "text": "To Keeper's Pass South & North"
+    },
+    {
+      "target": "timberwolf_mountain",
+      "bbox": [
+        0.81437,
+        0.01808,
+        0.84859,
+        0.02875
+      ],
+      "text": "To Timberwolf Mountain"
+    },
+    {
+      "target": "winding_river",
+      "bbox": [
+        0.23703,
+        0.81305,
+        0.26415,
+        0.8158
+      ],
+      "text": "TO WINDING RIVER"
+    }
+  ],
+  "desolation_point": [
+    {
+      "target": "crumbling_highway",
+      "bbox": [
+        0.05456,
+        0.25351,
+        0.12276,
+        0.25832
+      ],
+      "text": "TO CRUMBLING HIGHWAY"
+    }
+  ],
+  "timberwolf_mountain": [
+    {
+      "target": "ash_canyon",
+      "bbox": [
+        0.86709,
+        0.16709,
+        0.90227,
+        0.17093
+      ],
+      "text": "TO ASH CANYON"
+    },
+    {
+      "target": "ash_canyon",
+      "bbox": [
+        0.91725,
+        0.5438,
+        0.94596,
+        0.55915
+      ],
+      "text": "To Ash Canyon"
+    },
+    {
+      "target": "blackrock",
+      "bbox": [
+        0.06977,
+        0.22845,
+        0.10238,
+        0.23174
+      ],
+      "text": "TO BLACKROCK"
+    },
+    {
+      "target": "pleasant_valley",
+      "bbox": [
+        0.08151,
+        0.6943,
+        0.12585,
+        0.70855
+      ],
+      "text": "To Pleasant Valley"
+    }
+  ],
+  "forlorn_muskeg": [
+    {
+      "target": "bleak_inlet",
+      "bbox": [
+        0.73196,
+        0.88657,
+        0.76451,
+        0.88991
+      ],
+      "text": "TO BLEAK INLET"
+    },
+    {
+      "target": "broken_railroad",
+      "bbox": [
+        0.04873,
+        0.55034,
+        0.08409,
+        0.56242
+      ],
+      "text": "To Broken Railroad"
+    },
+    {
+      "target": "mountain_town",
+      "bbox": [
+        0.22165,
+        0.2343,
+        0.26509,
+        0.24623
+      ],
+      "text": "To Mountain Town"
+    },
+    {
+      "target": "mystery_lake",
+      "bbox": [
+        0.91247,
+        0.45132,
+        0.95061,
+        0.46342
+      ],
+      "text": "To Mystery Lake"
+    }
+  ],
+  "broken_railroad": [
+    {
+      "target": "far_range",
+      "bbox": [
+        0.05182,
+        0.67739,
+        0.11321,
+        0.69637
+      ],
+      "text": "To Far Range Branch Line"
+    },
+    {
+      "target": "forlorn_muskeg",
+      "bbox": [
+        0.89545,
+        0.54373,
+        0.94174,
+        0.56353
+      ],
+      "text": "To Forlorn Muskeg"
+    }
+  ],
+  "bleak_inlet": [
+    {
+      "target": "forlorn_muskeg",
+      "bbox": [
+        0.43879,
+        0.19339,
+        0.4784,
+        0.19678
+      ],
+      "text": "TO FORLORN MUSKEG"
+    },
+    {
+      "target": "ravine",
+      "bbox": [
+        0.61401,
+        0.18118,
+        0.64522,
+        0.18621
+      ],
+      "text": "To Ravine"
+    }
+  ],
+  "hushed_river_valley": [
+    {
+      "target": "mountain_town",
+      "bbox": [
+        0.26819,
+        0.78773,
+        0.31377,
+        0.79194
+      ],
+      "text": "TO MOUNTAIN TOWN"
+    }
+  ],
+  "mountain_town": [
+    {
+      "target": "forlorn_muskeg",
+      "bbox": [
+        0.08184,
+        0.80894,
+        0.11954,
+        0.82094
+      ],
+      "text": "To Forlorn Muskeg"
+    },
+    {
+      "target": "hushed_river_valley",
+      "bbox": [
+        0.52422,
+        0.03958,
+        0.55531,
+        0.04609
+      ],
+      "text": "TO HUSHED RIVER VALLEY"
+    },
+    {
+      "target": "mystery_lake",
+      "bbox": [
+        0.77824,
+        0.53105,
+        0.81747,
+        0.53483
+      ],
+      "text": "TO MYSTERY LAKE"
+    }
+  ],
+  "ash_canyon": [
+    {
+      "target": "timberwolf_mountain",
+      "bbox": [
+        0.33718,
+        0.75747,
+        0.37115,
+        0.76509
+      ],
+      "text": "TO TIMBERWOLF MOUNTAIN"
+    },
+    {
+      "target": "timberwolf_mountain",
+      "bbox": [
+        0.84883,
+        0.78453,
+        0.89945,
+        0.79721
+      ],
+      "text": "To Timberwolf Mountain"
+    }
+  ],
+  "blackrock": [
+    {
+      "target": "keepers_pass",
+      "bbox": [
+        0.36796,
+        0.79299,
+        0.41898,
+        0.81818
+      ],
+      "text": "To Keeper's Pass North & South Valley"
+    },
+    {
+      "target": "pleasant_valley",
+      "bbox": [
+        0.36853,
+        0.8064,
+        0.40337,
+        0.81818
+      ],
+      "text": "To Pleasant Valley"
+    },
+    {
+      "target": "timberwolf_mountain",
+      "bbox": [
+        0.76267,
+        0.55142,
+        0.79177,
+        0.55869
+      ],
+      "text": "TO TIMBERWOLF MOUNTAIN"
+    }
+  ],
+  "forsaken_airfield": [
+    {
+      "target": "sundered_pass",
+      "bbox": [
+        0.94247,
+        0.41935,
+        0.97124,
+        0.42242
+      ],
+      "text": "TO SUNDERED PASS"
+    },
+    {
+      "target": "transfer_pass",
+      "bbox": [
+        0.67028,
+        0.79862,
+        0.69811,
+        0.8073
+      ],
+      "text": "To Transfer Pass"
+    },
+    {
+      "target": "zone_of_contamination",
+      "bbox": [
+        0.94448,
+        0.41281,
+        0.96856,
+        0.41882
+      ],
+      "text": "TO ZONE OF CONIAMINAIION"
+    }
+  ],
+  "sundered_pass": [
+    {
+      "target": "forsaken_airfield",
+      "bbox": [
+        0.12019,
+        0.61043,
+        0.14352,
+        0.61704
+      ],
+      "text": "TO FORSAKEN AIRFIELD"
+    },
+    {
+      "target": "transfer_pass",
+      "bbox": [
+        0.34763,
+        0.85602,
+        0.379,
+        0.86542
+      ],
+      "text": "To Transfer Pass"
+    },
+    {
+      "target": "zone_of_contamination",
+      "bbox": [
+        0.11807,
+        0.60383,
+        0.14564,
+        0.60983
+      ],
+      "text": "TO ZONE OF CONTAMINATION"
+    }
+  ],
+  "zone_of_contamination": [
+    {
+      "target": "forsaken_airfield",
+      "bbox": [
+        0.39747,
+        0.77307,
+        0.42644,
+        0.78078
+      ],
+      "text": "TO FORSAKEN AIRFIELD"
+    },
+    {
+      "target": "sundered_pass",
+      "bbox": [
+        0.39168,
+        0.78175,
+        0.43288,
+        0.78517
+      ],
+      "text": "TO SUNDERED PASS"
+    },
+    {
+      "target": "transfer_pass",
+      "bbox": [
+        0.91888,
+        0.71616,
+        0.96008,
+        0.72864
+      ],
+      "text": "To Transfer Pass"
+    }
+  ],
+  "crumbling_highway": [
+    {
+      "target": "coastal_highway",
+      "bbox": [
+        0.06295,
+        0.5399,
+        0.1402,
+        0.57418
+      ],
+      "text": "To Coastal Highway"
+    },
+    {
+      "target": "desolation_point",
+      "bbox": [
+        0.8207,
+        0.34387,
+        0.91607,
+        0.35351
+      ],
+      "text": "TO DESOLATION POINT"
+    }
+  ],
+  "far_range": [
+    {
+      "target": "broken_railroad",
+      "bbox": [
+        0.87852,
+        0.21364,
+        0.91797,
+        0.24342
+      ],
+      "text": "To Broken Railroad"
+    },
+    {
+      "target": "transfer_pass",
+      "bbox": [
+        0.0757,
+        0.50778,
+        0.11762,
+        0.53891
+      ],
+      "text": "To Transfer Pass"
+    }
+  ],
+  "transfer_pass": [
+    {
+      "target": "far_range",
+      "bbox": [
+        0.80876,
+        0.90226,
+        0.88525,
+        0.92367
+      ],
+      "text": "To Far Range Branch Line"
+    },
+    {
+      "target": "forsaken_airfield",
+      "bbox": [
+        0.38299,
+        0.46858,
+        0.45345,
+        0.48999
+      ],
+      "text": "To Forsaken Airfield"
+    },
+    {
+      "target": "sundered_pass",
+      "bbox": [
+        0.28447,
+        0.06617,
+        0.35785,
+        0.08854
+      ],
+      "text": "To Sundered Pass"
+    },
+    {
+      "target": "zone_of_contamination",
+      "bbox": [
+        0.846,
+        0.08201,
+        0.93155,
+        0.10438
+      ],
+      "text": "To Zone of Contamination"
+    }
+  ],
+  "ravine": [
+    {
+      "target": "bleak_inlet",
+      "bbox": [
+        0.52615,
+        0.85098,
+        0.59736,
+        0.8649
+      ],
+      "text": "To Bleak Inlet"
+    },
+    {
+      "target": "coastal_highway",
+      "bbox": [
+        0.88835,
+        0.72006,
+        0.94198,
+        0.75561
+      ],
+      "text": "To Coastal Highway"
+    },
+    {
+      "target": "mystery_lake",
+      "bbox": [
+        0.04034,
+        0.72094,
+        0.09664,
+        0.75348
+      ],
+      "text": "To Mystery Lake"
+    }
+  ],
+  "winding_river": [],
+  "keepers_pass": [
+    {
+      "target": "blackrock",
+      "bbox": [
+        0.83432,
+        0.15116,
+        0.91501,
+        0.15929
+      ],
+      "text": "To Blackrock"
+    },
+    {
+      "target": "pleasant_valley",
+      "bbox": [
+        0.5894,
+        0.67934,
+        0.66326,
+        0.70011
+      ],
+      "text": "To Pleasant Valley"
+    }
+  ]
+}
