@@ -4664,6 +4664,10 @@ let worldMousePanStartX = 0, worldMousePanStartY = 0;
 
 mapContainer.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;  // primary only
+  // preventDefault blocks the browser's native img-drag (which otherwise
+  // starts a "drag this image" gesture as soon as the cursor moves on the
+  // world-map img). Click events still fire, so region-btn taps still work.
+  e.preventDefault();
   worldMouseDragging = true;
   worldDragMoved = false;
   worldMouseDragStartX = e.clientX;
