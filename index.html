@@ -5107,15 +5107,23 @@ const WORLD_MAX_ZOOM = 8;
 let worldZoom = 1, worldPanX = 0, worldPanY = 0;
 
 function applyWorldTransform() {
-  // Keep the map's centre inside the viewport so a panic-pan can't lose
-  // the map off-screen. At zoom 1 with initial pan this is a no-op.
+  // Clamp pan so the map can't drift past the viewport edges. When the
+  // scaled map is wider/taller than the viewport, the user can pan to
+  // any edge or corner; when it fits, we lock to centred. transform-origin
+  // is 0 0, so panX/panY are the map's top-left in viewport coords.
   const w = mapContainer.offsetWidth;
   const h = mapContainer.offsetHeight;
   if (w && h) {
-    const halfW = (w * worldZoom) / 2;
-    const halfH = (h * worldZoom) / 2;
-    worldPanX = Math.min(Math.max(worldPanX, -halfW), window.innerWidth - halfW);
-    worldPanY = Math.min(Math.max(worldPanY, -halfH), window.innerHeight - halfH);
+    const sw = w * worldZoom;
+    const sh = h * worldZoom;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    worldPanX = sw <= vw
+      ? (vw - sw) / 2
+      : Math.min(0, Math.max(vw - sw, worldPanX));
+    worldPanY = sh <= vh
+      ? (vh - sh) / 2
+      : Math.min(0, Math.max(vh - sh, worldPanY));
   }
   mapContainer.style.transform =
     `translate(${worldPanX}px, ${worldPanY}px) scale(${worldZoom})`;
