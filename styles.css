@@ -708,6 +708,10 @@ body.detail-open #search-wrap { display: none; }
   overflow: hidden;
   position: relative;
   cursor: grab;
+  /* Stop the browser running its own pinch-zoom on top of ours: without
+     this, two-finger pinch on the canvas also scales the visual viewport,
+     dragging the detail header (pills, tabs) off-screen as a side effect. */
+  touch-action: none;
 }
 #map-canvas:active { cursor: grabbing; }
 
