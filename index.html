@@ -104,6 +104,7 @@
   </div>
 </div>
 
+<script src="./src/logic.js"></script>
 <script>
 // ════════════════════════════════════════════════════════════════════════════
 // PLACES INDEX (scraped from the Long Dark wiki by scrape_places.py --inline)
@@ -5357,70 +5358,19 @@ const REGIONS_BY_ID = Object.fromEntries(REGIONS.map(r => [r.id, r]));
 const MAX_RESULTS = 30;
 let activeIdx = -1;
 
-// Synonyms the user might type when looking for crafting stations. Mapped to
-// the canonical tool tag used in PLACE_TOOLS / TOOL_GLYPHS.
-const TOOL_SYNONYMS = {
-  'forge': 'forge', 'forges': 'forge', 'arrowhead': 'forge', 'arrowheads': 'forge', 'smithing': 'forge',
-  'workbench': 'workbench', 'workbenches': 'workbench', 'wb': 'workbench', 'craft': 'workbench', 'crafting': 'workbench',
-  'ammo': 'ammunition_workbench', 'ammunition': 'ammunition_workbench', 'reload': 'ammunition_workbench', 'reloading': 'ammunition_workbench',
-  'milling': 'milling_machine', 'mill': 'milling_machine',
-  'bed': 'bed', 'beds': 'bed', 'sleep': 'bed', 'bedroll': 'bed',
-  'stove': 'stove', 'fireplace': 'stove', 'fire': 'stove', 'barrel': 'stove',
-  'firstaid': 'first_aid', 'first-aid': 'first_aid', 'first_aid': 'first_aid', 'medkit': 'first_aid', 'medical': 'first_aid',
-  'icefishing': 'ice_fishing_hut', 'ice-fishing': 'ice_fishing_hut',
-};
-
+// Pure logic lives in src/logic.js so it can be unit-tested. These wrappers
+// preserve the original call signatures by closing over the inline data tables.
 function matchToolKeyword(q) {
-  // Returns a canonical tool tag if the trimmed query matches a synonym
-  // (full word, case-insensitive). Used by search to surface tool-bearing
-  // places that don't share their name with the tool.
-  const ql = q.trim().toLowerCase();
-  return TOOL_SYNONYMS[ql] || null;
+  return LDLogic.matchToolKeyword(q);
 }
 
 function searchPlaces(q) {
-  const ql = q.trim().toLowerCase();
-  if (!ql) return [];
-  const regionOrder = new Map(REGIONS.map((r, i) => [r.id, i]));
-  const matches = [];
-  // Score: exact prefix > word-boundary > substring; ties broken by region order in REGIONS.
-  for (const p of PLACES_INDEX) {
-    const nl = p.name.toLowerCase();
-    let score;
-    if (nl === ql) score = 0;
-    else if (nl.startsWith(ql)) score = 1;
-    else if (nl.includes(' ' + ql)) score = 2;
-    else if (nl.includes(ql)) score = 3;
-    else continue;
-    matches.push({ p, score, matchedTool: null });
-  }
-  // Tool-keyword expansion: any place tagged with the matched tool joins the
-  // results, even if its name doesn't contain the query. Score 1.5 keeps tool
-  // matches above generic substring hits but below name-prefix hits.
-  const tool = matchToolKeyword(q);
-  if (tool) {
-    const seen = new Set(matches.map(m => m.p.region + '|' + m.p.name));
-    for (const [region, places] of Object.entries(PLACE_TOOLS)) {
-      for (const [name, tags] of Object.entries(places)) {
-        if (!tags.includes(tool)) continue;
-        const key = region + '|' + name;
-        if (seen.has(key)) {
-          // Same place already matched by name — annotate with the tool so
-          // the result row still gets the highlighted badge.
-          const existing = matches.find(m => m.p.region === region && m.p.name === name);
-          if (existing) existing.matchedTool = tool;
-          continue;
-        }
-        seen.add(key);
-        matches.push({ p: { name, region }, score: 1.5, matchedTool: tool });
-      }
-    }
-  }
-  matches.sort((a, b) =>
-    a.score - b.score
-    || regionOrder.get(a.p.region) - regionOrder.get(b.p.region)
-    || a.p.name.localeCompare(b.p.name));
-  return matches.slice(0, MAX_RESULTS).map(m => ({ ...m.p, matchedTool: m.matchedTool }));
+  return LDLogic.searchPlaces(q, {
+    placesIndex: PLACES_INDEX,
+    placeTools:  PLACE_TOOLS,
+    regions:     REGIONS,
+    maxResults:  MAX_RESULTS,
+  });
 }
 
 function renderResults(results) {
@@ -5557,24 +5507,11 @@ let lastFocusBeforeModal = null;
 // (or applyHashState() called inline) drives the actual modal work.
 
 function parseHash() {
-  const raw = location.hash.slice(1);
-  if (!raw) return null;
-  // Format: region[/place[/tool]]. Tool segment activates setToolFilter so
-  // tool-keyword search results stay tool-filtered across deep links.
-  const parts = raw.split('/').map(decodeURIComponent);
-  return {
-    regionId: parts[0] || null,
-    placeName: parts[1] || null,
-    tool: parts[2] || null,
-  };
+  return LDLogic.parseHash(location.hash);
 }
 
 function makeHash(regionId, placeName, tool) {
-  if (!regionId) return '';
-  let h = '#' + encodeURIComponent(regionId);
-  if (placeName) h += '/' + encodeURIComponent(placeName);
-  if (placeName && tool) h += '/' + encodeURIComponent(tool);
-  return h;
+  return LDLogic.makeHash(regionId, placeName, tool);
 }
 
 function pushHash(regionId, placeName, tool) {
@@ -6033,49 +5970,18 @@ function setToolFilter(tool) {
 // route popover can let the user step through the path one region at a time
 // instead of teleporting straight to the destination.
 function bfsPaths(fromId) {
-  const visited = { [fromId]: { hops: 0, path: [fromId] } };
-  const queue = [fromId];
-  while (queue.length) {
-    const cur = queue.shift();
-    const region = REGIONS_BY_ID[cur];
-    if (!region) continue;
-    for (const neighbour of (region.adjacencies || [])) {
-      if (neighbour in visited) continue;
-      visited[neighbour] = {
-        hops: visited[cur].hops + 1,
-        path: [...visited[cur].path, neighbour],
-      };
-      queue.push(neighbour);
-    }
-  }
-  return visited;
+  return LDLogic.bfsPaths(fromId, REGIONS_BY_ID);
 }
 
 function findNearestTool(fromRegionId, tool) {
-  // Returns { regionId, placeName, hops, path } or null. Ties broken by
-  // lexical region order so results are deterministic.
-  const reachable = bfsPaths(fromRegionId);
-  let best = null;
-  for (const [regionId, places] of Object.entries(PLACE_TOOLS)) {
-    if (!(regionId in reachable)) continue;
-    const { hops, path } = reachable[regionId];
-    for (const [placeName, tags] of Object.entries(places)) {
-      if (!tags.includes(tool)) continue;
-      if (!best
-          || hops < best.hops
-          || (hops === best.hops && regionId < best.regionId)) {
-        best = { regionId, placeName, hops, path };
-      }
-    }
-  }
-  return best;
+  return LDLogic.findNearestTool(fromRegionId, tool, {
+    placeTools:  PLACE_TOOLS,
+    regionsById: REGIONS_BY_ID,
+  });
 }
 
 function pathSummary(path) {
-  // "via Ravine, Mystery Lake" for an intermediate-only summary; "" if direct.
-  if (path.length <= 2) return '';
-  const middle = path.slice(1, -1).map(id => (REGIONS_BY_ID[id] || {}).name || id);
-  return 'via ' + middle.join(', ');
+  return LDLogic.pathSummary(path, REGIONS_BY_ID);
 }
 
 // Tools the strip surfaces: rare crafting stations the user might travel
