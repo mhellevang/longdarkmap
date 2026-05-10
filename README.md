@@ -126,6 +126,22 @@ Click **Save** when the box looks right. The server writes the new bbox into `da
 
 The overrides file is the source of manual fixes; running `merge_boxes.py` on its own re-derives `data/place_boxes.json` from the OCR results in `data/tiles/` and layers overrides on top, so re-running the OCR pipeline never destroys hand-tuned boxes.
 
+## Tests
+
+```sh
+npm install   # one-time; installs jsdom (the only dev dep)
+npm test      # runs the full suite (~1s, ~50 tests)
+```
+
+Two layers, both running on Node's built-in `node:test`:
+
+- **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format.
+- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, and region-button clicks.
+
+`src/logic.js` dual-exports — it attaches `window.LDLogic` in the browser and `module.exports = LDLogic` in Node — so the same code is exercised in both environments. The inline `<script>` in `index.html` uses thin wrappers that pass the bundled data tables (`PLACES_INDEX`, `PLACE_TOOLS`, `REGIONS`, `REGIONS_BY_ID`) into those helpers.
+
+The DOM harness stubs all subresources except `src/logic.js` (served from disk), so tests don't depend on map images or CSS being fetchable. Pan/zoom transforms and pinch-zoom are out of scope — jsdom doesn't model real layout — and would need a headless browser (e.g. Playwright) if those regress.
+
 ## Map sources & credits
 
 All map artwork is community-made and hosted on Steam. The images bundled here are mirrored only so the static site is usable; full credit and ownership belong to the creators below. Please visit, rate, and follow their work on Steam. If either creator would prefer the images not be re-hosted, open an issue and they'll be removed.
@@ -143,6 +159,12 @@ All map artwork is community-made and hosted on Steam. The images bundled here a
 ```
 index.html              # App shell, HTML markup, JS, and inlined data (place index + place boxes + regions)
 styles.css              # All app styling, loaded by index.html
+src/logic.js            # Pure helpers (search ranking, BFS, hash routing). Loaded by index.html and unit-tested
+tests/                  # node:test suites (run via `npm test`)
+  harness.js            #   Boots index.html into jsdom for DOM-level tests
+  logic.test.js         #   Unit tests for src/logic.js
+  dom.test.js           #   Search dropdown, keyboard nav, hash routing
+package.json            # `npm test` script + jsdom dev-dep (the only npm dep in the project)
 tools/                  # Build-time scripts — only needed when refreshing the data:
   download_maps.py      #   Fetches region maps into maps/
   scrape_places.py      #   Scrapes the place index from the Long Dark Fandom wiki
