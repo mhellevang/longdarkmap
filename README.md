@@ -1,6 +1,6 @@
 # The Long Dark — Interactive Map
 
-A single-file, offline-friendly interactive map for *The Long Dark*. The world view shows Great Bear Island with clickable region labels; clicking a region opens a zoomable, pannable detail map.
+A no-build, offline-friendly interactive map for *The Long Dark*. The world view shows Great Bear Island with clickable region labels; clicking a region opens a zoomable, pannable detail map. Static files only — `index.html` + `styles.css` + `src/logic.js` + the bundled map images, no toolchain, no runtime server.
 
 **▶ Live demo: https://mhellevang.github.io/longdarkmap/**
 
