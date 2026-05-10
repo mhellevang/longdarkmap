@@ -3,7 +3,10 @@
   "private": true,
   "description": "Long Dark interactive map. Frontend is a single index.html; pure helpers live in src/logic.js and are unit-tested.",
   "scripts": {
-    "test": "node --test tests/*.js",
+    "test": "node --test tests/*.test.js",
     "dev": "node dev-server.js"
+  },
+  "devDependencies": {
+    "jsdom": "^29.1.1"
   }
 }

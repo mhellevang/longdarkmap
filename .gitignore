@@ -3,5 +3,6 @@
 .claude/
 .venv/
 __pycache__/
+node_modules/
 data/tiles/
 data/unclaimed_candidates.json
