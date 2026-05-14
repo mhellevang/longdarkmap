@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+
+from _inline import inline_block
 
 ROOT = Path(__file__).parent.parent
 OUT = ROOT / "data" / "places_index.json"
@@ -95,13 +96,7 @@ END = "// PLACES_INDEX_END"
 
 
 def inline_into_html(places: list[dict]) -> bool:
-    html = INDEX_HTML.read_text()
-    pattern = re.compile(rf"({re.escape(START)}\n).*?(\n\s*{re.escape(END)})", re.S)
-    if not pattern.search(html):
-        return False
-    payload = f"const PLACES_INDEX = {json.dumps(places, indent=2)};"
-    INDEX_HTML.write_text(pattern.sub(lambda m: m.group(1) + payload + m.group(2), html))
-    return True
+    return inline_block(INDEX_HTML, "PLACES_INDEX", START, END, places)
 
 
 def main(argv: list[str]) -> int:

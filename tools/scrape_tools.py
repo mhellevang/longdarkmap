@@ -21,9 +21,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
+
+from _inline import inline_block
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -81,13 +82,7 @@ def fetch_category(category: str) -> list[str]:
 
 
 def inline_into_html(tools: dict) -> bool:
-    html = INDEX_HTML.read_text()
-    pattern = re.compile(rf"({re.escape(START)}\n).*?(\n\s*{re.escape(END)})", re.S)
-    if not pattern.search(html):
-        return False
-    payload = f"const PLACE_TOOLS = {json.dumps(tools, indent=2)};"
-    INDEX_HTML.write_text(pattern.sub(lambda m: m.group(1) + payload + m.group(2), html))
-    return True
+    return inline_block(INDEX_HTML, "PLACE_TOOLS", START, END, tools)
 
 
 def main(argv: list[str]) -> int:

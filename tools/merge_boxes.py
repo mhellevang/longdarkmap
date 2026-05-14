@@ -21,6 +21,8 @@ import re
 import sys
 from pathlib import Path
 
+from _inline import inline_block
+
 ROOT = Path(__file__).parent.parent
 TILES_DIR = ROOT / "data" / "tiles"
 OUT = ROOT / "data" / "place_boxes.json"
@@ -105,13 +107,7 @@ def merge_region(region_dir: Path, canonical_names: list[str]) -> tuple[dict, li
 
 
 def inline_into_html(payload: dict) -> bool:
-    html = INDEX_HTML.read_text()
-    pattern = re.compile(rf"({re.escape(START)}\n).*?(\n\s*{re.escape(END)})", re.S)
-    if not pattern.search(html):
-        return False
-    body = f"const PLACE_BOXES = {json.dumps(payload, indent=2, ensure_ascii=False)};"
-    INDEX_HTML.write_text(pattern.sub(lambda m: m.group(1) + body + m.group(2), html))
-    return True
+    return inline_block(INDEX_HTML, "PLACE_BOXES", START, END, payload, ensure_ascii=False)
 
 
 def main(argv: list[str]) -> int:

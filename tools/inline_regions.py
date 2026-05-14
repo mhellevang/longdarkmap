@@ -14,9 +14,10 @@ Usage:
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
+
+from _inline import inline_block
 
 ROOT = Path(__file__).parent.parent
 INDEX_HTML = ROOT / "index.html"
@@ -37,25 +38,17 @@ BLOCKS = [
 ]
 
 
-def inline(html: str, block: dict) -> tuple[str, int]:
-    data = json.loads(block["file"].read_text())
-    start, end, var = block["start"], block["end"], block["var"]
-    pattern = re.compile(rf"({re.escape(start)}\n).*?(\n\s*{re.escape(end)})", re.S)
-    if not pattern.search(html):
-        print(f"sentinels {start}/{end} not found in {INDEX_HTML.name}", file=sys.stderr)
-        sys.exit(1)
-    payload = f"const {var} = {json.dumps(data, indent=2)};"
-    new_html = pattern.sub(lambda m: m.group(1) + payload + m.group(2), html)
-    count = len(data) if isinstance(data, (list, dict)) else 0
-    return new_html, count
-
-
 def main() -> int:
-    html = INDEX_HTML.read_text()
     for block in BLOCKS:
-        html, count = inline(html, block)
+        data = json.loads(block["file"].read_text())
+        if not inline_block(INDEX_HTML, block["var"], block["start"], block["end"], data):
+            print(
+                f"sentinels {block['start']}/{block['end']} not found in {INDEX_HTML.name}",
+                file=sys.stderr,
+            )
+            return 1
+        count = len(data) if isinstance(data, (list, dict)) else 0
         print(f"  inlined {block['var']:<14} ({count} entries) from {block['file'].name}")
-    INDEX_HTML.write_text(html)
     return 0
 
 
