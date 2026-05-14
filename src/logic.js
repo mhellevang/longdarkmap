@@ -8,18 +8,33 @@
 // big PLACES_INDEX / PLACE_TOOLS / REGIONS tables — so tests can pass small
 // fixtures.
 
-// Synonyms the user might type when looking for crafting stations. Mapped to
-// the canonical tool tag used in PLACE_TOOLS / TOOL_GLYPHS.
-const TOOL_SYNONYMS = {
-  'forge': 'forge', 'forges': 'forge', 'arrowhead': 'forge', 'arrowheads': 'forge', 'smithing': 'forge',
-  'workbench': 'workbench', 'workbenches': 'workbench', 'wb': 'workbench', 'craft': 'workbench', 'crafting': 'workbench',
-  'ammo': 'ammunition_workbench', 'ammunition': 'ammunition_workbench', 'reload': 'ammunition_workbench', 'reloading': 'ammunition_workbench',
-  'milling': 'milling_machine', 'mill': 'milling_machine',
-  'bed': 'bed', 'beds': 'bed', 'sleep': 'bed', 'bedroll': 'bed',
-  'stove': 'stove', 'fireplace': 'stove', 'fire': 'stove', 'barrel': 'stove',
-  'firstaid': 'first_aid', 'first-aid': 'first_aid', 'first_aid': 'first_aid', 'medkit': 'first_aid', 'medical': 'first_aid',
-  'icefishing': 'ice_fishing_hut', 'ice-fishing': 'ice_fishing_hut',
+// Single source of truth for crafting-tool tags. Each entry carries:
+//   glyph    — one-char badge text shown on map overlays + search rows
+//   label    — human-readable name for tooltips / pill text
+//   synonyms — words the user might type to surface this tool in search
+//              (include the canonical tag itself so identity matches work)
+//   nearby   — true if the detail-view "nearest tool" strip should surface
+//              this tool. Rare crafting stations only; common amenities
+//              (bed, stove, first_aid) aren't worth a nearest pill.
+//
+// TOOL_SYNONYMS, TOOL_GLYPHS, NEARBY_TOOLS, toolLabel are all derived from
+// this. Adding a tool means adding one entry here.
+const TOOLS_META = {
+  forge:                { glyph: 'F', label: 'Forge',                synonyms: ['forge', 'forges', 'arrowhead', 'arrowheads', 'smithing'], nearby: true },
+  workbench:            { glyph: 'W', label: 'Workbench',            synonyms: ['workbench', 'workbenches', 'wb', 'craft', 'crafting'],    nearby: true },
+  ammunition_workbench: { glyph: 'A', label: 'Ammunition Workbench', synonyms: ['ammo', 'ammunition', 'reload', 'reloading'],              nearby: true },
+  milling_machine:      { glyph: 'M', label: 'Milling Machine',      synonyms: ['milling', 'mill'],                                        nearby: true },
+  bed:                  { glyph: 'B', label: 'Bed',                  synonyms: ['bed', 'beds', 'sleep', 'bedroll'],                        nearby: false },
+  stove:                { glyph: 'S', label: 'Stove',                synonyms: ['stove', 'fireplace', 'fire', 'barrel'],                   nearby: false },
+  first_aid:            { glyph: '+', label: 'First Aid',            synonyms: ['firstaid', 'first-aid', 'first_aid', 'medkit', 'medical'], nearby: false },
+  ice_fishing_hut:      { glyph: 'I', label: 'Ice Fishing Hut',      synonyms: ['icefishing', 'ice-fishing'],                              nearby: false },
+  ice_fishing_hole:     { glyph: 'i', label: 'Ice Fishing Hole',     synonyms: [],                                                         nearby: false },
 };
+
+const TOOL_SYNONYMS = {};
+for (const [tag, meta] of Object.entries(TOOLS_META)) {
+  for (const syn of meta.synonyms) TOOL_SYNONYMS[syn] = tag;
+}
 
 function matchToolKeyword(q) {
   // Returns a canonical tool tag if the trimmed query matches a synonym
@@ -147,6 +162,7 @@ function makeHash(regionId, placeName, tool) {
 }
 
 const LDLogic = {
+  TOOLS_META,
   TOOL_SYNONYMS,
   matchToolKeyword,
   searchPlaces,

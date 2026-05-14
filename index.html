@@ -5884,20 +5884,17 @@ function setAllBoxesVisible(visible) {
 const toolsLayer = document.getElementById('tools-layer');
 let toolBadgeItems = [];  // [{ el, bbox }]
 
-const TOOL_GLYPHS = {
-  forge: 'F',
-  workbench: 'W',
-  ammunition_workbench: 'A',
-  milling_machine: 'M',
-  bed: 'B',
-  stove: 'S',
-  first_aid: '+',
-  ice_fishing_hut: 'I',
-  ice_fishing_hole: 'i',
-};
+// LDLogic.TOOLS_META is the source of truth. Glyph/label/nearby derivations
+// live there so adding a tool only requires one edit. (Classic-script
+// lexical scope is shared across <script> tags, so we can't re-alias the
+// name here — read via LDLogic each time.)
+const TOOL_GLYPHS = Object.fromEntries(
+  Object.entries(LDLogic.TOOLS_META).map(([tag, m]) => [tag, m.glyph])
+);
 
 function toolLabel(tool) {
-  return tool.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const meta = LDLogic.TOOLS_META[tool];
+  return meta ? meta.label : tool.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 function renderToolBadges() {
@@ -5985,8 +5982,10 @@ function pathSummary(path) {
 
 // Tools the strip surfaces: rare crafting stations the user might travel
 // for. Common amenities (bed/stove/first_aid) aren't worth a "nearest"
-// pill — they're everywhere.
-const NEARBY_TOOLS = ['forge', 'workbench', 'ammunition_workbench', 'milling_machine'];
+// pill — they're everywhere. Derived from TOOLS_META's `nearby` flag.
+const NEARBY_TOOLS = Object.entries(LDLogic.TOOLS_META)
+  .filter(([, m]) => m.nearby)
+  .map(([tag]) => tag);
 
 const toolsNearbyEl = document.getElementById('tools-nearby');
 
