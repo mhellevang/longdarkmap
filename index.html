@@ -5525,7 +5525,15 @@ function pushHash(regionId, placeName, tool) {
   }
 }
 
-function applyHashState() {
+// historyOp encodes what to do with the back-to-origin breadcrumb stack:
+//   { op: 'reset' }            — fresh entry (search, world-map click, browser nav)
+//   { op: 'pop' }              — back-step; caller already popped the stack
+//   { op: 'push', from: r }    — hop; push `from` onto the stack
+// Browser-driven hashchange always resets (we can't distinguish forward from
+// back from a fresh navigation, and conflating with the breadcrumb stack would
+// duplicate entries).
+function applyHashState(historyOp) {
+  historyOp = historyOp || { op: 'reset' };
   const parsed = parseHash();
   if (!parsed || !parsed.regionId) {
     if (detailView.style.display === 'flex') _closeModal();
@@ -5542,30 +5550,26 @@ function applyHashState() {
   const currentPlace = highlightTarget ? highlightTarget.name : null;
   const wantedPlace  = target ? target.name : null;
   if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool) {
-    // Drop any handoff state that the no-op would otherwise leak into the
-    // next openRegion call.
-    pendingPillOrigin = null;
-    pendingHistoryPop = false;
     return;
   }
-  _openRegion(region, target, parsed.tool);
+  _openRegion(region, target, parsed.tool, historyOp);
 }
 
-window.addEventListener('hashchange', applyHashState);
+window.addEventListener('hashchange', () => applyHashState({ op: 'reset' }));
 
 // Public APIs: callers (region-button click, search result, ✕, Escape)
 // update the hash. pushState doesn't fire hashchange, so we apply
 // synchronously after each push — the listener handles browser back/forward.
-function openRegion(region, target, tool) {
+function openRegion(region, target, tool, historyOp) {
   pushHash(region.id, target ? target.name : null, tool || null);
-  applyHashState();
+  applyHashState(historyOp || { op: 'reset' });
 }
 function closeModal() {
   pushHash(null, null, null);
-  applyHashState();
+  applyHashState({ op: 'reset' });
 }
 
-function _openRegion(region, target, tool) {
+function _openRegion(region, target, tool, historyOp) {
   lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
   mapTabsEl.innerHTML = '';
@@ -5588,18 +5592,13 @@ function _openRegion(region, target, tool) {
     });
   }
 
-  // History stack handoff. Three cases:
-  //   pop  — the back-button popped already, just render and continue.
-  //   pill — push the origin so the chain extends.
-  //   else — fresh entry (search, world-map click, hash); clear history.
-  if (pendingHistoryPop) {
-    pendingHistoryPop = false;
-  } else if (pendingPillOrigin) {
-    regionHistory.push(pendingPillOrigin);
+  if (historyOp.op === 'pop') {
+    // caller popped the stack already; leave it alone
+  } else if (historyOp.op === 'push') {
+    regionHistory.push(historyOp.from);
   } else {
     regionHistory = [];
   }
-  pendingPillOrigin = null;
   hideRoutePopover();
   renderBackToOrigin();
 
@@ -6178,17 +6177,15 @@ document.addEventListener('keydown', e => {
 // path without using browser history. The stack is cleared on a fresh entry
 // (search, world-map click, direct hash) and on modal close.
 //
-// Handoff to _openRegion is via two flags set by navigateFromPill /
-// the back button:
-//   pendingPillOrigin — region to push if the next _openRegion is a hop
-//   pendingHistoryPop — true if the next _openRegion is a back-step
+// Navigation intent is passed explicitly through openRegion's historyOp arg
+// (see _openRegion). No module-level handoff flags.
 let regionHistory = [];
-let pendingPillOrigin = null;
-let pendingHistoryPop = false;
 
 function navigateFromPill(originRegion, targetRegion, target, tool) {
-  pendingPillOrigin = originRegion && originRegion.id !== targetRegion.id ? originRegion : null;
-  openRegion(targetRegion, target, tool);
+  const op = originRegion && originRegion.id !== targetRegion.id
+    ? { op: 'push', from: originRegion }
+    : { op: 'reset' };
+  openRegion(targetRegion, target, tool, op);
 }
 
 const backToOriginBtn = document.getElementById('back-to-origin-btn');
@@ -6207,8 +6204,7 @@ function renderBackToOrigin() {
 backToOriginBtn.addEventListener('click', () => {
   if (!regionHistory.length) return;
   const prev = regionHistory.pop();
-  pendingHistoryPop = true;
-  openRegion(prev, null, null);
+  openRegion(prev, null, null, { op: 'pop' });
 });
 
 function onAllBoxMouseDown(e, name, bbox) {
@@ -6581,8 +6577,6 @@ function _closeModal() {
   detailCoordDisplay.classList.remove('has-bbox');
   currentRegion = null;
   regionHistory = [];
-  pendingPillOrigin = null;
-  pendingHistoryPop = false;
   // Return focus to whatever opened the modal (search result, region label)
   // so keyboard users don't get dumped at the top of the document.
   if (lastFocusBeforeModal && document.contains(lastFocusBeforeModal)) {
