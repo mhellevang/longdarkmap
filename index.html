@@ -5729,17 +5729,25 @@ function applyTransform() {
   updateZoomUI();
 }
 
+// Map an image-normalized bbox ([x1,y1,x2,y2] in 0..1) to canvas pixel
+// coords. All overlays (highlight, region links, all-boxes, tool badges,
+// draw box) project the same way; padding is layered on per-renderer.
+function bboxToCanvasRect([x1, y1, x2, y2]) {
+  return {
+    left:   panX + x1 * imgW * zoom,
+    top:    panY + y1 * imgH * zoom,
+    width:  (x2 - x1) * imgW * zoom,
+    height: (y2 - y1) * imgH * zoom,
+  };
+}
+
 function positionHighlight() {
   if (!highlightTarget) {
     highlightBox.style.display = 'none';
     highlightBox.classList.remove('dev-grab');
     return;
   }
-  const [x1, y1, x2, y2] = highlightTarget.bbox;
-  let left   = panX + x1 * imgW * zoom;
-  let top    = panY + y1 * imgH * zoom;
-  let width  = (x2 - x1) * imgW * zoom;
-  let height = (y2 - y1) * imgH * zoom;
+  let { left, top, width, height } = bboxToCanvasRect(highlightTarget.bbox);
   // A small constant pad around the label so the halo has a few pixels of
   // breathing room beyond the OCR text bbox. Scales with zoom only because
   // the label scales with zoom — fixed-pixel min sizes felt detached when
@@ -5811,15 +5819,13 @@ function positionRegionLinks() {
   // Slightly inflate the click target so OCR's tight text bbox is comfy
   // to tap on phones — half the box height, capped, both axes.
   for (const it of regionLinkItems) {
-    const [x1, y1, x2, y2] = it.bbox;
-    const w = (x2 - x1) * imgW * zoom;
-    const h = (y2 - y1) * imgH * zoom;
-    const padX = Math.min(w * 0.4, 24);
-    const padY = Math.min(h * 1.2, 24);
-    it.el.style.left   = (panX + x1 * imgW * zoom - padX) + 'px';
-    it.el.style.top    = (panY + y1 * imgH * zoom - padY) + 'px';
-    it.el.style.width  = (w + padX * 2) + 'px';
-    it.el.style.height = (h + padY * 2) + 'px';
+    const { left, top, width, height } = bboxToCanvasRect(it.bbox);
+    const padX = Math.min(width * 0.4, 24);
+    const padY = Math.min(height * 1.2, 24);
+    it.el.style.left   = (left - padX) + 'px';
+    it.el.style.top    = (top - padY) + 'px';
+    it.el.style.width  = (width + padX * 2) + 'px';
+    it.el.style.height = (height + padY * 2) + 'px';
   }
 }
 
@@ -5865,11 +5871,11 @@ function renderAllBoxes() {
 function positionAllBoxes() {
   if (!allBoxesLayer.classList.contains('visible')) return;
   for (const it of allBoxItems) {
-    const [x1, y1, x2, y2] = it.bbox;
-    it.el.style.left   = (panX + x1 * imgW * zoom) + 'px';
-    it.el.style.top    = (panY + y1 * imgH * zoom) + 'px';
-    it.el.style.width  = ((x2 - x1) * imgW * zoom) + 'px';
-    it.el.style.height = ((y2 - y1) * imgH * zoom) + 'px';
+    const { left, top, width, height } = bboxToCanvasRect(it.bbox);
+    it.el.style.left   = left + 'px';
+    it.el.style.top    = top + 'px';
+    it.el.style.width  = width + 'px';
+    it.el.style.height = height + 'px';
   }
 }
 
@@ -5940,9 +5946,9 @@ function positionToolBadges() {
   // bbox top-centre while it scales.
   const scale = (fitZoom > 0 ? zoom / fitZoom : 1) * 0.25;
   for (const it of toolBadgeItems) {
-    const [x1, y1, x2, y2] = it.bbox;
-    it.el.style.left = (panX + ((x1 + x2) / 2) * imgW * zoom) + 'px';
-    it.el.style.top  = (panY + y1 * imgH * zoom) + 'px';
+    const { left, top, width } = bboxToCanvasRect(it.bbox);
+    it.el.style.left = (left + width / 2) + 'px';
+    it.el.style.top  = top + 'px';
     it.el.style.transform = `translate(-50%, -100%) scale(${scale})`;
   }
 }
@@ -6272,14 +6278,12 @@ const bboxSaveBtn      = document.getElementById('bbox-save-btn');
 const bboxCancelBtn    = document.getElementById('bbox-cancel-btn');
 
 function updateDrawBox() {
-  const x1 = Math.min(drawNX0, drawNX1) * imgW * zoom + panX;
-  const y1 = Math.min(drawNY0, drawNY1) * imgH * zoom + panY;
-  const x2 = Math.max(drawNX0, drawNX1) * imgW * zoom + panX;
-  const y2 = Math.max(drawNY0, drawNY1) * imgH * zoom + panY;
-  drawBox.style.left   = x1 + 'px';
-  drawBox.style.top    = y1 + 'px';
-  drawBox.style.width  = (x2 - x1) + 'px';
-  drawBox.style.height = (y2 - y1) + 'px';
+  // currentBbox() normalises NW/SE so bboxToCanvasRect gets sorted coords.
+  const { left, top, width, height } = bboxToCanvasRect(currentBbox());
+  drawBox.style.left   = left + 'px';
+  drawBox.style.top    = top + 'px';
+  drawBox.style.width  = width + 'px';
+  drawBox.style.height = height + 'px';
   drawBox.style.display = 'block';
 }
 
