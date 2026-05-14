@@ -26,13 +26,9 @@ const ROOT = __dirname;
 const PORT = Number(process.env.PORT) || 8765;
 const HOST = '127.0.0.1';
 
-const BOXES_FILE     = path.join(ROOT, 'data', 'place_boxes.json');
 const OVERRIDES_FILE = path.join(ROOT, 'data', 'place_boxes_overrides.json');
 const MERGE_SCRIPT   = path.join(ROOT, 'tools', 'merge_boxes.py');
 const PYTHON         = path.join(ROOT, '.venv', 'bin', 'python');
-const HTML_FILE      = path.join(ROOT, 'index.html');
-const SENTINEL_START = '// PLACE_BOXES_START';
-const SENTINEL_END   = '// PLACE_BOXES_END';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -68,38 +64,19 @@ function loadJson(file) {
   catch { return {}; }
 }
 
-function inlineIntoHtml(boxes) {
-  let html;
-  try { html = fs.readFileSync(HTML_FILE, 'utf8'); }
-  catch { return false; }
-  const re = new RegExp(
-    `(${SENTINEL_START}\\n)[\\s\\S]*?(\\n\\s*${SENTINEL_END})`
-  );
-  if (!re.test(html)) return false;
-  const body = `const PLACE_BOXES = ${JSON.stringify(boxes, null, 2)};`;
-  fs.writeFileSync(HTML_FILE, html.replace(re, `$1${body}$2`));
-  return true;
-}
-
 // Run merge_boxes.py to fold the new override into data/place_boxes.json AND
-// inline the merged result into index.html. Falls back to in-process merging
-// if Python isn't available, so the dev server still works on a clean clone.
+// inline the merged result into index.html. Python is required — the merge
+// logic has dedup rules (instance-suffix aliasing, paren-suffix bridging)
+// that would silently drift if reimplemented here.
 function runMerge() {
-  if (fs.existsSync(PYTHON) && fs.existsSync(MERGE_SCRIPT)) {
-    const r = spawnSync(PYTHON, [MERGE_SCRIPT, '--inline'], { cwd: ROOT, encoding: 'utf8' });
-    if (r.status === 0) return { ok: true, source: 'merge_boxes.py' };
-    console.warn('merge_boxes.py failed:', r.stderr || r.stdout);
+  if (!fs.existsSync(PYTHON) || !fs.existsSync(MERGE_SCRIPT)) {
+    return { ok: false, error: `merge requires ${PYTHON} and ${MERGE_SCRIPT}` };
   }
-  // Fallback: layer overrides on top of whatever's already in place_boxes.json.
-  const boxes = loadJson(BOXES_FILE);
-  const overrides = loadJson(OVERRIDES_FILE);
-  for (const [region, names] of Object.entries(overrides)) {
-    if (!boxes[region]) boxes[region] = {};
-    Object.assign(boxes[region], names);
+  const r = spawnSync(PYTHON, [MERGE_SCRIPT, '--inline'], { cwd: ROOT, encoding: 'utf8' });
+  if (r.status !== 0) {
+    return { ok: false, error: `merge_boxes.py failed: ${r.stderr || r.stdout}` };
   }
-  fs.writeFileSync(BOXES_FILE, JSON.stringify(boxes, null, 2) + '\n');
-  inlineIntoHtml(boxes);
-  return { ok: true, source: 'fallback' };
+  return { ok: true };
 }
 
 function round5(v) { return Math.round(v * 1e5) / 1e5; }
@@ -132,9 +109,12 @@ async function handleApi(req, res) {
     fs.writeFileSync(OVERRIDES_FILE, JSON.stringify(overrides, null, 2) + '\n');
 
     const merge = runMerge();
+    if (!merge.ok) {
+      console.warn(merge.error);
+      return send(res, 503, { error: merge.error });
+    }
 
-    console.log(`saved ${region}/${name} -> ${JSON.stringify(rounded)}` +
-                ` (overrides + ${merge.source})`);
+    console.log(`saved ${region}/${name} -> ${JSON.stringify(rounded)} (overrides + merge_boxes.py)`);
     return send(res, 200, { ok: true, region, name, bbox: rounded });
   }
   send(res, 404, { error: 'not found' });
