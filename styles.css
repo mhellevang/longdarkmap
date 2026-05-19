@@ -594,6 +594,84 @@ body.detail-open #search-wrap { display: none; }
   color: #f0f6ff;
 }
 
+/* ── Resources panel (legend-icon detections) ───────────────────────────── */
+/* Below the tools-nearby strip on its own row. Each pill represents one
+   resource type (moose/bear/wolf/timberwolf/cattails). Click cycles through
+   the hits; the active pill shows "i / n" + a coloured swatch matching
+   RESOURCES_META[tag].color. Empty when the open region has no detected
+   resources (it's hidden entirely via :empty in that case). */
+#resources-panel {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  align-items: center;
+  order: 5;       /* always after tools-nearby, even when both wrap */
+}
+#resources-panel:empty {
+  display: none;
+}
+.resources-label {
+  font-size: 11px;
+  color: rgba(180, 200, 220, 0.55);
+  font-family: Georgia, serif;
+  letter-spacing: 0.3px;
+  padding-right: 4px;
+}
+.resource-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  background: rgba(20, 28, 40, 0.72);
+  border: 1px solid rgba(110, 170, 230, 0.22);
+  border-radius: 14px;
+  cursor: pointer;
+  color: #c9d1d9;
+  font: 11px/1.2 inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+.resource-pill:hover {
+  background: rgba(110, 170, 230, 0.18);
+  border-color: rgba(110, 170, 230, 0.55);
+  color: #f0f6ff;
+}
+.resource-pill.active {
+  /* Echo the resource colour in the border so the active pill's identity
+     is unambiguous, even across very different resource types. */
+  border-color: var(--resource-color, rgba(110, 170, 230, 0.7));
+  background: color-mix(in srgb, var(--resource-color, #6eaae6) 18%, rgba(20, 28, 40, 0.72));
+  color: #f0f6ff;
+}
+.resource-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  flex-shrink: 0;
+}
+.resource-pill-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+.resource-pill-count {
+  color: rgba(180, 220, 180, 0.85);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+}
+.resource-pill-index {
+  /* Only rendered when the pill is active; empty otherwise. The leading
+     border-left visually separates "1 / 5" from the count. */
+  color: #8bb8e8;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(110, 170, 230, 0.22);
+}
+.resource-pill-index:empty {
+  display: none;
+}
+
 /* ── Route preview popover ──────────────────────────────────────────────── */
 /* Anchored below a clicked tool pill; lists each region in the path so the
    user can step through one transition at a time, instead of teleporting. */
@@ -935,6 +1013,18 @@ body.detail-open #search-wrap { display: none; }
   }
   #tools-nearby::-webkit-scrollbar { display: none; }
   .tool-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
+
+  /* Resources-panel: same horizontal-scroll treatment as tools-nearby so
+     all detected resource pills stay reachable on phone-width viewports. */
+  #resources-panel {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #resources-panel::-webkit-scrollbar { display: none; }
+  .resource-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
 
   /* Route popover: dock as a bottom sheet. The !important overrides override
      the inline top/right that anchorRoutePopover() sets relative to a pill —

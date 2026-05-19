@@ -36,6 +36,22 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
   for (const syn of meta.synonyms) TOOL_SYNONYMS[syn] = tag;
 }
 
+// Single source of truth for legend-icon resources detected by
+// tools/find_resources.py. Each entry mirrors TOOLS_META's shape:
+//   label    — display name shown on the resources panel
+//   color    — pill border + highlight stroke (CSS color)
+//   synonyms — words the user might type; the canonical tag is included so
+//              identity matches work in any future search wiring.
+//
+// Inlined data file is REGION_RESOURCES[region][tag] = [{bbox, score}].
+const RESOURCES_META = {
+  moose:      { label: 'Moose area',      color: '#1f7a3a', synonyms: ['moose'] },
+  bear:       { label: 'Bear area',       color: '#b85a1a', synonyms: ['bear'] },
+  wolf:       { label: 'Wolf area',       color: '#1a7fb8', synonyms: ['wolf'] },
+  timberwolf: { label: 'Timberwolf pack', color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
+  cattails:   { label: 'Cattails',        color: '#a14fb0', synonyms: ['cattails', 'cattail'] },
+};
+
 function matchToolKeyword(q) {
   // Returns a canonical tool tag if the trimmed query matches a synonym
   // (full word, case-insensitive). Used by search to surface tool-bearing
@@ -140,22 +156,51 @@ function pathSummary(path, regionsById) {
   return 'via ' + middle.join(', ');
 }
 
+// Sentinel prefix that distinguishes a resource-cycle segment from a normal
+// place name. Real place names never start with '$', so collisions are out.
+const RESOURCE_HASH_PREFIX = '$resource:';
+
 function parseHash(hashStr) {
-  // Format: region[/place[/tool]]. Tool segment activates setToolFilter so
-  // tool-keyword search results stay tool-filtered across deep links.
+  // Format variants:
+  //   #region                         — open region only
+  //   #region/place                   — open + highlight a named place
+  //   #region/place/tool              — same + carry a tool filter
+  //   #region/$resource:moose         — open + cycle 1st moose hit
+  //   #region/$resource:moose/3       — same + cycle 3rd hit (1-indexed)
   const raw = (hashStr || '').replace(/^#/, '');
   if (!raw) return null;
   const parts = raw.split('/').map(decodeURIComponent);
+  const regionId = parts[0] || null;
+  if (!regionId) return null;
+  if (parts[1] && parts[1].startsWith(RESOURCE_HASH_PREFIX)) {
+    const resource = parts[1].slice(RESOURCE_HASH_PREFIX.length) || null;
+    const idxRaw = parts[2] ? parseInt(parts[2], 10) : 1;
+    const resourceIndex = Number.isFinite(idxRaw) && idxRaw >= 1 ? idxRaw : 1;
+    return {
+      regionId, placeName: null, tool: null,
+      resource, resourceIndex,
+    };
+  }
   return {
-    regionId: parts[0] || null,
+    regionId,
     placeName: parts[1] || null,
     tool: parts[2] || null,
+    resource: null,
+    resourceIndex: null,
   };
 }
 
-function makeHash(regionId, placeName, tool) {
+function makeHash(regionId, placeName, tool, resource, resourceIndex) {
   if (!regionId) return '';
   let h = '#' + encodeURIComponent(regionId);
+  if (resource) {
+    h += '/' + encodeURIComponent(RESOURCE_HASH_PREFIX + resource);
+    // Omit index suffix when it's 1 to keep shareable URLs short.
+    if (resourceIndex && resourceIndex > 1) {
+      h += '/' + encodeURIComponent(String(resourceIndex));
+    }
+    return h;
+  }
   if (placeName) h += '/' + encodeURIComponent(placeName);
   if (placeName && tool) h += '/' + encodeURIComponent(tool);
   return h;
@@ -164,6 +209,8 @@ function makeHash(regionId, placeName, tool) {
 const LDLogic = {
   TOOLS_META,
   TOOL_SYNONYMS,
+  RESOURCES_META,
+  RESOURCE_HASH_PREFIX,
   matchToolKeyword,
   searchPlaces,
   bfsPaths,

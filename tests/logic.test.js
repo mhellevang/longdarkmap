@@ -249,24 +249,49 @@ test('parseHash: empty / null returns null', () => {
 test('parseHash: region only', () => {
   assert.deepEqual(L.parseHash('#mystery_lake'), {
     regionId: 'mystery_lake', placeName: null, tool: null,
+    resource: null, resourceIndex: null,
   });
 });
 
 test('parseHash: region + place', () => {
   assert.deepEqual(L.parseHash('#mystery_lake/Camp%20Office'), {
     regionId: 'mystery_lake', placeName: 'Camp Office', tool: null,
+    resource: null, resourceIndex: null,
   });
 });
 
 test('parseHash: region + place + tool', () => {
   assert.deepEqual(L.parseHash('#forlorn_muskeg/Forge%20Shed/forge'), {
     regionId: 'forlorn_muskeg', placeName: 'Forge Shed', tool: 'forge',
+    resource: null, resourceIndex: null,
   });
 });
 
 test('parseHash: handles missing leading #', () => {
   assert.deepEqual(L.parseHash('mystery_lake'), {
     regionId: 'mystery_lake', placeName: null, tool: null,
+    resource: null, resourceIndex: null,
+  });
+});
+
+test('parseHash: region + resource defaults to index 1', () => {
+  assert.deepEqual(L.parseHash('#coastal_highway/$resource%3Amoose'), {
+    regionId: 'coastal_highway', placeName: null, tool: null,
+    resource: 'moose', resourceIndex: 1,
+  });
+});
+
+test('parseHash: region + resource + index', () => {
+  assert.deepEqual(L.parseHash('#mystery_lake/$resource%3Acattails/7'), {
+    regionId: 'mystery_lake', placeName: null, tool: null,
+    resource: 'cattails', resourceIndex: 7,
+  });
+});
+
+test('parseHash: invalid resource index falls back to 1', () => {
+  assert.deepEqual(L.parseHash('#mystery_lake/$resource%3Awolf/garbage'), {
+    regionId: 'mystery_lake', placeName: null, tool: null,
+    resource: 'wolf', resourceIndex: 1,
   });
 });
 
@@ -306,5 +331,30 @@ test('makeHash / parseHash round-trip with special characters', () => {
   const place  = "Mountaineer's Hut";
   const tool   = 'workbench';
   const round  = L.parseHash(L.makeHash(region, place, tool));
-  assert.deepEqual(round, { regionId: region, placeName: place, tool });
+  assert.deepEqual(round, {
+    regionId: region, placeName: place, tool,
+    resource: null, resourceIndex: null,
+  });
+});
+
+test('makeHash: region + resource (index 1 omitted)', () => {
+  assert.equal(
+    L.makeHash('coastal_highway', null, null, 'moose', 1),
+    '#coastal_highway/%24resource%3Amoose',
+  );
+});
+
+test('makeHash: region + resource + index > 1', () => {
+  assert.equal(
+    L.makeHash('mystery_lake', null, null, 'cattails', 7),
+    '#mystery_lake/%24resource%3Acattails/7',
+  );
+});
+
+test('makeHash / parseHash round-trip for resource cycle', () => {
+  const round = L.parseHash(L.makeHash('mystery_lake', null, null, 'wolf', 3));
+  assert.deepEqual(round, {
+    regionId: 'mystery_lake', placeName: null, tool: null,
+    resource: 'wolf', resourceIndex: 3,
+  });
 });
