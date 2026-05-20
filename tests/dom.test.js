@@ -272,6 +272,59 @@ test('resources panel: hash deep-link to a resource hit activates the pill', asy
   } finally { close(); }
 });
 
+test('tool pill: clicking "Workbench here" cycles through instances', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+
+    let pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"].here');
+    assert.ok(pill, 'expected "Workbench here" pill on CH');
+
+    // First click: cycle activates, index shows "1 / N", pill goes .cycling.
+    fire(window, pill, 'click');
+    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
+    assert.ok(pill.classList.contains('cycling'), 'pill should be cycling after first click');
+    const idx1 = pill.querySelector('.tool-pill-cycle-index').textContent;
+    assert.match(idx1, /^1 \/ \d+$/, `first click should show "1 / N", got "${idx1}"`);
+    const hashAfter1 = decodeURIComponent(window.location.hash);
+    assert.match(hashAfter1, /\/.+\/workbench$/, 'hash should carry place + workbench filter');
+
+    // Second click: advances to "2 / N", hash points at a different place.
+    fire(window, pill, 'click');
+    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
+    const idx2 = pill.querySelector('.tool-pill-cycle-index').textContent;
+    assert.match(idx2, /^2 \/ \d+$/, `second click should show "2 / N", got "${idx2}"`);
+    const hashAfter2 = decodeURIComponent(window.location.hash);
+    assert.notEqual(hashAfter1, hashAfter2,
+      'second click should navigate to a different place');
+  } finally { close(); }
+});
+
+test('tool pill: ✕ exits the cycle and drops the place from the hash', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+
+    let pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"].here');
+    fire(window, pill, 'click');
+    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
+    assert.ok(pill.classList.contains('cycling'), 'sanity: cycling after click');
+
+    const xBtn = pill.querySelector('.tool-pill-cycle-close');
+    assert.ok(xBtn, 'expected ✕ on cycling tool pill');
+    fire(window, xBtn, 'click');
+
+    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
+    assert.ok(!pill.classList.contains('cycling'), '✕ should exit cycling');
+    assert.equal(window.location.hash, '#coastal_highway',
+      'hash should drop the place segment after ✕');
+    assert.equal(document.getElementById('detail-view').style.display, 'flex',
+      'modal should stay open after ✕');
+  } finally { close(); }
+});
+
 test('resources panel: pill ✕ deselects the active resource (keeps modal open)', async () => {
   const { window, document, close } = await loadPage();
   try {

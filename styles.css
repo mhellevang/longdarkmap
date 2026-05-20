@@ -597,6 +597,38 @@ body.detail-open #search-wrap { display: none; }
   border-color: rgba(110, 170, 230, 0.7);
   color: #f0f6ff;
 }
+/* "Tool here" cycling — same UX shape as resource-pill cycling. The index
+   chip and ✕ are only visible when the pill is .cycling (i.e. there's a
+   live toolHereCycle pointed at this tool). */
+.tool-pill.cycling {
+  background: rgba(110, 170, 230, 0.22);
+  border-color: rgba(110, 170, 230, 0.7);
+  color: #f0f6ff;
+}
+.tool-pill-cycle-index {
+  color: #8bb8e8;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(110, 170, 230, 0.22);
+}
+.tool-pill-cycle-index:empty { display: none; }
+.tool-pill-cycle-close {
+  display: none;
+  margin-left: 4px;
+  padding: 0 4px;
+  color: rgba(220, 230, 245, 0.55);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.12s, background 0.12s;
+}
+.tool-pill-cycle-close:hover {
+  color: #ffd1d1;
+  background: rgba(244, 164, 164, 0.18);
+}
+.tool-pill.cycling .tool-pill-cycle-close { display: inline; }
 
 /* ── Resources panel (legend-icon detections) ───────────────────────────── */
 /* Sits inline on the right of the header, right after #tools-nearby — they

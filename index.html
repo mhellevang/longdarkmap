@@ -2117,10 +2117,10 @@ const PLACE_BOXES = {
       0.86248
     ],
     "Cinder Hills Coal Mine": [
-      0.53508,
-      0.17324,
-      0.5728,
-      0.21432
+      0.46516,
+      0.03051,
+      0.51315,
+      0.069
     ],
     "No. 3 Coal Mine": [
       0.51608,
@@ -31085,11 +31085,11 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
   // #region/$resource:moose/2 is loaded — selectResource will set up the
   // highlight after the resources panel renders.
   highlightTarget = target || null;
-  // Reset resource state when switching regions; selectResource (below) sets
-  // it back up if the new open is a resource-cycle hash.
-  // Direct assign instead of setResourceCycle — renderResourcesPanel runs
-  // shortly after and rebuilds the pill row from scratch.
+  // Reset cycle state when switching regions; resource/tool pill rendering
+  // below rebuilds the pill rows from scratch, so direct assignment is fine
+  // (no need to round-trip through the setters).
   resourceCycle = null;
+  toolHereCycle = null;
 
   if (region.maps.length > 1) {
     region.maps.forEach((m, i) => {
@@ -31161,6 +31161,12 @@ let currentToolFilter = null;
 // REGION_RESOURCES[currentRegion.id][tag]. Cleared on region switch and on
 // modal close. Mutate via setResourceCycle so the pill state stays in sync.
 let resourceCycle = null;
+// toolHereCycle: { tool, places, index } when the user is cycling through
+// the in-this-region instances of a crafting tool (e.g. all 5 CH
+// workbenches). `places` is the cycle-ordered list of place names (with
+// suspect/legend-strip bboxes filtered out so clicks always land on real
+// labels). Same null-when-idle pattern as resourceCycle.
+let toolHereCycle = null;
 const highlightBox = document.getElementById('highlight-box');
 
 const zoomOutBtn  = document.getElementById('zoom-out');
@@ -31534,22 +31540,42 @@ function renderToolsNearby(region) {
     pill.dataset.tool = tool;
     const here = hereByTool[tool];
     if (here && here.length) {
-      // Tool is present in this region → click highlights the badges.
+      // Tool is present in this region → click cycles through every instance.
       pill.classList.add('here');
+      // Build the cycle list once: skip places whose stored bbox is sitting
+      // inside the map's legend strip (OCR-to-wiki-name matcher sometimes
+      // misbinds names to legend text, e.g. "Coal Mine" → the legend's
+      // "Coal" entry). Falls back to the raw list so a region where every
+      // bbox is suspect still cycles through *something*.
+      const placeBoxes = PLACE_BOXES[region.id] || {};
+      const goodPlaces = here.filter(n => placeBoxes[n] && !LDLogic.looksLikeLegendBbox(placeBoxes[n]));
+      const cyclePlaces = goodPlaces.length ? goodPlaces : here.slice();
       pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
                      + `<span class="tool-pill-label">${toolLabel(tool)} here</span>`
-                     + `<span class="tool-pill-count">${here.length}</span>`;
+                     + `<span class="tool-pill-count">${here.length}</span>`
+                     + `<span class="tool-pill-cycle-index" aria-hidden="true"></span>`
+                     + `<span class="tool-pill-cycle-close" aria-hidden="true" title="Stop cycling (Esc)">✕</span>`;
       pill.title = `${toolLabel(tool)}: ${here.join(', ')}`;
+      // ✕ click handler — fires before the outer pill click via stopPropagation.
+      pill.querySelector('.tool-pill-cycle-close').addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        exitToolHereCycle();
+      });
       pill.addEventListener('click', () => {
-        // Prefer the first place whose stored bbox isn't sitting inside the
-        // map's legend strip. The OCR-to-wiki-name matcher sometimes binds
-        // place names to legend text (e.g. "Coal Mine" → the legend's "Coal"
-        // entry), and we don't want those to be the click landing spot.
-        const placeBoxes = PLACE_BOXES[region.id] || {};
-        const target = here.find(n => placeBoxes[n] && !LDLogic.looksLikeLegendBbox(placeBoxes[n]))
-                    || here[0];
-        const box = placeBoxes[target];
-        openRegion(region, box ? { name: target, bbox: box } : null, tool);
+        const next = LDLogic.nextResourceCycle(
+          toolHereCycle?.tool ?? null,
+          toolHereCycle?.index ?? 0,
+          tool,
+          cyclePlaces.length,
+        );
+        const place = cyclePlaces[next.index];
+        const box = placeBoxes[place];
+        // openRegion rebuilds the tools-nearby strip via _openRegion, which
+        // resets toolHereCycle. Set it back *after* the rebuild so the new
+        // pill ends up with the .cycling class and the right "i / N" index.
+        openRegion(region, box ? { name: place, bbox: box } : null, tool);
+        setToolHereCycle({ tool: next.tag, places: cyclePlaces, index: next.index });
       });
     } else {
       const nearest = findNearestTool(region.id, tool);
@@ -31844,6 +31870,43 @@ function exitResourceCycle() {
   clearResourceCycle();
   clearHighlight();
   if (currentRegion) pushHash({ regionId: currentRegion.id });
+}
+
+function setToolHereCycle(next) {
+  toolHereCycle = next;
+  updateToolPillState();
+}
+
+function clearToolHereCycle() {
+  setToolHereCycle(null);
+}
+
+// Parallel to exitResourceCycle: ESC / pill ✕ — drop the highlight + cycle
+// state and rewrite the URL to keep just the region. The tool *filter*
+// (badge accent) follows the URL, so dropping the place segment also drops
+// the filter; that matches the user's mental model of "stop showing me
+// this tool" when they press ESC.
+function exitToolHereCycle() {
+  if (!toolHereCycle) return;
+  clearToolHereCycle();
+  clearHighlight();
+  if (currentRegion) pushHash({ regionId: currentRegion.id });
+}
+
+function updateToolPillState() {
+  if (!toolsNearbyEl) return;
+  const pills = toolsNearbyEl.querySelectorAll('.tool-pill');
+  pills.forEach(p => {
+    const isActive = !!toolHereCycle && p.dataset.tool === toolHereCycle.tool;
+    p.classList.toggle('cycling', isActive);
+    const idxEl = p.querySelector('.tool-pill-cycle-index');
+    if (!idxEl) return;  // "nearest" pills don't have a cycle index slot
+    if (isActive) {
+      idxEl.textContent = `${toolHereCycle.index + 1} / ${toolHereCycle.places.length}`;
+    } else {
+      idxEl.textContent = '';
+    }
+  });
 }
 
 function updateResourcePillState() {
@@ -32261,6 +32324,7 @@ function _closeModal() {
   document.body.classList.remove('detail-open');
   clearHighlight();
   clearResourceCycle();
+  clearToolHereCycle();
   exitEditing();
   drawBox.style.display = 'none';
   detailCoordDisplay.style.display = 'none';
@@ -32281,12 +32345,12 @@ detailView.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  // Layered dismiss: if a resource pill is active, ESC clears just the
-  // cycle (and the URL hash drops the $resource: segment). A second ESC
-  // closes the modal as before.
-  if (detailView.style.display === 'flex' && resourceCycle) {
-    exitResourceCycle();
-    return;
+  // Layered dismiss: ESC peels off whichever cycle is active before closing
+  // the modal. Order: resource cycle > tool cycle > modal close. A user
+  // who's been clicking around can press ESC two or three times to retrace.
+  if (detailView.style.display === 'flex') {
+    if (resourceCycle) { exitResourceCycle(); return; }
+    if (toolHereCycle) { exitToolHereCycle(); return; }
   }
   closeModal();
 });
