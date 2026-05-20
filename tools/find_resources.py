@@ -129,7 +129,10 @@ CLASS_GROUPS: list[tuple[str, list[str], list[dict], int, float, float]] = [
                            "rose_hips", "lichen", "reishi"],        GREEN,         0, 0.0,  DEF_THR),
 ]
 # Disambiguator classes — found by the matcher to suppress false hits in
-# their color group, but not surfaced in data/region_resources.json.
+# their color group, but not surfaced in data/region_resources.json. Must
+# be a subset of classes mentioned in CLASS_GROUPS (asserted at module
+# load so a typo here gets caught instead of silently dropping a class
+# from the output).
 DISAMBIGUATOR_CLASSES = {"rabbit", "coal", "rose_hips", "lichen", "reishi"}
 
 # Internal classes that get merged into a single output class. Used when
@@ -140,6 +143,19 @@ MERGE_INTO = {
     "maple_sapling": "sapling",
     "birch_sapling": "sapling",
 }
+
+_all_classes = {c for _, classes, *_ in CLASS_GROUPS for c in classes}
+_unknown_disambiguators = DISAMBIGUATOR_CLASSES - _all_classes
+assert not _unknown_disambiguators, (
+    f"DISAMBIGUATOR_CLASSES references unknown class(es) not in CLASS_GROUPS: "
+    f"{sorted(_unknown_disambiguators)}"
+)
+_unknown_merge = set(MERGE_INTO.keys()) - _all_classes
+assert not _unknown_merge, (
+    f"MERGE_INTO references unknown source class(es) not in CLASS_GROUPS: "
+    f"{sorted(_unknown_merge)}"
+)
+del _all_classes, _unknown_disambiguators, _unknown_merge
 
 
 def color_mask(bgr: np.ndarray, ranges: list[dict], open_k: int = 0) -> np.ndarray:

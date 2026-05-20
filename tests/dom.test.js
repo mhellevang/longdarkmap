@@ -271,3 +271,25 @@ test('resources panel: hash deep-link to a resource hit activates the pill', asy
     assert.equal(cattPill.querySelector('.resource-pill-index').textContent.startsWith('2 / '), true);
   } finally { close(); }
 });
+
+test('resources panel: switching region clears the previous active pill', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    // Open Mystery Lake on moose hit #2.
+    window.location.hash = '#mystery_lake/' + encodeURIComponent('$resource:moose') + '/2';
+    fire(window, window, 'hashchange');
+    const mooseBefore = document.querySelector('#resources-panel .resource-pill[data-tag="moose"]');
+    assert.ok(mooseBefore && mooseBefore.classList.contains('active'),
+      'sanity: moose pill should be active before switching region');
+
+    // Switch to Coastal Highway with no resource hash — moose pill should
+    // no longer exist (different region's pill set) and no pill should be
+    // marked active.
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+
+    const activePills = document.querySelectorAll('#resources-panel .resource-pill.active');
+    assert.equal(activePills.length, 0,
+      'no pill should remain active after switching to a non-resource hash');
+  } finally { close(); }
+});

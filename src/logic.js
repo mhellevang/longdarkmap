@@ -36,14 +36,26 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
   for (const syn of meta.synonyms) TOOL_SYNONYMS[syn] = tag;
 }
 
-// Single source of truth for legend-icon resources detected by
-// tools/find_resources.py. Each entry mirrors TOOLS_META's shape:
-//   label    — display name shown on the resources panel
-//   color    — pill border + highlight stroke (CSS color)
-//   synonyms — words the user might type; the canonical tag is included so
-//              identity matches work in any future search wiring.
+// Single source of truth for legend-icon resources surfaced in the detail
+// view's "Resources" pill row. Each entry carries:
+//   label    — display name shown on the pill and used in the search-result
+//              "highlighted name" (e.g. "Moose area #2")
+//   color    — CSS colour for the pill border + swatch when the pill is
+//              active. Picked roughly to match the legend pictogram's
+//              palette so the active pill reads as "this kind of icon".
+//   synonyms — words the user might type to surface this resource (kept
+//              for future search-bar wiring; not consumed yet). Include
+//              the canonical tag itself so identity matches work.
 //
-// Inlined data file is REGION_RESOURCES[region][tag] = [{bbox, score}].
+// Source of detections is tools/find_resources.py → REGION_RESOURCES inlined
+// in index.html as `REGION_RESOURCES[region_id][tag] = [{bbox, score}]`.
+// Iteration order here is the visual order of the pills (regions don't
+// reorder them per-region — common resources first, rarer ones last).
+//
+// To add a resource: (1) add a canonical PNG to
+// data/legend_icons/canonical/<tag>.png, (2) extend CLASS_GROUPS in
+// tools/find_resources.py with the colour filter that captures it,
+// (3) add an entry here, (4) re-run find_resources.py --inline.
 const RESOURCES_META = {
   moose:          { label: 'Moose area',      color: '#1f7a3a', synonyms: ['moose'] },
   bear:           { label: 'Bear area',       color: '#b85a1a', synonyms: ['bear'] },
@@ -55,6 +67,21 @@ const RESOURCES_META = {
   sapling:        { label: 'Sapling',         color: '#3a8a3a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
   salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },
 };
+
+// Pure cycle-step helper for the resources panel: given the currently active
+// resource state and a click on some pill, return the next state.
+//   currentTag    — resource tag the user is currently cycling through, or null
+//   currentIndex  — 0-indexed hit within that resource (ignored if tag changes)
+//   clickedTag    — the pill the user just clicked
+//   hitCount      — how many hits the clicked resource has on this region (>= 1)
+//
+// Clicking a different pill resets the cycle to hit 0 of the new resource;
+// clicking the same pill again advances and wraps. Returns { tag, index }.
+function nextResourceCycle(currentTag, currentIndex, clickedTag, hitCount) {
+  if (hitCount <= 0) return { tag: clickedTag, index: 0 };
+  if (currentTag !== clickedTag) return { tag: clickedTag, index: 0 };
+  return { tag: clickedTag, index: (currentIndex + 1) % hitCount };
+}
 
 function matchToolKeyword(q) {
   // Returns a canonical tool tag if the trimmed query matches a synonym
@@ -218,6 +245,7 @@ const LDLogic = {
   TOOL_SYNONYMS,
   RESOURCES_META,
   RESOURCE_HASH_PREFIX,
+  nextResourceCycle,
   matchToolKeyword,
   searchPlaces,
   bfsPaths,

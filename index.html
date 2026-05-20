@@ -31050,7 +31050,7 @@ function applyHashState(historyOp) {
   // Already on this region/place/tool? Don't tear down + re-open.
   const currentPlace = highlightTarget ? highlightTarget.name : null;
   const wantedPlace  = target ? target.name : null;
-  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool && !currentResource) {
+  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool && !resourceCycle) {
     return;
   }
   _openRegion(region, target, parsed.tool, historyOp);
@@ -31087,8 +31087,9 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
   highlightTarget = target || null;
   // Reset resource state when switching regions; selectResource (below) sets
   // it back up if the new open is a resource-cycle hash.
-  currentResource = null;
-  currentResourceIndex = 0;
+  // Direct assign instead of setResourceCycle — renderResourcesPanel runs
+  // shortly after and rebuilds the pill row from scratch.
+  resourceCycle = null;
 
   if (region.maps.length > 1) {
     region.maps.forEach((m, i) => {
@@ -31154,11 +31155,12 @@ let currentRegion = null;
 // currentToolFilter: the tool tag carried in the URL hash, if any. Used by
 // applyHashState to decide whether a no-op short-circuit is safe.
 let currentToolFilter = null;
-// currentResource: the resource tag (moose/bear/wolf/timberwolf/cattails)
-// the user is currently cycling through, or null. currentResourceIndex is
-// 0-indexed into REGION_RESOURCES[regionId][tag]. Cleared on region switch.
-let currentResource = null;
-let currentResourceIndex = 0;
+// resourceCycle: { tag, index } when the user is cycling through a resource
+// (moose / bear / cattails / ...), or null when no pill is active. `tag` is
+// a key in RESOURCES_META; `index` is 0-indexed into
+// REGION_RESOURCES[currentRegion.id][tag]. Cleared on region switch and on
+// modal close. Mutate via setResourceCycle so the pill state stays in sync.
+let resourceCycle = null;
 const highlightBox = document.getElementById('highlight-box');
 
 const zoomOutBtn  = document.getElementById('zoom-out');
@@ -31762,11 +31764,20 @@ function onResourcePillClick(tag) {
   if (!currentRegion) return;
   const hits = (REGION_RESOURCES[currentRegion.id] || {})[tag] || [];
   if (!hits.length) return;
-  // Cycle to next hit if this pill is already active; otherwise start at 0.
-  const nextIdx = (currentResource === tag)
-    ? (currentResourceIndex + 1) % hits.length
-    : 0;
-  selectResource(tag, nextIdx);
+  const next = LDLogic.nextResourceCycle(
+    resourceCycle?.tag ?? null,
+    resourceCycle?.index ?? 0,
+    tag,
+    hits.length,
+  );
+  selectResource(next.tag, next.index);
+}
+
+// Only setter for resourceCycle; keeps the pill state in sync with the
+// underlying state so callers never have to remember to update both.
+function setResourceCycle(next) {
+  resourceCycle = next;
+  updateResourcePillState();
 }
 
 function selectResource(tag, index, opts) {
@@ -31776,8 +31787,6 @@ function selectResource(tag, index, opts) {
   // Normalise index into [0, hits.length).
   const n = hits.length;
   const idx = ((index % n) + n) % n;
-  currentResource = tag;
-  currentResourceIndex = idx;
   const meta = LDLogic.RESOURCES_META[tag];
   const hit = hits[idx];
   // Reuse the search-highlight target so existing focusHighlight /
@@ -31786,11 +31795,11 @@ function selectResource(tag, index, opts) {
     name: `${meta.label} #${idx + 1}`,
     bbox: hit.bbox,
   };
-  // If the image is loaded, focus immediately. If not (e.g. mid-_openRegion),
-  // loadDetailMap's onload will call focusHighlight once dimensions are known.
+  // If the image is loaded, focus immediately. If not (e.g. mid-_openRegion
+  // from a hash deep-link), loadDetailMap's onload will call focusHighlight
+  // once the natural dimensions are known.
   if (imgW > 1) focusHighlight();
-  else positionHighlight();
-  updateResourcePillState();
+  setResourceCycle({ tag, index: idx });
   if (!opts || opts.pushHash !== false) {
     pushHash({
       regionId: currentRegion.id,
@@ -31801,21 +31810,19 @@ function selectResource(tag, index, opts) {
 }
 
 function clearResourceCycle() {
-  currentResource = null;
-  currentResourceIndex = 0;
-  updateResourcePillState();
+  setResourceCycle(null);
 }
 
 function updateResourcePillState() {
   if (!resourcesPanelEl) return;
   const pills = resourcesPanelEl.querySelectorAll('.resource-pill');
   pills.forEach(p => {
-    const isActive = p.dataset.tag === currentResource;
+    const isActive = !!resourceCycle && p.dataset.tag === resourceCycle.tag;
     p.classList.toggle('active', isActive);
     const idxEl = p.querySelector('.resource-pill-index');
     if (isActive && currentRegion) {
-      const hits = (REGION_RESOURCES[currentRegion.id] || {})[currentResource] || [];
-      idxEl.textContent = `${currentResourceIndex + 1} / ${hits.length}`;
+      const hits = (REGION_RESOURCES[currentRegion.id] || {})[resourceCycle.tag] || [];
+      idxEl.textContent = `${resourceCycle.index + 1} / ${hits.length}`;
     } else {
       idxEl.textContent = '';
     }
