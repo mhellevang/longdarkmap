@@ -272,6 +272,55 @@ test('resources panel: hash deep-link to a resource hit activates the pill', asy
   } finally { close(); }
 });
 
+test('resources panel: pill ✕ deselects the active resource (keeps modal open)', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#coastal_highway/' + encodeURIComponent('$resource:cattails') + '/2';
+    fire(window, window, 'hashchange');
+
+    const cattPill = document.querySelector('#resources-panel .resource-pill[data-tag="cattails"]');
+    assert.ok(cattPill && cattPill.classList.contains('active'),
+      'sanity: cattails pill should be active before exit');
+
+    const closeBtn = cattPill.querySelector('.resource-pill-close');
+    assert.ok(closeBtn, 'expected a ✕ inside the active pill');
+    fire(window, closeBtn, 'click');
+
+    assert.ok(!cattPill.classList.contains('active'),
+      'pill should no longer be active after ✕ click');
+    // Modal stays open — only the cycle is cleared.
+    assert.equal(document.getElementById('detail-view').style.display, 'flex',
+      'modal should remain open after pill ✕');
+    // Hash drops the resource segment but keeps the region.
+    assert.equal(window.location.hash, '#coastal_highway');
+  } finally { close(); }
+});
+
+test('resources panel: ESC clears the active resource before closing the modal', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#mystery_lake/' + encodeURIComponent('$resource:moose') + '/2';
+    fire(window, window, 'hashchange');
+
+    const moosePill = document.querySelector('#resources-panel .resource-pill[data-tag="moose"]');
+    assert.ok(moosePill && moosePill.classList.contains('active'),
+      'sanity: moose pill should be active before ESC');
+
+    // First ESC: clears the cycle, modal stays open.
+    fire(window, document, 'keydown', { key: 'Escape' });
+    assert.ok(!moosePill.classList.contains('active'),
+      'first ESC should clear the active pill');
+    assert.equal(document.getElementById('detail-view').style.display, 'flex',
+      'first ESC should leave the modal open');
+    assert.equal(window.location.hash, '#mystery_lake');
+
+    // Second ESC: closes the modal as before.
+    fire(window, document, 'keydown', { key: 'Escape' });
+    assert.notEqual(document.getElementById('detail-view').style.display, 'flex',
+      'second ESC should close the modal');
+  } finally { close(); }
+});
+
 test('resources panel: switching region clears the previous active pill', async () => {
   const { window, document, close } = await loadPage();
   try {

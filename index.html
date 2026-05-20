@@ -31750,6 +31750,22 @@ function renderResourcesPanel(region) {
     indexEl.setAttribute('aria-hidden', 'true');
     pill.appendChild(indexEl);
 
+    // Visible only when the pill is active (CSS-driven via .active parent).
+    // Clicking it exits the cycle without closing the region. Spans rather
+    // than <button> so we don't nest interactive elements inside the
+    // outer <button>; keyboard users have ESC for the same purpose.
+    const closeEl = document.createElement('span');
+    closeEl.className = 'resource-pill-close';
+    closeEl.setAttribute('aria-hidden', 'true');
+    closeEl.title = 'Stop cycling this resource (Esc)';
+    closeEl.textContent = '✕';
+    closeEl.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      exitResourceCycle();
+    });
+    pill.appendChild(closeEl);
+
     pill.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -31811,6 +31827,17 @@ function selectResource(tag, index, opts) {
 
 function clearResourceCycle() {
   setResourceCycle(null);
+}
+
+// User-driven cycle exit (ESC key, pill ✕ click): drop the highlight, clear
+// the pill state, and rewrite the URL to omit the $resource: segment while
+// keeping the region. _closeModal calls clearResourceCycle directly because
+// it handles the hash itself (resets to empty).
+function exitResourceCycle() {
+  if (!resourceCycle) return;
+  clearResourceCycle();
+  clearHighlight();
+  if (currentRegion) pushHash({ regionId: currentRegion.id });
 }
 
 function updateResourcePillState() {
@@ -32247,7 +32274,15 @@ detailView.addEventListener('click', e => {
   if (e.target === detailView) closeModal();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key !== 'Escape') return;
+  // Layered dismiss: if a resource pill is active, ESC clears just the
+  // cycle (and the URL hash drops the $resource: segment). A second ESC
+  // closes the modal as before.
+  if (detailView.style.display === 'flex' && resourceCycle) {
+    exitResourceCycle();
+    return;
+  }
+  closeModal();
 });
 
 // Keyboard pan/zoom in the detail view. Arrows pan (Shift = larger step);

@@ -669,6 +669,28 @@ body.detail-open #search-wrap { display: none; }
 .resource-pill-index:empty {
   display: none;
 }
+/* Pill ✕ — only rendered for the active pill (CSS-driven via .active
+   parent). Click clears the cycle without closing the region. Padding is
+   generous so the ✕ has a reasonable tap target without enlarging the pill
+   when inactive. */
+.resource-pill-close {
+  display: none;
+  margin-left: 4px;
+  padding: 0 4px;
+  color: rgba(220, 230, 245, 0.55);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.12s, background 0.12s;
+}
+.resource-pill-close:hover {
+  color: #ffd1d1;
+  background: rgba(244, 164, 164, 0.18);
+}
+.resource-pill.active .resource-pill-close {
+  display: inline;
+}
 
 /* ── Route preview popover ──────────────────────────────────────────────── */
 /* Anchored below a clicked tool pill; lists each region in the path so the
