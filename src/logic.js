@@ -68,6 +68,19 @@ const RESOURCES_META = {
   salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },
 };
 
+// Heuristic: does this bbox look like it landed inside the map's legend
+// strip rather than on real on-map content? HokuOwl's region maps put the
+// legend at the very top or very bottom of the image (depending on region),
+// so any bbox whose vertical centre sits inside a thin outer band is almost
+// certainly a bad OCR match against legend text rather than a real label.
+// Used by the tool-pill "here" click to skip places with bogus bboxes when
+// picking which workbench / forge / etc. to navigate to first.
+function looksLikeLegendBbox(bbox) {
+  if (!Array.isArray(bbox) || bbox.length !== 4) return false;
+  const cy = (bbox[1] + bbox[3]) / 2;
+  return cy < 0.08 || cy > 0.88;
+}
+
 // Pure cycle-step helper for the resources panel: given the currently active
 // resource state and a click on some pill, return the next state.
 //   currentTag    — resource tag the user is currently cycling through, or null
@@ -245,6 +258,7 @@ const LDLogic = {
   TOOL_SYNONYMS,
   RESOURCES_META,
   RESOURCE_HASH_PREFIX,
+  looksLikeLegendBbox,
   nextResourceCycle,
   matchToolKeyword,
   searchPlaces,

@@ -238,6 +238,29 @@ test('pathSummary: falls back to id when region unknown', () => {
   assert.equal(L.pathSummary(path, REGIONS_BY_ID), 'via unknown_region');
 });
 
+// ─── looksLikeLegendBbox ─────────────────────────────────────────────────────
+
+test('looksLikeLegendBbox: bottom-edge bbox flagged as suspect', () => {
+  // y-centre = 0.925 → in the bottom legend strip (HokuOwl's most-common layout)
+  assert.equal(L.looksLikeLegendBbox([0.516, 0.923, 0.525, 0.927]), true);
+});
+
+test('looksLikeLegendBbox: top-edge bbox flagged as suspect', () => {
+  // y-centre = 0.04 → in a top-of-map legend (Mystery Lake style)
+  assert.equal(L.looksLikeLegendBbox([0.78, 0.03, 0.80, 0.05]), true);
+});
+
+test('looksLikeLegendBbox: mid-map bbox not flagged', () => {
+  assert.equal(L.looksLikeLegendBbox([0.788, 0.319, 0.817, 0.333]), false);
+  assert.equal(L.looksLikeLegendBbox([0.30, 0.50, 0.32, 0.52]), false);
+});
+
+test('looksLikeLegendBbox: malformed input returns false (no false-positive suppression)', () => {
+  assert.equal(L.looksLikeLegendBbox(null), false);
+  assert.equal(L.looksLikeLegendBbox([0.5, 0.5]), false);
+  assert.equal(L.looksLikeLegendBbox('not a bbox'), false);
+});
+
 // ─── nextResourceCycle ───────────────────────────────────────────────────────
 
 test('nextResourceCycle: clicking a different pill resets to index 0', () => {

@@ -2117,10 +2117,10 @@ const PLACE_BOXES = {
       0.86248
     ],
     "Cinder Hills Coal Mine": [
-      0.51608,
-      0.92271,
-      0.52513,
-      0.92734
+      0.53508,
+      0.17324,
+      0.5728,
+      0.21432
     ],
     "No. 3 Coal Mine": [
       0.51608,
@@ -31541,8 +31541,14 @@ function renderToolsNearby(region) {
                      + `<span class="tool-pill-count">${here.length}</span>`;
       pill.title = `${toolLabel(tool)}: ${here.join(', ')}`;
       pill.addEventListener('click', () => {
-        const target = here[0];
-        const box = (PLACE_BOXES[region.id] || {})[target];
+        // Prefer the first place whose stored bbox isn't sitting inside the
+        // map's legend strip. The OCR-to-wiki-name matcher sometimes binds
+        // place names to legend text (e.g. "Coal Mine" → the legend's "Coal"
+        // entry), and we don't want those to be the click landing spot.
+        const placeBoxes = PLACE_BOXES[region.id] || {};
+        const target = here.find(n => placeBoxes[n] && !LDLogic.looksLikeLegendBbox(placeBoxes[n]))
+                    || here[0];
+        const box = placeBoxes[target];
         openRegion(region, box ? { name: target, bbox: box } : null, tool);
       });
     } else {
