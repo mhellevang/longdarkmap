@@ -219,9 +219,6 @@ test('resources panel: opening a region populates pills for present resources', 
 
     const pills = document.querySelectorAll('#resources-panel .resource-pill');
     assert.ok(pills.length >= 1, 'expected at least one resource pill');
-    // The label prefix should be present.
-    assert.ok(document.querySelector('#resources-panel .resources-label'),
-      'expected the "On this map:" label');
   } finally { close(); }
 });
 

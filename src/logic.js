@@ -45,11 +45,15 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 //
 // Inlined data file is REGION_RESOURCES[region][tag] = [{bbox, score}].
 const RESOURCES_META = {
-  moose:      { label: 'Moose area',      color: '#1f7a3a', synonyms: ['moose'] },
-  bear:       { label: 'Bear area',       color: '#b85a1a', synonyms: ['bear'] },
-  wolf:       { label: 'Wolf area',       color: '#1a7fb8', synonyms: ['wolf'] },
-  timberwolf: { label: 'Timberwolf pack', color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
-  cattails:   { label: 'Cattails',        color: '#a14fb0', synonyms: ['cattails', 'cattail'] },
+  moose:          { label: 'Moose area',      color: '#1f7a3a', synonyms: ['moose'] },
+  bear:           { label: 'Bear area',       color: '#b85a1a', synonyms: ['bear'] },
+  wolf:           { label: 'Wolf area',       color: '#1a7fb8', synonyms: ['wolf'] },
+  timberwolf:     { label: 'Timberwolf pack', color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
+  cougar:         { label: 'Cougar territory', color: '#777a85', synonyms: ['cougar'] },
+  deer:           { label: 'Deer area',       color: '#2f3540', synonyms: ['deer'] },
+  cattails:       { label: 'Cattails',        color: '#a14fb0', synonyms: ['cattails', 'cattail'] },
+  sapling:        { label: 'Sapling',         color: '#3a8a3a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
+  salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },
 };
 
 function matchToolKeyword(q) {

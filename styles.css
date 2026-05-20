@@ -209,19 +209,23 @@ body {
   pointer-events: all;
   cursor: pointer;
   background: transparent;
-  border: 2px solid transparent;
+  border: 0;
   border-radius: 6px;
   padding: 0;
   box-sizing: border-box;
-  transition: background 0.12s ease, border-color 0.12s ease,
-              box-shadow 0.12s ease;
+  transition: box-shadow 0.18s ease;
 }
+/* Soft radial halo on hover, mirroring the resource-highlight glow but
+   in the region-link's red palette so the two emphasis styles share an
+   aesthetic without losing their distinct identities. No vignette here —
+   hover shouldn't dim the surrounding map. */
 .region-link:hover,
 .region-link:focus-visible {
-  background: rgba(244, 164, 164, 0.15);
-  border-color: rgba(244, 164, 164, 0.85);
-  box-shadow: 0 0 0 3px rgba(244, 164, 164, 0.25);
   outline: none;
+  box-shadow:
+    0 0 16px  3px  rgba(244, 164, 164, 0.65),
+    0 0 36px 12px  rgba(244, 164, 164, 0.35),
+    0 0 72px 22px  rgba(244, 164, 164, 0.18);
 }
 
 /* ── All-boxes overlay (dev mode) ────────────────────────────────────────── */
@@ -595,28 +599,22 @@ body.detail-open #search-wrap { display: none; }
 }
 
 /* ── Resources panel (legend-icon detections) ───────────────────────────── */
-/* Below the tools-nearby strip on its own row. Each pill represents one
-   resource type (moose/bear/wolf/timberwolf/cattails). Click cycles through
-   the hits; the active pill shows "i / n" + a coloured swatch matching
-   RESOURCES_META[tag].color. Empty when the open region has no detected
-   resources (it's hidden entirely via :empty in that case). */
+/* Sits inline on the right of the header, right after #tools-nearby — they
+   share the same conceptual row ("things you can navigate to at a glance").
+   A thin left border visually separates the two groups without adding a
+   second strip. Each pill is one resource type; click cycles through hits.
+   Empty when the open region has no detected resources (hidden via :empty). */
 #resources-panel {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  flex-basis: 100%;
   align-items: center;
-  order: 5;       /* always after tools-nearby, even when both wrap */
+  padding-left: 10px;
+  margin-left: 4px;
+  border-left: 1px solid rgba(110, 170, 230, 0.18);
 }
 #resources-panel:empty {
   display: none;
-}
-.resources-label {
-  font-size: 11px;
-  color: rgba(180, 200, 220, 0.55);
-  font-family: Georgia, serif;
-  letter-spacing: 0.3px;
-  padding-right: 4px;
 }
 .resource-pill {
   display: inline-flex;
@@ -1015,10 +1013,17 @@ body.detail-open #search-wrap { display: none; }
   .tool-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
 
   /* Resources-panel: same horizontal-scroll treatment as tools-nearby so
-     all detected resource pills stay reachable on phone-width viewports. */
+     all detected resource pills stay reachable on phone-width viewports.
+     Forced to its own row here (the desktop layout uses a left border to
+     sit inline with tools-nearby; on mobile we drop the border and let it
+     break to a new line). */
   #resources-panel {
     flex-wrap: nowrap;
     overflow-x: auto;
+    flex-basis: 100%;
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 2px;
