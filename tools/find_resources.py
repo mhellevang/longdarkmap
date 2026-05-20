@@ -53,14 +53,13 @@ SCALES = [0.85, 0.95, 1.00, 1.05, 1.15]
 # configured per-group in CLASS_GROUPS below.
 SCORE_THRESHOLD_DEFAULT = 0.45
 NMS_IOU = 0.30
-# HokuOwl's region maps have a legend strip at the bottom ~22% of the image
-# for *most* regions, but Mystery Lake / Bleak Inlet / Forlorn Muskeg put
-# the legend at the top instead. Rather than maintain a per-region exclusion
-# rect, we detect legend areas after matching: a tight spatial cluster
-# containing very-high-score hits from multiple distinct classes (legend
-# swatches reproduce the icon exactly so they peak at ~0.98) is almost
-# certainly a legend. We then suppress *all* hits inside that bbox.
-LEGEND_TOP_FRAC = 0.78
+# Legend strips live in different positions on different HokuOwl maps —
+# bottom (Coastal Highway, most others) or top (Mystery Lake, Bleak Inlet,
+# Forlorn Muskeg). Rather than maintain a per-region exclusion rect, we
+# detect legend areas after matching: a tight spatial cluster containing
+# very-high-score hits from multiple distinct classes (legend swatches
+# reproduce the icon exactly so they peak at ~0.98) is almost certainly a
+# legend. We then suppress all hits inside that bbox.
 LEGEND_DETECT_SCORE = 0.95
 # Classes trusted to seed legend-area detection. Only the four red-brown
 # animals have low enough false-positive rates at >0.95 that their hits
@@ -211,9 +210,6 @@ def _match_template(map_mask_f: np.ndarray, tpl_mask: np.ndarray, cls: str,
                 continue
             result = cv2.matchTemplate(map_mask_f, tpl_s.astype(np.float32),
                                        cv2.TM_CCOEFF_NORMED)
-            legend_top_y = int(H * LEGEND_TOP_FRAC) - new_h
-            if 0 < legend_top_y < result.shape[0]:
-                result[legend_top_y:, :] = -1
             ys, xs = np.where(result >= score_threshold)
             density_threshold = density_min * tpl_sum if density_min > 0 else 0.0
             for y, x in zip(ys, xs):

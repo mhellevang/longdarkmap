@@ -61,6 +61,21 @@ The subagent prompt (`amenity_prompt.md`) constrains the output to a fixed canon
 
 Recall is uneven by map style: regions where amenities cluster in styled "info chips" next to each label (e.g. Quonset Garage in Coastal Highway) come back well-tagged; regions where amenity icons are drawn at their actual workshop building inside a building cluster (e.g. Coastal Townsite) often produce empty crops because the icon is outside the label-centred crop window. The wiki layer is what catches those.
 
+### Region resources
+
+The detail-view header carries a row of resource pills — one per legend pictogram detected on that region's map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit). Each pill shows the resource's name, total count, and a colour swatch.
+
+- **Click** a pill to highlight the first hit (reuses the existing dim-and-pulse animation).
+- **Click again** to cycle to the next hit — the pill shows `1 / N`, `2 / N`, … and wraps around.
+- **Click another pill** to switch resource and start from its first hit.
+- Closing the modal clears the cycle.
+
+The URL hash carries the cycle state, so any view is shareable:
+- `index.html#coastal_highway/$resource:moose` → opens Coastal Highway and highlights moose hit #1
+- `index.html#mystery_lake/$resource:cattails/7` → opens Mystery Lake and highlights cattails hit #7
+
+Hits are detected by `tools/find_resources.py` (see "Refreshing the region resources" below) and inlined into `index.html` between the `REGION_RESOURCES_START` / `REGION_RESOURCES_END` sentinels.
+
 ### Nearest-tool lookup
 
 Every region in `data/regions.json` carries an `adjacencies` field — a list of region IDs reachable via in-game transition zones, seeded from the Long Dark wiki's `connections` infobox field. The detail view shows a small pill row in its header for each rare crafting tool (forge, workbench, ammunition workbench, milling machine):
@@ -126,17 +141,45 @@ Click **Save** when the box looks right. The server writes the new bbox into `da
 
 The overrides file is the source of manual fixes; running `merge_boxes.py` on its own re-derives `data/place_boxes.json` from the OCR results in `data/tiles/` and layers overrides on top, so re-running the OCR pipeline never destroys hand-tuned boxes.
 
+## Refreshing the region resources
+
+`data/region_resources.json` holds detected legend-icon positions (moose, bear, wolf, deer, cougar, cattails, sapling, salt deposit, …) per region — fed straight into the detail-view's resource pills. To regenerate:
+
+```sh
+.venv/bin/python tools/find_resources.py             # all regions
+.venv/bin/python tools/find_resources.py mystery_lake # one region
+.venv/bin/python tools/find_resources.py --inline    # all + refresh index.html block
+.venv/bin/python tools/find_resources.py --inline-only # re-inline existing JSON, skip matching
+```
+
+The matcher uses OpenCV template matching against canonical legend swatches in `data/legend_icons/canonical/` (one PNG per resource). HokuOwl reuses the same vector icons across all 21 regions, so a single canonical set suffices.
+
+Pipeline per region:
+1. For each "class group" sharing an HSV colour filter (red-brown animals, brown cattails, black icons, gray cougar, green foraging), build a binary colour mask of the map.
+2. Multi-scale `TM_CCOEFF_NORMED` on the binary mask, against both the original template and its horizontal flip — animals on the map are drawn facing either direction.
+3. Cross-class NMS keeps each spatial cluster's highest-scoring class so moose / bear / wolf / timberwolf get disambiguated despite sharing the maroon palette.
+4. Auto legend-area suppression: clusters of high-score multi-class hits that touch a map edge get treated as legend swatches and zeroed out.
+5. Disambiguator templates (rabbit, coal, rose hips, lichen, reishi) compete in NMS but get dropped from the output — they exist to claim their own legend swatches and any on-map locations that look like them, so the user-facing classes don't false-positive on those.
+
+Per-group tuning knobs live in `CLASS_GROUPS` at the top of `find_resources.py`: morphological opening (kills thin text strokes for black/gray groups), a density floor on the matched bbox (rejects CCOEFF-high but sparse text-fragment matches), and a stricter score threshold for noisy groups.
+
+The maple and birch sapling templates run separately during matching (so both icon variants on the map get caught), then merge into a single `sapling` class at output time — the tiny M/B letter is too small for reliable matchTemplate discrimination, and the user just wants to find "a sapling".
+
+Coordinates are stored as `[x1, y1, x2, y2]` fractions (0..1) of the standard region map, same convention as `data/place_boxes.json`. Each hit also carries the matcher's confidence score.
+
+Requires `opencv-python-headless` and `numpy` from `requirements.txt`. Runtime is ~3 minutes for all 21 regions on an M-series Mac.
+
 ## Tests
 
 ```sh
 npm install   # one-time; installs jsdom (the only dev dep)
-npm test      # runs the full suite (~1s, ~50 tests)
+npm test      # runs the full suite (~2s, ~60 tests)
 ```
 
 Two layers, both running on Node's built-in `node:test`:
 
-- **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format.
-- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, and region-button clicks.
+- **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format (including the resource-cycle hash form).
+- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, region-button clicks, and the resources panel (pill rendering, click-to-activate, cycle progression, hash deep-link).
 
 `src/logic.js` dual-exports — it attaches `window.LDLogic` in the browser and `module.exports = LDLogic` in Node — so the same code is exercised in both environments. The inline `<script>` in `index.html` uses thin wrappers that pass the bundled data tables (`PLACES_INDEX`, `PLACE_TOOLS`, `REGIONS`, `REGIONS_BY_ID`) into those helpers.
 
@@ -178,6 +221,7 @@ tools/                  # Build-time scripts — only needed when refreshing the
   scrape_connections.py #   Scrapes per-region `connections` infobox → regions_connections_raw.json (audit trail)
   amenity_prep.py       #   Crops each PLACE_BOXES entry into per-place .jpg + legend.jpg for vision-LLM amenity tagging
   amenity_prompt.md     #   Subagent prompt template for the vision-LLM amenity pass
+  find_resources.py     #   OpenCV template-matching: finds legend pictograms (moose/bear/.../sapling) → region_resources.json + index.html inline
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
 data/regions.json       # Canonical region list (id, display name, world-map pos, map paths, wiki + Steam URLs, adjacencies)
@@ -187,6 +231,8 @@ data/place_boxes_overrides.json  # Manual edits from the dev server's Save butto
 data/crafting_tools.json         # {region: {name: [tool, ...]}} merge of wiki + extras + vision-LLM amenities (committed)
 data/crafting_tools_extra.json   # Manual seed for tools the wiki doesn't categorise — ammo workbench, milling machine (committed)
 data/regions_connections_raw.json # Wiki connections audit trail from scrape_connections.py (committed; small)
+data/region_resources.json # {region: {resource: [{bbox, score}]}} detected resource pictograms (committed; from find_resources.py)
+data/legend_icons/canonical/ # PNG templates per resource (moose.png, bear.png, …); shared across all regions
 data/tiles/             # Per-region tiled maps + OCR/amenity intermediates (intermediate; gitignored)
 ```
 

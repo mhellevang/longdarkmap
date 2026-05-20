@@ -194,7 +194,10 @@ function parseHash(hashStr) {
   };
 }
 
-function makeHash(regionId, placeName, tool, resource, resourceIndex) {
+function makeHash(opts) {
+  // opts: { regionId, placeName, tool, resource, resourceIndex } — same shape
+  // parseHash returns, so the round-trip is symmetric. All keys optional.
+  const { regionId, placeName, tool, resource, resourceIndex } = opts || {};
   if (!regionId) return '';
   let h = '#' + encodeURIComponent(regionId);
   if (resource) {

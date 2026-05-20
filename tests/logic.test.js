@@ -297,25 +297,26 @@ test('parseHash: invalid resource index falls back to 1', () => {
 
 // ─── makeHash ────────────────────────────────────────────────────────────────
 
-test('makeHash: no region returns empty string', () => {
-  assert.equal(L.makeHash(null, null, null), '');
-  assert.equal(L.makeHash(null, 'place', 'tool'), '');
+test('makeHash: empty / no region returns empty string', () => {
+  assert.equal(L.makeHash({}), '');
+  assert.equal(L.makeHash({ placeName: 'place', tool: 'tool' }), '');
+  assert.equal(L.makeHash(), '');
 });
 
 test('makeHash: region only', () => {
-  assert.equal(L.makeHash('mystery_lake', null, null), '#mystery_lake');
+  assert.equal(L.makeHash({ regionId: 'mystery_lake' }), '#mystery_lake');
 });
 
 test('makeHash: region + place', () => {
   assert.equal(
-    L.makeHash('mystery_lake', 'Camp Office', null),
+    L.makeHash({ regionId: 'mystery_lake', placeName: 'Camp Office' }),
     '#mystery_lake/Camp%20Office',
   );
 });
 
 test('makeHash: region + place + tool', () => {
   assert.equal(
-    L.makeHash('forlorn_muskeg', 'Forge Shed', 'forge'),
+    L.makeHash({ regionId: 'forlorn_muskeg', placeName: 'Forge Shed', tool: 'forge' }),
     '#forlorn_muskeg/Forge%20Shed/forge',
   );
 });
@@ -323,38 +324,37 @@ test('makeHash: region + place + tool', () => {
 test('makeHash: tool ignored without place', () => {
   // The browser-side openRegion never passes tool without place, but the
   // logic guards against it anyway.
-  assert.equal(L.makeHash('mystery_lake', null, 'forge'), '#mystery_lake');
+  assert.equal(L.makeHash({ regionId: 'mystery_lake', tool: 'forge' }), '#mystery_lake');
 });
 
 test('makeHash / parseHash round-trip with special characters', () => {
-  const region = 'pleasant_valley';
-  const place  = "Mountaineer's Hut";
-  const tool   = 'workbench';
-  const round  = L.parseHash(L.makeHash(region, place, tool));
-  assert.deepEqual(round, {
-    regionId: region, placeName: place, tool,
-    resource: null, resourceIndex: null,
-  });
+  const opts = {
+    regionId: 'pleasant_valley',
+    placeName: "Mountaineer's Hut",
+    tool: 'workbench',
+  };
+  const round = L.parseHash(L.makeHash(opts));
+  assert.deepEqual(round, { ...opts, resource: null, resourceIndex: null });
 });
 
 test('makeHash: region + resource (index 1 omitted)', () => {
   assert.equal(
-    L.makeHash('coastal_highway', null, null, 'moose', 1),
+    L.makeHash({ regionId: 'coastal_highway', resource: 'moose', resourceIndex: 1 }),
     '#coastal_highway/%24resource%3Amoose',
   );
 });
 
 test('makeHash: region + resource + index > 1', () => {
   assert.equal(
-    L.makeHash('mystery_lake', null, null, 'cattails', 7),
+    L.makeHash({ regionId: 'mystery_lake', resource: 'cattails', resourceIndex: 7 }),
     '#mystery_lake/%24resource%3Acattails/7',
   );
 });
 
 test('makeHash / parseHash round-trip for resource cycle', () => {
-  const round = L.parseHash(L.makeHash('mystery_lake', null, null, 'wolf', 3));
+  const opts = { regionId: 'mystery_lake', resource: 'wolf', resourceIndex: 3 };
+  const round = L.parseHash(L.makeHash(opts));
   assert.deepEqual(round, {
-    regionId: 'mystery_lake', placeName: null, tool: null,
-    resource: 'wolf', resourceIndex: 3,
+    ...opts, placeName: null, tool: null,
   });
 });

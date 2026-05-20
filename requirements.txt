@@ -4,6 +4,11 @@
 # ocrmac wraps the macOS Vision framework and only works on macOS.
 # Linux/Windows contributors can still run merge_boxes.py / scrape_places.py
 # (which need no third-party deps) but not the OCR or tile-build steps.
+#
+# opencv-python-headless + numpy are required by find_resources.py (legend-
+# icon detection). Headless variant avoids pulling in GTK/Qt for the tools.
 
 Pillow>=10.0
 ocrmac>=0.1.8 ; sys_platform == "darwin"
+opencv-python-headless>=4.10
+numpy>=1.26
