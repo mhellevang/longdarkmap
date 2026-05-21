@@ -70,15 +70,16 @@ const RESOURCES_META = {
 
 // Heuristic: does this bbox look like it landed inside the map's legend
 // strip rather than on real on-map content? HokuOwl's region maps put the
-// legend at the very top or very bottom of the image (depending on region),
-// so any bbox whose vertical centre sits inside a thin outer band is almost
-// certainly a bad OCR match against legend text rather than a real label.
-// Used by the tool-pill "here" click to skip places with bogus bboxes when
-// picking which workbench / forge / etc. to navigate to first.
+// legend at the very top or very bottom of the image (depending on region).
+// Bands are intentionally narrow: real on-map labels can sit close to the
+// edge (e.g. a region-transition label at the top of CH), and being too
+// aggressive here would silently skip legitimate places. The original bug
+// we're guarding against had cy ≈ 0.925; thresholds set to comfortably
+// catch that while leaving room for real edge labels to pass.
 function looksLikeLegendBbox(bbox) {
   if (!Array.isArray(bbox) || bbox.length !== 4) return false;
   const cy = (bbox[1] + bbox[3]) / 2;
-  return cy < 0.08 || cy > 0.88;
+  return cy < 0.025 || cy > 0.92;
 }
 
 // Pure cycle-step helper for the resources panel: given the currently active

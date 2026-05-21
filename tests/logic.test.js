@@ -240,14 +240,22 @@ test('pathSummary: falls back to id when region unknown', () => {
 
 // ─── looksLikeLegendBbox ─────────────────────────────────────────────────────
 
-test('looksLikeLegendBbox: bottom-edge bbox flagged as suspect', () => {
-  // y-centre = 0.925 → in the bottom legend strip (HokuOwl's most-common layout)
+test('looksLikeLegendBbox: bottom-strip bbox flagged as suspect', () => {
+  // y-centre = 0.925 — matches the original CH coal-mine misbinding bug.
   assert.equal(L.looksLikeLegendBbox([0.516, 0.923, 0.525, 0.927]), true);
 });
 
-test('looksLikeLegendBbox: top-edge bbox flagged as suspect', () => {
-  // y-centre = 0.04 → in a top-of-map legend (Mystery Lake style)
-  assert.equal(L.looksLikeLegendBbox([0.78, 0.03, 0.80, 0.05]), true);
+test('looksLikeLegendBbox: very-top-edge bbox flagged as suspect', () => {
+  // y-centre = 0.02 — only the absolute top fraction is flagged (band is
+  // narrow on purpose so real edge labels at the top of a region pass).
+  assert.equal(L.looksLikeLegendBbox([0.78, 0.01, 0.80, 0.03]), true);
+});
+
+test('looksLikeLegendBbox: edge-adjacent on-map label not flagged', () => {
+  // Cinder Hills Coal Mine on CH sits at the top of the map (region-
+  // transition label). cy ≈ 0.05 is legitimate, not legend.
+  assert.equal(L.looksLikeLegendBbox([0.465, 0.031, 0.513, 0.069]), false);
+  assert.equal(L.looksLikeLegendBbox([0.20, 0.91, 0.22, 0.915]), false);
 });
 
 test('looksLikeLegendBbox: mid-map bbox not flagged', () => {
