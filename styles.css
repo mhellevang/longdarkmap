@@ -1119,3 +1119,15 @@ body.detail-open #search-wrap { display: none; }
   /* The hint references scroll wheels and arrow keys — not useful on touch. */
   #zoom-hint { display: none; }
 }
+
+/* Phone in landscape: viewport is wide enough to sit map-tabs inline with
+   the title row, saving ~32px of header height. Tools-nearby and
+   resources-panel keep their own rows — they have too many pills to fit. */
+@media (max-height: 500px) and (orientation: landscape) {
+  #detail-header { padding: 6px 10px; gap: 6px; }
+  #map-tabs {
+    flex-basis: auto;
+    flex-shrink: 1;
+    max-width: 45%;
+  }
+}

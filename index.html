@@ -30673,12 +30673,37 @@ function renderLabels() {
     const btn = document.createElement('button');
     btn.className = 'region-btn';
     btn.textContent = region.name;
+    btn.dataset.regionId = region.id;
     btn.style.left = region.pos[0] + '%';
     btn.style.top  = region.pos[1] + '%';
-    btn.addEventListener('click', () => openRegion(region));
     labelLayer.appendChild(btn);
   }
 }
+
+// Disambiguate overlapping region-btn hitboxes. The buttons are sized in
+// CSS pixels (so they stay tappable when the world map is scaled down on
+// phones), which means at default zoom on a narrow viewport multiple
+// labels can occupy the same screen rect — and the browser then opens
+// whichever button happens to be on top, not the one closest to the tap.
+// Listen on labelLayer instead of per-button, and when the tap lands
+// inside multiple hitboxes pick the region whose centre is nearest.
+labelLayer.addEventListener('click', e => {
+  const targetBtn = e.target.closest('.region-btn');
+  if (!targetBtn) return;
+  const tapX = e.clientX, tapY = e.clientY;
+  let best = null, bestDist = Infinity;
+  for (const btn of labelLayer.querySelectorAll('.region-btn')) {
+    const r = btn.getBoundingClientRect();
+    if (tapX < r.left || tapX > r.right || tapY < r.top || tapY > r.bottom) continue;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const d = Math.hypot(cx - tapX, cy - tapY);
+    if (d < bestDist) { bestDist = d; best = btn; }
+  }
+  if (!best) return;
+  const region = REGIONS_BY_ID[best.dataset.regionId];
+  if (region) openRegion(region);
+});
 
 // Dev mode: press D to show coords under the cursor.
 //  - World view: cursor as % of the world map (used for tweaking REGIONS pos).
