@@ -40,6 +40,27 @@
 </script>
 
 <link rel="stylesheet" href="styles.css">
+
+<!-- PWA: installable + works fully offline once the SW has pre-cached the
+     app shell and all region maps (~72 MB). See manifest.json and sw.js. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TLD Map">
+<script>
+  // Register the service worker. Guarded so it's a no-op on browsers
+  // without SW support (e.g. very old mobile browsers). The script is
+  // last so registration doesn't delay first paint.
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
 </head>
 <body>
 
