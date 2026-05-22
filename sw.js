@@ -7,7 +7,7 @@
 // To force clients to refetch after changing any bundled asset, bump
 // CACHE_VERSION. The old cache is dropped on activate.
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `longdarkmap-${CACHE_VERSION}`;
 
 // Runtime assets. data/*.json, data/tiles/, and data/legend_icons/ are
