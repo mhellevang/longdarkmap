@@ -988,8 +988,12 @@ body.detail-open #search-wrap { display: none; }
 /* Phone-sized layout: stack the detail header into rows, turn the tab and
    tool-pill rows into horizontally scrollable strips, dock the route popover
    as a bottom sheet, and grow tap targets to ~44px. The world map and detail
-   map already pinch-zoom; this block fixes the chrome around them. */
-@media (max-width: 640px) {
+   map already pinch-zoom; this block fixes the chrome around them.
+   The second condition (short + landscape) catches phones held sideways —
+   a phone in landscape is ~800px wide so max-width:640 wouldn't fire, but
+   the ~390px height makes the wrapped desktop header eat most of the screen.
+   iPads in landscape are ~768px tall so they're not affected. */
+@media (max-width: 640px), (max-height: 500px) and (orientation: landscape) {
   /* Search: 16px font prevents iOS auto-zoom on focus. */
   #search-wrap {
     top: 10px;
