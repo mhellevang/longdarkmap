@@ -283,6 +283,42 @@ test('world view: pointer-clicking a region label opens detail', async () => {
   } finally { close(); }
 });
 
+test('world view: mobile viewport defaults to a centred cover zoom, desktop to fit', async () => {
+  const { window, document, tick, close } = await loadPage();
+  try {
+    const scaleOf = () => {
+      const m = document.getElementById('map-container').style.transform
+        .match(/scale\(([\d.]+(?:e-?\d+)?)\)/);
+      return m ? Number(m[1]) : NaN;
+    };
+    // Desktop (harness matchMedia stub matches nothing): plain contained fit.
+    assert.equal(scaleOf(), 1, 'desktop keeps the whole-map fit');
+
+    // Simulate a portrait phone: mobile breakpoint matches, viewport 390×844.
+    // The contained fit of the 4017×2048 map is a ~200px strip there, so the
+    // default must zoom until the map covers the viewport, centred.
+    Object.defineProperty(window, 'innerWidth',  { value: 390, configurable: true });
+    Object.defineProperty(window, 'innerHeight', { value: 844, configurable: true });
+    window.matchMedia = (query) => ({
+      matches: true, media: query, onchange: null,
+      addEventListener() {}, removeEventListener() {},
+      addListener() {}, removeListener() {}, dispatchEvent: () => false,
+    });
+    fire(window, window, 'resize');
+    await tick(200); // past the resize debounce
+
+    const mc = document.getElementById('map-container');
+    const scale = scaleOf();
+    const scaledW = parseFloat(mc.style.width) * scale;
+    const scaledH = parseFloat(mc.style.height) * scale;
+    assert.ok(scale > 1, `mobile default should zoom in, got scale ${scale}`);
+    assert.ok(scaledW >= 390 - 1 && scaledH >= 844 - 1,
+      `map should cover the viewport, got ${scaledW}×${scaledH}`);
+    const panX = Number(mc.style.transform.match(/translate\((-?[\d.]+(?:e-?\d+)?)px/)[1]);
+    assert.ok(Math.abs(panX - (390 - scaledW) / 2) < 1, 'crop is horizontally centred');
+  } finally { close(); }
+});
+
 // ─── resources panel (legend-icon cycle) ────────────────────────────────────
 
 test('resources panel: opening a region populates pills for present resources', async () => {

@@ -36,6 +36,18 @@ async function loadPage() {
     runScripts: 'dangerously',
     resources: { interceptors: [interceptor] },
     pretendToBeVisual: true,
+    beforeParse(window) {
+      // jsdom doesn't implement matchMedia; the page uses it for the mobile
+      // breakpoint (world-map default zoom, popover positioning). Default to
+      // desktop (no match); tests can replace window.matchMedia and dispatch
+      // a resize to exercise the mobile paths.
+      window.matchMedia = (query) => ({
+        matches: false, media: query, onchange: null,
+        addEventListener() {}, removeEventListener() {},
+        addListener() {}, removeListener() {},
+        dispatchEvent: () => false,
+      });
+    },
   });
   const { window } = dom;
 

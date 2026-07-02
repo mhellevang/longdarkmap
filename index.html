@@ -30682,8 +30682,16 @@ function layoutWorldMap() {
   // world-view's top-left so transform-origin: 0 0 makes pinch/wheel math
   // identical regardless of size.
   worldZoom = 1;
-  worldPanX = (window.innerWidth - w) / 2;
-  worldPanY = (window.innerHeight - h) / 2;
+  // On phone-sized viewports the contained fit leaves the ~2:1 map as a
+  // thin strip, so default to a cover crop instead: zoom until the map
+  // fills the viewport, centred. Pinching out (WORLD_MIN_ZOOM = 1) still
+  // reaches the full-map fit. Same breakpoint as the mobile stylesheet.
+  if (matchMedia('(max-width: 640px), (max-height: 500px) and (orientation: landscape)').matches) {
+    worldZoom = Math.min(WORLD_MAX_ZOOM,
+      Math.max(window.innerWidth / w, window.innerHeight / h));
+  }
+  worldPanX = (window.innerWidth - w * worldZoom) / 2;
+  worldPanY = (window.innerHeight - h * worldZoom) / 2;
   applyWorldTransform();
 }
 
