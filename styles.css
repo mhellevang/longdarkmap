@@ -413,6 +413,17 @@ body {
 .search-result .result-tools .tool-badge.match { opacity: 1; }
 .search-result:hover .result-tools .tool-badge,
 .search-result.active .result-tools .tool-badge { opacity: 1; }
+/* Region-scoped resource rows (query was a resource keyword like "moose"). */
+.search-result .resource-swatch {
+  flex-shrink: 0;
+  align-self: center;
+}
+.search-result .result-count {
+  flex-shrink: 0;
+  color: rgba(180, 220, 180, 0.85);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+}
 #search-empty {
   padding: 8px 12px;
   font-size: 12px;
@@ -422,6 +433,36 @@ body {
 
 /* Hide search whenever the detail modal is up */
 body.detail-open #search-wrap { display: none; }
+
+/* ── Offline bulk download ───────────────────────────────────────────────── */
+#offline-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 50;
+  background: rgba(8, 12, 18, 0.92);
+  border: 1px solid rgba(110, 170, 230, 0.32);
+  color: #8bb8e8;
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-family: Georgia, serif;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+#offline-btn:hover:not(:disabled) {
+  background: rgba(110, 170, 230, 0.18);
+  border-color: rgba(110, 170, 230, 0.72);
+  color: #f0f6ff;
+}
+#offline-btn:disabled {
+  color: rgba(180, 220, 180, 0.75);
+  border-color: rgba(180, 220, 180, 0.3);
+  cursor: default;
+}
+#offline-btn[hidden] { display: none; }
+body.detail-open #offline-btn { display: none; }
 
 /* ── Detail view (modal) ─────────────────────────────────────────────────── */
 #detail-view {
@@ -722,6 +763,102 @@ body.detail-open #search-wrap { display: none; }
 }
 .resource-pill.active .resource-pill-close {
   display: inline;
+}
+
+/* ── Legend popover ─────────────────────────────────────────────────────── */
+#legend-btn {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-left: auto;
+  background: none;
+  border: 1px solid rgba(110, 170, 230, 0.32);
+  border-radius: 50%;
+  color: #8bb8e8;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+#legend-btn:hover,
+#legend-btn[aria-expanded="true"] {
+  background: rgba(110, 170, 230, 0.18);
+  border-color: rgba(110, 170, 230, 0.72);
+  color: #f0f6ff;
+}
+#legend-popover {
+  position: fixed;
+  z-index: 30;
+  min-width: 240px;
+  max-width: 320px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: rgba(8, 12, 18, 0.97);
+  border: 1px solid rgba(110, 170, 230, 0.42);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  padding: 12px 14px;
+  color: #c9d1d9;
+  font-size: 13px;
+}
+#legend-popover[hidden] { display: none; }
+#legend-popover-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(110, 170, 230, 0.18);
+  margin-bottom: 10px;
+}
+#legend-popover-title {
+  flex: 1;
+  font-weight: 500;
+  color: #e6edf3;
+}
+#legend-close {
+  background: none;
+  border: none;
+  color: rgba(180, 200, 220, 0.55);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+#legend-close:hover { color: #f0f6ff; }
+.legend-section h3 {
+  margin: 10px 0 6px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(180, 200, 220, 0.55);
+}
+.legend-note {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: rgba(180, 200, 220, 0.55);
+}
+.legend-rows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.legend-row .tool-badge {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  line-height: 16px;
+  border-width: 1px;
+  box-shadow: none;
+  flex-shrink: 0;
 }
 
 /* ── Route preview popover ──────────────────────────────────────────────── */
@@ -1110,6 +1247,21 @@ body.detail-open #search-wrap { display: none; }
   .route-step { padding: 10px 0; }
   .route-step-btn { padding: 8px 12px; font-size: 13px; }
   #route-popover-travel { padding: 12px; font-size: 14px; }
+
+  /* Legend popover: same bottom-sheet docking as the route popover. */
+  #legend-popover {
+    top: auto !important;
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    max-width: none;
+    min-width: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom)) 16px;
+    border-bottom: none;
+    max-height: 70dvh;
+    overflow-y: auto;
+  }
 
   /* Zoom controls: 40px hit area, easier to tap than 28px. */
   .zoom-btn { width: 40px; height: 40px; font-size: 20px; }

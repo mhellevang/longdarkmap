@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "The Long Dark Interactive Map",
   "short_name": "TLD Map",
   "description": "Offline interactive map for The Long Dark — Great Bear Island regions, locations, forges, workbenches.",
@@ -10,6 +11,12 @@
   "theme_color": "#0d1117",
   "categories": ["games", "utilities", "reference"],
   "icons": [
+    {
+      "src": "icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
@@ -27,6 +34,23 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mystery Lake",
+      "url": "./#mystery_lake",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Coastal Highway",
+      "url": "./#coastal_highway",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Pleasant Valley",
+      "url": "./#pleasant_valley",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

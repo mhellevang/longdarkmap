@@ -128,6 +128,62 @@ test('search: tool keyword surfaces tool-tagged places with .match badge', async
   } finally { close(); }
 });
 
+test('search: resource keyword lists region-scoped resource rows first', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    const input = document.getElementById('place-search');
+    input.value = 'moose';
+    fire(window, input, 'input');
+
+    const rows = document.querySelectorAll('#search-results .resource-result');
+    assert.ok(rows.length > 0, 'expected resource rows for "moose"');
+    const first = document.querySelector('#search-results .search-result');
+    assert.ok(first.classList.contains('resource-result'),
+      'resource rows should come before place-name matches');
+    assert.equal(first.querySelector('.result-name').textContent, 'Moose area');
+    assert.ok(first.querySelector('.result-count').textContent.match(/^\d+$/),
+      'row should show the hit count');
+  } finally { close(); }
+});
+
+test('search: clicking a resource row opens the region with the resource cycle active', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    const input = document.getElementById('place-search');
+    input.value = 'moose';
+    fire(window, input, 'input');
+
+    const row = document.querySelector('#search-results .resource-result');
+    fire(window, row, 'click');
+
+    assert.equal(document.getElementById('detail-view').style.display, 'flex');
+    assert.match(window.location.hash, /(?:\$|%24)resource(?:%3A|:)moose/);
+    const activePill = document.querySelector('#resources-panel .resource-pill.active[data-tag="moose"]');
+    assert.ok(activePill, 'moose pill should be active after opening a resource result');
+  } finally { close(); }
+});
+
+test('search: combobox ARIA state tracks the dropdown', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    const input = document.getElementById('place-search');
+    assert.equal(input.getAttribute('aria-expanded'), 'false');
+
+    input.value = 'camp';
+    fire(window, input, 'input');
+    assert.equal(input.getAttribute('aria-expanded'), 'true');
+
+    fire(window, input, 'keydown', { key: 'ArrowDown' });
+    const rows = document.querySelectorAll('#search-results .search-result');
+    assert.equal(rows[0].getAttribute('aria-selected'), 'true');
+    assert.equal(input.getAttribute('aria-activedescendant'), rows[0].id);
+
+    fire(window, input, 'keydown', { key: 'Escape' });
+    assert.equal(input.getAttribute('aria-expanded'), 'false');
+    assert.equal(input.hasAttribute('aria-activedescendant'), false);
+  } finally { close(); }
+});
+
 // ─── hash routing ────────────────────────────────────────────────────────────
 
 test('hash: deep link to #region opens the detail view', async () => {
@@ -192,16 +248,35 @@ test('hash: navigating between regions updates the title', async () => {
 
 // ─── world-view → region-button click → hash ─────────────────────────────────
 
-test('world view: clicking a region label updates the hash and opens detail', async () => {
+test('world view: keyboard-activating a region label (click detail 0) opens detail', async () => {
   const { window, document, close } = await loadPage();
   try {
-    // Region buttons live in the label-layer.
+    // Region buttons live in the label-layer. A keyboard Enter/Space on a
+    // focused button dispatches a click with detail 0 and clientX/Y 0 —
+    // the handler must not rely on coordinates for this path.
     const labelLayer = document.getElementById('label-layer');
     const buttons = labelLayer.querySelectorAll('button');
     assert.ok(buttons.length > 0, 'expected region buttons in label-layer');
 
     const first = buttons[0];
-    fire(window, first, 'click');
+    fire(window, first, 'click', { detail: 0 });
+
+    assert.equal(document.getElementById('detail-view').style.display, 'flex');
+    assert.ok(window.location.hash.length > 1);
+    assert.ok(window.location.hash.includes(first.dataset.regionId),
+      'the focused button\'s own region should open, not a hit-test neighbour');
+  } finally { close(); }
+});
+
+test('world view: pointer-clicking a region label opens detail', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    const labelLayer = document.getElementById('label-layer');
+    const first = labelLayer.querySelectorAll('button')[0];
+    // detail >= 1 marks a real pointer click; jsdom's zero-size rects make
+    // the coordinate hit-test degenerate but the click must still open a
+    // region rather than fall through.
+    fire(window, first, 'click', { detail: 1 });
 
     assert.equal(document.getElementById('detail-view').style.display, 'flex');
     assert.ok(window.location.hash.length > 1);

@@ -11,6 +11,7 @@ Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the re
 - **Click** a region label to open its detail map
 - **Scroll** to zoom, **drag** to pan, **double-click** to reset
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
+- **?** in the detail-view header opens a legend explaining the tool-badge glyphs and resource-pill colours
 - **D** (dev server only) toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. The key is a no-op when the page is opened directly or from the public deploy. In the detail view with D on:
   - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
   - **Click any box** (including the search highlight) to grab it for editing.
@@ -44,6 +45,10 @@ The tool data is scraped from the Long Dark wiki's structured categories ([Locat
 - vision-LLM amenity passes (per region, optional) that pick up amenities printed only as map pictograms — bed, stove, first-aid kit, ice fishing hut. These layer on top of the wiki tags and never remove them.
 
 Output: `data/crafting_tools.json` plus an inlined `PLACE_TOOLS` block in `index.html`.
+
+### Resource keywords
+
+Typing a resource name (`moose`, `bear`, `wolf`, `timberwolf`, `cougar`, `deer`, `cattails`, `sapling`, `salt`, …) lists the regions where that resource was detected, biggest count first, above any place-name matches. Each row shows the resource swatch, the region, and the hit count; opening one jumps straight into that region's resource cycle (`#region/$resource:moose`). The synonym table lives in `RESOURCES_META` in `src/logic.js`.
 
 ### Vision-LLM amenity pass (per region)
 
@@ -84,6 +89,15 @@ Every region in `data/regions.json` carries an `adjacencies` field — a list of
 - If not, the pill shows the closest place that does, with the hop count via BFS over the adjacency graph (e.g. *"Forge → The Riken (Desolation Point) · 1 hop"* from Coastal Highway). Click to navigate.
 
 The graph is undirected and seeded once. To regenerate after wiki changes, run `python3 tools/scrape_connections.py` to dump each region's parsed connections to `data/regions_connections_raw.json`; the symmetric union is hand-merged into `data/regions.json` and re-inlined via `python3 tools/inline_regions.py`.
+
+## Offline / PWA
+
+The site is installable as a PWA (see `manifest.json`) and works offline via a service worker (`sw.js`) with two caches:
+
+- **Shell cache** (versioned): `index.html`, `styles.css`, `src/logic.js`, manifest, and icons — precached on install, then served stale-while-revalidate, so a deploy reaches users on the visit after it lands without bumping `SHELL_VERSION`.
+- **Maps cache** (unversioned): the region map images. Each map is cached lazily the first time its region is opened, and the **"Save all maps offline"** button in the world view prefetches all of them (~72 MB) for fully offline use — on a plane, in the woods, anywhere without signal. The maps cache survives shell deploys, so updating the app never re-downloads the maps.
+
+Bump `SHELL_VERSION` in `sw.js` only to force an immediate refetch of the shell (stale-while-revalidate already picks changes up one visit later).
 
 ## Refreshing the region maps
 
@@ -222,6 +236,9 @@ tools/                  # Build-time scripts — only needed when refreshing the
   amenity_prep.py       #   Crops each PLACE_BOXES entry into per-place .jpg + legend.jpg for vision-LLM amenity tagging
   amenity_prompt.md     #   Subagent prompt template for the vision-LLM amenity pass
   find_resources.py     #   OpenCV template-matching: finds legend pictograms (moose/bear/.../sapling) → region_resources.json + index.html inline
+sw.js                   # Service worker: shell precache + stale-while-revalidate, lazy maps cache
+manifest.json           # PWA manifest (install metadata, icons, region shortcuts)
+icons/                  # PWA / touch icons
 dev-server.js           # Optional Node dev server: serves the site + persists in-browser bbox edits
 maps/                   # Map images: per-region detail maps + the world map (committed; refresh via the script)
 data/regions.json       # Canonical region list (id, display name, world-map pos, map paths, wiki + Steam URLs, adjacencies)

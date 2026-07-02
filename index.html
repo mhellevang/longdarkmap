@@ -41,8 +41,10 @@
 
 <link rel="stylesheet" href="styles.css">
 
-<!-- PWA: installable + works fully offline once the SW has pre-cached the
-     app shell and all region maps (~72 MB). See manifest.json and sw.js. -->
+<!-- PWA: installable + offline-friendly. The SW precaches the small app
+     shell and lazy-caches each region map on first view; the "Save all maps
+     offline" button prefetches everything (~72 MB) for fully offline use.
+     See manifest.json and sw.js. -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d1117">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -67,14 +69,16 @@
 <!-- ══════════ WORLD VIEW ══════════ -->
 <div id="world-view">
   <div id="map-container">
-    <img id="world-map" src="maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg" alt="Great Bear Island">
+    <img id="world-map" src="maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg" alt="Great Bear Island" width="4017" height="2048" decoding="async">
     <div id="label-layer"></div>
   </div>
   <div id="coord-display"></div>
   <div id="search-wrap">
-    <input id="place-search" type="search" placeholder="Search for a place (e.g. Carter Hydro Dam)…" autocomplete="off">
-    <div id="search-results"></div>
+    <input id="place-search" type="search" placeholder="Search for a place (e.g. Carter Hydro Dam)…" autocomplete="off"
+           role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" aria-label="Search for a place">
+    <div id="search-results" role="listbox" aria-label="Search results"></div>
   </div>
+  <button id="offline-btn" hidden>Save all maps offline</button>
 </div>
 
 <!-- ══════════ DETAIL VIEW (modal) ══════════ -->
@@ -87,6 +91,22 @@
       <div id="map-tabs"></div>
       <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
       <div id="resources-panel" aria-label="Resources on this map"></div>
+      <button id="legend-btn" aria-label="Map legend" aria-expanded="false" title="What do the badges and colours mean?">?</button>
+    </div>
+    <div id="legend-popover" role="dialog" aria-label="Map legend" hidden>
+      <div id="legend-popover-header">
+        <div id="legend-popover-title">Legend</div>
+        <button id="legend-close" aria-label="Close legend">✕</button>
+      </div>
+      <div class="legend-section">
+        <h3>Crafting &amp; amenity badges</h3>
+        <div id="legend-tools" class="legend-rows"></div>
+      </div>
+      <div class="legend-section">
+        <h3>Resource pills</h3>
+        <p class="legend-note">One pill per pictogram type found on this map; click a pill to jump between its locations.</p>
+        <div id="legend-resources" class="legend-rows"></div>
+      </div>
     </div>
     <div id="route-popover" role="dialog" aria-label="Route preview" hidden>
       <div id="route-popover-header">
@@ -97,7 +117,7 @@
       <button id="route-popover-travel"></button>
     </div>
     <div id="map-canvas">
-      <img id="detail-img" alt="">
+      <img id="detail-img" alt="" decoding="async">
       <div id="all-boxes-layer"></div>
       <div id="region-links-layer"></div>
       <div id="tools-layer" aria-hidden="true"></div>
@@ -30690,6 +30710,14 @@ function renderLabels() {
 labelLayer.addEventListener('click', e => {
   const targetBtn = e.target.closest('.region-btn');
   if (!targetBtn) return;
+  // Keyboard activation (Enter/Space on a focused button) dispatches a click
+  // with detail 0 and no useful coordinates — the coordinate hit-test below
+  // would find nothing. Trust the focused button directly.
+  if (e.detail === 0) {
+    const region = REGIONS_BY_ID[targetBtn.dataset.regionId];
+    if (region) openRegion(region);
+    return;
+  }
   const tapX = e.clientX, tapY = e.clientY;
   let best = null, bestDist = Infinity;
   for (const btn of labelLayer.querySelectorAll('.region-btn')) {
@@ -30745,7 +30773,20 @@ mapContainer.addEventListener('mousemove', e => {
   coordDisplay.textContent = `pos: [${xPct}, ${yPct}]  (D to hide)`;
 });
 
-window.addEventListener('resize', layoutWorldMap);
+// Debounced with a leading call: layoutWorldMap rebuilds every region button
+// (innerHTML wipe), and a live window-resize fires dozens of events per
+// second. The leading call keeps the first response instant (and lets the
+// test harness's synthetic resize work synchronously); the trailing call
+// settles on the final size.
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (resizeTimer === null) layoutWorldMap();
+  else clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    resizeTimer = null;
+    layoutWorldMap();
+  }, 150);
+});
 worldMapImg.addEventListener('load', layoutWorldMap);
 if (worldMapImg.complete) layoutWorldMap();
 
@@ -30906,25 +30947,67 @@ function searchPlaces(q) {
   });
 }
 
-function renderResults(results) {
+function searchResources(q) {
+  return LDLogic.searchResources(q, {
+    regionResources: REGION_RESOURCES,
+    regions:         REGIONS,
+    maxResults:      6,
+  });
+}
+
+// Single show/hide gate for the dropdown so the combobox ARIA state
+// (aria-expanded + aria-activedescendant on the input) can't drift from
+// the visual state.
+function setResultsVisible(visible) {
+  resultsEl.style.display = visible ? 'block' : 'none';
+  searchInput.setAttribute('aria-expanded', String(!!visible));
+  if (!visible) searchInput.removeAttribute('aria-activedescendant');
+}
+
+function renderResults(results, resourceRows) {
+  resourceRows = resourceRows || [];
   resultsEl.innerHTML = '';
   activeIdx = -1;
   if (!searchInput.value.trim()) {
-    resultsEl.style.display = 'none';
+    setResultsVisible(false);
     return;
   }
-  if (!results.length) {
+  if (!results.length && !resourceRows.length) {
     const empty = document.createElement('div');
     empty.id = 'search-empty';
     empty.textContent = 'No results';
     resultsEl.appendChild(empty);
-    resultsEl.style.display = 'block';
+    setResultsVisible(true);
     return;
+  }
+  // Region-scoped resource rows first (only present when the query is a
+  // resource keyword like "moose" or "cattails"): the user is asking
+  // "where can I find X", and the biggest counts are the best answers.
+  for (const rr of resourceRows) {
+    const meta = LDLogic.RESOURCES_META[rr.tag];
+    const region = REGIONS_BY_ID[rr.region];
+    const item = document.createElement('button');
+    item.className = 'search-result resource-result';
+    const swatch = document.createElement('span');
+    swatch.className = 'resource-swatch';
+    swatch.style.background = meta.color;
+    const nameEl = document.createElement('span');
+    nameEl.className = 'result-name';
+    nameEl.textContent = meta.label;
+    const regionEl = document.createElement('span');
+    regionEl.className = 'result-region';
+    regionEl.textContent = region ? region.name : rr.region;
+    const countEl = document.createElement('span');
+    countEl.className = 'result-count';
+    countEl.textContent = rr.count;
+    countEl.title = `${rr.count} detected on this map`;
+    item.append(swatch, nameEl, regionEl, countEl);
+    item.addEventListener('click', () => openResourceResult(rr));
+    resultsEl.appendChild(item);
   }
   results.forEach((p, i) => {
     const item = document.createElement('button');
     item.className = 'search-result';
-    item.dataset.idx = i;
     const region = REGIONS_BY_ID[p.region];
     const nameEl = document.createElement('span');
     nameEl.className = 'result-name';
@@ -30952,25 +31035,50 @@ function renderResults(results) {
     item.addEventListener('click', () => openSearchResult(p));
     resultsEl.appendChild(item);
   });
-  resultsEl.style.display = 'block';
+  // Option ids/roles are assigned across BOTH row kinds so keyboard nav and
+  // aria-activedescendant see one flat list.
+  resultsEl.querySelectorAll('.search-result').forEach((it, i) => {
+    it.id = 'search-opt-' + i;
+    it.dataset.idx = i;
+    it.setAttribute('role', 'option');
+    it.setAttribute('aria-selected', 'false');
+  });
+  setResultsVisible(true);
+}
+
+function openResourceResult(rr) {
+  searchInput.value = '';
+  setResultsVisible(false);
+  pushHash({ regionId: rr.region, resource: rr.tag, resourceIndex: 1 });
+  applyHashState({ op: 'reset' });
 }
 
 function openSearchResult(p) {
   const region = REGIONS_BY_ID[p.region];
   if (!region) return;
   searchInput.value = '';
-  resultsEl.style.display = 'none';
+  setResultsVisible(false);
   const box = (PLACE_BOXES[p.region] || {})[p.name];
   openRegion(region, box ? { name: p.name, bbox: box } : null, p.matchedTool || null);
 }
 
 function setActiveResult(items, idx) {
   activeIdx = Math.max(-1, Math.min(items.length - 1, idx));
-  items.forEach((it, i) => it.classList.toggle('active', i === activeIdx));
-  if (activeIdx >= 0) items[activeIdx].scrollIntoView({ block: 'nearest' });
+  items.forEach((it, i) => {
+    it.classList.toggle('active', i === activeIdx);
+    it.setAttribute('aria-selected', String(i === activeIdx));
+  });
+  if (activeIdx >= 0) {
+    searchInput.setAttribute('aria-activedescendant', items[activeIdx].id);
+    // Last: jsdom (tests) doesn't implement scrollIntoView.
+    if (items[activeIdx].scrollIntoView) items[activeIdx].scrollIntoView({ block: 'nearest' });
+  } else {
+    searchInput.removeAttribute('aria-activedescendant');
+  }
 }
 
-searchInput.addEventListener('input', () => renderResults(searchPlaces(searchInput.value)));
+searchInput.addEventListener('input', () =>
+  renderResults(searchPlaces(searchInput.value), searchResources(searchInput.value)));
 
 searchInput.addEventListener('keydown', e => {
   const items = resultsEl.querySelectorAll('.search-result');
@@ -30986,7 +31094,7 @@ searchInput.addEventListener('keydown', e => {
   } else if (e.key === 'Escape') {
     if (searchInput.value) {
       searchInput.value = '';
-      resultsEl.style.display = 'none';
+      setResultsVisible(false);
     } else {
       searchInput.blur();
     }
@@ -30994,7 +31102,7 @@ searchInput.addEventListener('keydown', e => {
 });
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#search-wrap')) resultsEl.style.display = 'none';
+  if (!e.target.closest('#search-wrap')) setResultsVisible(false);
 });
 
 // "/" focuses the search box (not while typing in another input or in dev mode).
@@ -31159,6 +31267,7 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
     regionHistory = [];
   }
   hideRoutePopover();
+  hideLegend();
   renderBackToOrigin();
 
   loadDetailMap(region.maps[0]);
@@ -31235,6 +31344,10 @@ function applyZoom(nz, cx, cy) {
 }
 
 function loadDetailMap(src) {
+  // The map image IS the modal's content; label it for assistive tech.
+  detailImg.alt = currentRegion
+    ? `${currentRegion.name} — ${mapTabLabel(src)} map`
+    : 'Region map';
   // Hide the canvas content until the new image is decoded AND the new
   // transform has been applied. Without this, swapping src reveals the new
   // image painted at the previous region's pan/zoom for one frame, then
@@ -31664,6 +31777,15 @@ const routePopoverClose = document.getElementById('route-popover-close');
 let routePopoverState = null;  // { tool, origin, nearest } when open
 
 function hideRoutePopover() {
+  // If focus lives inside the popover (we move it there on open), return it
+  // to the pill that opened it so keyboard users aren't dropped at <body>.
+  if (!routePopover.hidden
+      && routePopover.contains(document.activeElement)
+      && routePopoverState
+      && routePopoverState.anchorPill
+      && document.contains(routePopoverState.anchorPill)) {
+    routePopoverState.anchorPill.focus();
+  }
   routePopover.hidden = true;
   routePopoverState = null;
   document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
@@ -31677,7 +31799,7 @@ function showRoutePopover(anchorPill, originRegion, tool, nearest) {
     hideRoutePopover();
     return;
   }
-  routePopoverState = { tool, origin: originRegion, nearest };
+  routePopoverState = { tool, origin: originRegion, nearest, anchorPill };
   document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
   anchorPill.classList.add('expanded');
 
@@ -31763,6 +31885,9 @@ function showRoutePopover(anchorPill, originRegion, tool, nearest) {
     routePopover.style.bottom = '';
   }
   routePopover.hidden = false;
+  // Move focus into the dialog so keyboard/screen-reader users land on it
+  // instead of having to hunt; hideRoutePopover returns focus to the pill.
+  routePopoverClose.focus();
 }
 
 routePopoverClose.addEventListener('click', hideRoutePopover);
@@ -31774,8 +31899,90 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !routePopover.hidden) {
-    e.stopPropagation();
+    // stopImmediatePropagation, not stopPropagation: the modal-close ESC
+    // handler is registered on document too, and plain stopPropagation
+    // doesn't stop same-node listeners — ESC would close the popover AND
+    // the whole modal in one press.
+    e.stopImmediatePropagation();
     hideRoutePopover();
+  }
+});
+
+// ── Legend popover ─────────────────────────────────────────────────────────
+// On-screen key for the tool-badge glyphs and resource-pill colours, which
+// are otherwise explained only via title tooltips (unavailable on touch).
+// Content is built once from LDLogic.TOOLS_META / RESOURCES_META so it can
+// never drift from the real vocabulary.
+const legendBtn = document.getElementById('legend-btn');
+const legendPopover = document.getElementById('legend-popover');
+const legendClose = document.getElementById('legend-close');
+
+(function buildLegend() {
+  const toolRows = document.getElementById('legend-tools');
+  for (const [tag, meta] of Object.entries(LDLogic.TOOLS_META)) {
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    const badge = document.createElement('span');
+    badge.className = `tool-badge tool-${tag}`;
+    badge.textContent = meta.glyph;
+    const label = document.createElement('span');
+    label.textContent = meta.label;
+    row.append(badge, label);
+    toolRows.appendChild(row);
+  }
+  const resourceRows = document.getElementById('legend-resources');
+  for (const meta of Object.values(LDLogic.RESOURCES_META)) {
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    const swatch = document.createElement('span');
+    swatch.className = 'resource-swatch';
+    swatch.style.background = meta.color;
+    const label = document.createElement('span');
+    label.textContent = meta.label;
+    row.append(swatch, label);
+    resourceRows.appendChild(row);
+  }
+})();
+
+function hideLegend() {
+  if (legendPopover.hidden) return;
+  // Return focus to the ? button when it was parked inside the popover.
+  if (legendPopover.contains(document.activeElement)) legendBtn.focus();
+  legendPopover.hidden = true;
+  legendBtn.setAttribute('aria-expanded', 'false');
+}
+
+function showLegend() {
+  hideRoutePopover();
+  // Same anchoring strategy as the route popover: pinned under the button
+  // on desktop, docked as a bottom sheet on phone-width (CSS overrides).
+  if (matchMedia('(max-width: 640px)').matches) {
+    legendPopover.style.top   = '';
+    legendPopover.style.right = '';
+  } else {
+    const rect = legendBtn.getBoundingClientRect();
+    legendPopover.style.top   = (rect.bottom + 6) + 'px';
+    legendPopover.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+  }
+  legendPopover.hidden = false;
+  legendBtn.setAttribute('aria-expanded', 'true');
+  legendClose.focus();
+}
+
+legendBtn.addEventListener('click', () => {
+  if (legendPopover.hidden) showLegend();
+  else hideLegend();
+});
+legendClose.addEventListener('click', hideLegend);
+document.addEventListener('click', e => {
+  if (legendPopover.hidden) return;
+  if (e.target.closest('#legend-popover') || e.target.closest('#legend-btn')) return;
+  hideLegend();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !legendPopover.hidden) {
+    e.stopImmediatePropagation();  // see the route-popover ESC note above
+    hideLegend();
   }
 });
 
@@ -31945,6 +32152,15 @@ function updateToolPillState() {
   pills.forEach(p => {
     const isActive = !!toolHereCycle && p.dataset.tool === toolHereCycle.tool;
     p.classList.toggle('cycling', isActive);
+    // The ✕ inside the pill is a decorative span (a real <button> can't nest
+    // inside the pill button), so the cycle state + how to leave it must be
+    // conveyed on the pill itself for assistive tech.
+    if (isActive) {
+      p.setAttribute('aria-label',
+        `${toolLabel(toolHereCycle.tool)} — showing location ${toolHereCycle.index + 1} of ${toolHereCycle.places.length}. Click for the next one, press Escape to stop.`);
+    } else {
+      p.removeAttribute('aria-label');
+    }
     const idxEl = p.querySelector('.tool-pill-cycle-index');
     if (!idxEl) return;  // "nearest" pills don't have a cycle index slot
     if (isActive) {
@@ -31965,8 +32181,14 @@ function updateResourcePillState() {
     if (isActive && currentRegion) {
       const hits = (REGION_RESOURCES[currentRegion.id] || {})[resourceCycle.tag] || [];
       idxEl.textContent = `${resourceCycle.index + 1} / ${hits.length}`;
+      // Same reasoning as updateToolPillState: the ✕ span is invisible to
+      // assistive tech, so the pill itself must carry the cycle state.
+      const meta = LDLogic.RESOURCES_META[resourceCycle.tag];
+      p.setAttribute('aria-label',
+        `${meta.label} — showing hit ${resourceCycle.index + 1} of ${hits.length}. Click for the next one, press Escape to stop.`);
     } else {
       idxEl.textContent = '';
+      p.removeAttribute('aria-label');
     }
   });
 }
@@ -32364,6 +32586,7 @@ mapCanvas.addEventListener('dblclick', fitMap);
 
 
 function _closeModal() {
+  hideLegend();
   detailView.style.display = 'none';
   detailView.setAttribute('aria-hidden', 'true');
   worldView.removeAttribute('inert');
@@ -32437,6 +32660,73 @@ document.addEventListener('keydown', e => {
   }
   e.preventDefault();
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// OFFLINE BULK DOWNLOAD
+// ════════════════════════════════════════════════════════════════════════════
+// The service worker lazy-caches each region map on first view; this button
+// prefetches all of them so the whole app works with no signal at all. It
+// writes straight into the SW's maps cache — the name must stay in sync
+// with MAPS_CACHE in sw.js. Hidden when the Cache API isn't available
+// (file://, very old browsers, jsdom tests).
+const MAPS_CACHE_NAME = 'longdarkmap-maps-v1';
+const offlineBtn = document.getElementById('offline-btn');
+
+if (offlineBtn && 'caches' in window && 'serviceWorker' in navigator) {
+  const allMapUrls = [
+    worldMapImg.getAttribute('src'),
+    ...new Set(REGIONS.flatMap(r => r.maps)),
+  ];
+
+  async function missingMapUrls() {
+    const cache = await caches.open(MAPS_CACHE_NAME);
+    const misses = [];
+    for (const url of allMapUrls) {
+      if (!(await cache.match(url))) misses.push(url);
+    }
+    return misses;
+  }
+
+  async function refreshOfflineBtn() {
+    const misses = await missingMapUrls();
+    if (!misses.length) {
+      offlineBtn.textContent = '✓ All maps saved offline';
+      offlineBtn.disabled = true;
+      offlineBtn.title = 'Every region map is cached — the app works without signal';
+    } else {
+      offlineBtn.textContent = 'Save all maps offline';
+      offlineBtn.disabled = false;
+      offlineBtn.title = `Download all ${allMapUrls.length} maps (~72 MB) so the app works without signal`;
+    }
+    offlineBtn.hidden = false;
+  }
+
+  offlineBtn.addEventListener('click', async () => {
+    offlineBtn.disabled = true;
+    const cache = await caches.open(MAPS_CACHE_NAME);
+    const misses = await missingMapUrls();
+    let done = 0, failed = 0;
+    // Sequential on purpose: ~40 multi-MB images in parallel would saturate
+    // slow connections and make the progress count meaningless.
+    for (const url of misses) {
+      try {
+        await cache.add(url);
+      } catch (e) {
+        failed++;
+      }
+      done++;
+      offlineBtn.textContent = `Downloading… ${done} / ${misses.length}`;
+    }
+    if (failed) {
+      offlineBtn.textContent = `${failed} map${failed === 1 ? '' : 's'} failed — click to retry`;
+      offlineBtn.disabled = false;
+    } else {
+      await refreshOfflineBtn();
+    }
+  });
+
+  refreshOfflineBtn().catch(() => { offlineBtn.hidden = true; });
+}
 
 // Apply any hash already present in the URL on first load (e.g. when the
 // page is opened via a shared deep link).

@@ -43,9 +43,10 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 //   color    — CSS colour for the pill border + swatch when the pill is
 //              active. Picked roughly to match the legend pictogram's
 //              palette so the active pill reads as "this kind of icon".
-//   synonyms — words the user might type to surface this resource (kept
-//              for future search-bar wiring; not consumed yet). Include
-//              the canonical tag itself so identity matches work.
+//   synonyms — words the user might type to surface this resource in the
+//              world-view search (consumed by matchResourceKeyword /
+//              searchResources). Include the canonical tag itself so
+//              identity matches work.
 //
 // Source of detections is tools/find_resources.py → REGION_RESOURCES inlined
 // in index.html as `REGION_RESOURCES[region_id][tag] = [{bbox, score}]`.
@@ -67,6 +68,38 @@ const RESOURCES_META = {
   sapling:        { label: 'Sapling',         color: '#3a8a3a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
   salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },
 };
+
+const RESOURCE_SYNONYMS = {};
+for (const [tag, meta] of Object.entries(RESOURCES_META)) {
+  for (const syn of meta.synonyms) RESOURCE_SYNONYMS[syn] = tag;
+}
+
+function matchResourceKeyword(q) {
+  // Returns a canonical resource tag if the trimmed query matches a synonym
+  // (full word, case-insensitive) — same contract as matchToolKeyword.
+  const ql = q.trim().toLowerCase();
+  return RESOURCE_SYNONYMS[ql] || null;
+}
+
+function searchResources(q, ctx) {
+  // Region-scoped resource results for the world-view search: typing "moose"
+  // lists the regions with detected moose areas, biggest count first, so the
+  // user can jump straight into a #region/$resource:moose cycle.
+  //   ctx: { regionResources, regions, maxResults? }
+  // Returns [{ tag, region, count }].
+  const tag = matchResourceKeyword(q);
+  if (!tag) return [];
+  const maxResults = ctx.maxResults != null ? ctx.maxResults : 6;
+  const rows = [];
+  for (const r of ctx.regions) {
+    const hits = (ctx.regionResources[r.id] || {})[tag];
+    if (Array.isArray(hits) && hits.length) {
+      rows.push({ tag, region: r.id, count: hits.length });
+    }
+  }
+  rows.sort((a, b) => b.count - a.count);
+  return rows.slice(0, maxResults);
+}
 
 // Heuristic: does this bbox look like it landed inside the map's legend
 // strip rather than on real on-map content? HokuOwl's region maps put the
@@ -262,7 +295,9 @@ const LDLogic = {
   looksLikeLegendBbox,
   nextResourceCycle,
   matchToolKeyword,
+  matchResourceKeyword,
   searchPlaces,
+  searchResources,
   bfsPaths,
   findNearestTool,
   pathSummary,

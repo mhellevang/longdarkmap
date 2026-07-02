@@ -69,6 +69,53 @@ test('matchToolKeyword: non-synonym returns null', () => {
   assert.equal(L.matchToolKeyword('something else'), null);
 });
 
+// ─── matchResourceKeyword / searchResources ─────────────────────────────────
+
+const REGION_RESOURCES = {
+  mystery_lake:    { moose: [{ bbox: [0, 0, 0.1, 0.1] }], cattails: [{}, {}, {}] },
+  coastal_highway: { moose: [{}, {}], cattails: [{}] },
+  pleasant_valley: { moose: [{}, {}, {}] },
+};
+const RESOURCE_CTX = { regionResources: REGION_RESOURCES, regions: REGIONS };
+
+test('matchResourceKeyword: canonical synonyms', () => {
+  assert.equal(L.matchResourceKeyword('moose'), 'moose');
+  assert.equal(L.matchResourceKeyword('timberwolves'), 'timberwolf');
+  assert.equal(L.matchResourceKeyword('cattail'), 'cattails');
+  assert.equal(L.matchResourceKeyword('birch'), 'sapling');
+  assert.equal(L.matchResourceKeyword('salt'), 'salt_deposit');
+});
+
+test('matchResourceKeyword: trims and lowercases; non-synonym returns null', () => {
+  assert.equal(L.matchResourceKeyword('  Moose  '), 'moose');
+  assert.equal(L.matchResourceKeyword('camp'), null);
+  assert.equal(L.matchResourceKeyword(''), null);
+});
+
+test('searchResources: non-keyword query returns []', () => {
+  assert.deepEqual(L.searchResources('camp office', RESOURCE_CTX), []);
+});
+
+test('searchResources: lists regions with hits, biggest count first', () => {
+  const rows = L.searchResources('moose', RESOURCE_CTX);
+  assert.deepEqual(rows, [
+    { tag: 'moose', region: 'pleasant_valley', count: 3 },
+    { tag: 'moose', region: 'coastal_highway', count: 2 },
+    { tag: 'moose', region: 'mystery_lake',    count: 1 },
+  ]);
+});
+
+test('searchResources: regions without the resource are skipped', () => {
+  const rows = L.searchResources('cattails', RESOURCE_CTX);
+  assert.deepEqual(rows.map(r => r.region), ['mystery_lake', 'coastal_highway']);
+});
+
+test('searchResources: maxResults caps the output', () => {
+  const rows = L.searchResources('moose', { ...RESOURCE_CTX, maxResults: 2 });
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].region, 'pleasant_valley');
+});
+
 // ─── searchPlaces ────────────────────────────────────────────────────────────
 
 test('searchPlaces: empty query returns []', () => {
