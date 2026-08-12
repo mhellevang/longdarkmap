@@ -1160,9 +1160,23 @@ body.detail-open #offline-btn { display: none; }
      Each strip scrolls horizontally instead of wrapping into a tall pile. */
   #detail-header {
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 6px;
+    padding: 6px 10px;
     align-items: center;
+  }
+
+  /* The legend button leaves the header (where it forced a mostly-empty
+     fourth row) and joins the zoom controls at the bottom edge, styled to
+     match them. Its popover already docks as a bottom sheet on phones. */
+  #legend-btn {
+    position: fixed;
+    left: 16px;
+    bottom: 14px;
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    background: rgba(8, 12, 18, 0.75);
   }
   #region-title {
     font-size: 16px;
@@ -1270,6 +1284,15 @@ body.detail-open #offline-btn { display: none; }
 
   /* The hint references scroll wheels and arrow keys — not useful on touch. */
   #zoom-hint { display: none; }
+
+  /* Right-edge fade on the horizontally scrolling strips while more pills
+     are hidden that way; JS toggles the class from scroll position. */
+  #map-tabs.scroll-fade,
+  #tools-nearby.scroll-fade,
+  #resources-panel.scroll-fade {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
 }
 
 /* Phone in landscape: viewport is wide enough to sit map-tabs inline with

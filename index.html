@@ -78,7 +78,7 @@
            role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" aria-label="Search for a place">
     <div id="search-results" role="listbox" aria-label="Search results"></div>
   </div>
-  <button id="offline-btn" hidden>Save all maps offline</button>
+  <button id="offline-btn" hidden>Save all maps offline (~72 MB)</button>
 </div>
 
 <!-- ══════════ DETAIL VIEW (modal) ══════════ -->
@@ -30635,6 +30635,12 @@ const WORLD_MIN_ZOOM = 1;
 const WORLD_MAX_ZOOM = 8;
 let worldZoom = 1, worldPanX = 0, worldPanY = 0;
 
+// Same phone breakpoint as the mobile stylesheet. A function (not a cached
+// MediaQueryList) because the jsdom test harness swaps window.matchMedia.
+function phoneLayout() {
+  return matchMedia('(max-width: 640px), (max-height: 500px) and (orientation: landscape)').matches;
+}
+
 function applyWorldTransform() {
   // Clamp pan so the map can't drift past the viewport edges. When the
   // scaled map is wider/taller than the viewport, the user can pan to
@@ -30686,7 +30692,7 @@ function layoutWorldMap() {
   // thin strip, so default to a cover crop instead: zoom until the map
   // fills the viewport, centred. Pinching out (WORLD_MIN_ZOOM = 1) still
   // reaches the full-map fit. Same breakpoint as the mobile stylesheet.
-  if (matchMedia('(max-width: 640px), (max-height: 500px) and (orientation: landscape)').matches) {
+  if (phoneLayout()) {
     worldZoom = Math.min(WORLD_MAX_ZOOM,
       Math.max(window.innerWidth / w, window.innerHeight / h));
   }
@@ -30737,6 +30743,12 @@ labelLayer.addEventListener('click', e => {
     if (d < bestDist) { bestDist = d; best = btn; }
   }
   if (!best) return;
+  // The hitboxes scale with the world zoom (styles keep them tappable at
+  // fit zoom, so at the mobile cover crop they're ~4× wider than the
+  // visible label chip). Ignore taps farther from the label centre than
+  // the button's unscaled size — those land on visually empty terrain.
+  const br = best.getBoundingClientRect();
+  if (bestDist > 0.75 * Math.max(br.width, br.height) / worldZoom) return;
   const region = REGIONS_BY_ID[best.dataset.regionId];
   if (region) openRegion(region);
 });
@@ -31382,7 +31394,12 @@ function loadDetailMap(src) {
 function fitMap() {
   const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
   fitZoom = Math.min(cw / imgW, ch / imgH);
-  zoom = fitZoom;
+  // Phones: default to a centred cover crop like the world view — the
+  // contained fit leaves the sheet as a letterboxed thumbnail. Pinching
+  // out still reaches the full fit (MIN_ZOOM is far below it).
+  zoom = phoneLayout()
+    ? Math.min(MAX_ZOOM, Math.max(cw / imgW, ch / imgH))
+    : fitZoom;
   panX = (cw - imgW * zoom) / 2;
   panY = (ch - imgH * zoom) / 2;
   applyTransform();
@@ -31400,10 +31417,15 @@ function focusHighlight() {
   const boxH = Math.max(1, (y2 - y1) * imgH);
   // Aim for the box to occupy ~5% of the smaller canvas dim, giving the
   // user ~20× as much surrounding context as box. Cap at 3× fitZoom so a
-  // very small place name doesn't slingshot us in too tight.
-  const target = 0.05;
+  // very small place name doesn't slingshot us in too tight. On phones the
+  // contained fit is a thumbnail, so both the floor and the cap use the
+  // cover zoom instead, and the box gets a bigger share of the canvas.
+  const baseZoom = phoneLayout()
+    ? Math.max(cw / imgW, ch / imgH)
+    : fitZoom;
+  const target = phoneLayout() ? 0.15 : 0.05;
   const wantedZoom = Math.min(cw * target / boxW, ch * target / boxH);
-  zoom = Math.min(MAX_ZOOM, fitZoom * 3, Math.max(fitZoom, wantedZoom));
+  zoom = Math.min(MAX_ZOOM, baseZoom * 3, Math.max(baseZoom, wantedZoom));
   const cxImg = ((x1 + x2) / 2) * imgW;
   const cyImg = ((y1 + y2) / 2) * imgH;
   panX = cw / 2 - cxImg * zoom;
@@ -32003,6 +32025,20 @@ document.addEventListener('keydown', e => {
 // shareable.
 const resourcesPanelEl = document.getElementById('resources-panel');
 
+// On phone widths the tab/pill strips scroll horizontally with hidden
+// scrollbars; fade the right edge while there's more content that way.
+// MutationObserver covers the re-renders on region open/tab switch.
+for (const strip of [mapTabsEl, toolsNearbyEl, resourcesPanelEl]) {
+  // rAF so the measurement runs after the modal is shown — the strips are
+  // repopulated while detail-view is still display:none (all widths 0).
+  const update = () => requestAnimationFrame(() =>
+    strip.classList.toggle('scroll-fade',
+      strip.scrollWidth - strip.clientWidth - strip.scrollLeft > 4));
+  strip.addEventListener('scroll', update, { passive: true });
+  new MutationObserver(update).observe(strip, { childList: true });
+  window.addEventListener('resize', update);
+}
+
 function renderResourcesPanel(region) {
   resourcesPanelEl.innerHTML = '';
   if (!region) return;
@@ -32552,10 +32588,11 @@ window.addEventListener('mouseup', e => {
 });
 
 // Touch
-let lastTouchDist = 0;
+let lastTouchDist = 0, lastTapTime = 0, touchMoved = false;
 mapCanvas.addEventListener('touchstart', e => {
   if (e.touches.length === 1) {
     dragging = true;
+    touchMoved = false;
     dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
     panStartX = panX; panStartY = panY;
   } else if (e.touches.length === 2) {
@@ -32568,10 +32605,14 @@ mapCanvas.addEventListener('touchstart', e => {
 }, { passive: true });
 mapCanvas.addEventListener('touchmove', e => {
   if (dragging && e.touches.length === 1) {
-    panX = panStartX + (e.touches[0].clientX - dragStartX);
-    panY = panStartY + (e.touches[0].clientY - dragStartY);
+    const dx = e.touches[0].clientX - dragStartX;
+    const dy = e.touches[0].clientY - dragStartY;
+    if (Math.abs(dx) + Math.abs(dy) > 8) touchMoved = true;
+    panX = panStartX + dx;
+    panY = panStartY + dy;
     applyTransform();
   } else if (e.touches.length === 2) {
+    touchMoved = true;
     const dist = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
@@ -32588,9 +32629,28 @@ mapCanvas.addEventListener('touchmove', e => {
     applyTransform();
   }
 }, { passive: true });
-mapCanvas.addEventListener('touchend', () => { dragging = false; });
+mapCanvas.addEventListener('touchend', e => {
+  dragging = false;
+  // Double-tap zooms in around the tap point (map-app convention). Desktop
+  // keeps double-click = reset via the dblclick listener below.
+  if (phoneLayout() && e.changedTouches.length === 1 && !touchMoved) {
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+      const r = mapCanvas.getBoundingClientRect();
+      const t = e.changedTouches[0];
+      applyZoom(zoom * 2, t.clientX - r.left, t.clientY - r.top);
+      lastTapTime = 0;
+    } else {
+      lastTapTime = now;
+    }
+  } else {
+    lastTapTime = 0;
+  }
+});
 
-mapCanvas.addEventListener('dblclick', fitMap);
+// Some mobile browsers synthesize dblclick from a double-tap; the phone
+// guard keeps that from resetting the zoom the touchend handler just set.
+mapCanvas.addEventListener('dblclick', () => { if (!phoneLayout()) fitMap(); });
 
 
 function _closeModal() {
@@ -32702,7 +32762,9 @@ if (offlineBtn && 'caches' in window && 'serviceWorker' in navigator) {
       offlineBtn.disabled = true;
       offlineBtn.title = 'Every region map is cached — the app works without signal';
     } else {
-      offlineBtn.textContent = 'Save all maps offline';
+      // The size in the button text, not just the tooltip — touch users
+      // never see title attributes, and they're the ones on mobile data.
+      offlineBtn.textContent = 'Save all maps offline (~72 MB)';
       offlineBtn.disabled = false;
       offlineBtn.title = `Download all ${allMapUrls.length} maps (~72 MB) so the app works without signal`;
     }

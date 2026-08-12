@@ -9,9 +9,9 @@ A no-build, offline-friendly interactive map for *The Long Dark*. The world view
 Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the repo and open `index.html` in any modern browser. No build step, no server required.
 
 - **Click** a region label to open its detail map
-- **Scroll** to zoom, **drag** to pan, **double-click** to reset
+- **Scroll** to zoom, **drag** to pan, **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
-- **?** in the detail-view header opens a legend explaining the tool-badge glyphs and resource-pill colours
+- **?** opens a legend explaining the tool-badge glyphs and resource-pill colours (detail-view header; bottom-left on phones)
 - **D** (dev server only) toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. The key is a no-op when the page is opened directly or from the public deploy. In the detail view with D on:
   - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
   - **Click any box** (including the search highlight) to grab it for editing.
