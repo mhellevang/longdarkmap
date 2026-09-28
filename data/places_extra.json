@@ -42,5 +42,349 @@
   {
     "name": "Warehouses",
     "region": "zone_of_contamination"
+  },
+  {
+    "name": "Cabin #1",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cabin #2",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cabin #3",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cabin #4",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cave #2",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Cave to Timberwolf Mountain",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "ash_canyon"
+  },
+  {
+    "name": "Abandoned Mine",
+    "region": "blackrock"
+  },
+  {
+    "name": "Cave to Timberwolf Mountain",
+    "region": "blackrock"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "blackrock"
+  },
+  {
+    "name": "Trailer #1",
+    "region": "blackrock"
+  },
+  {
+    "name": "Trailer #2",
+    "region": "blackrock"
+  },
+  {
+    "name": "Cabin #2",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cave #1",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cave #2",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cave #3",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cave #4",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Cave to Forlorn Muskeg",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Hunter's Blind #1",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Hunter's Blind #2",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Hunter's Blind #3",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Trailer #1",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Trailer #2",
+    "region": "bleak_inlet"
+  },
+  {
+    "name": "Maintenance Shed",
+    "region": "broken_railroad"
+  },
+  {
+    "name": "Cabin #1",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Cabin #2",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Cabin #3",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Cabins",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Coastal House #2",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Coastal House #3",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Coastal Houses",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #1",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #2",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #3",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #4",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #5",
+    "region": "coastal_highway"
+  },
+  {
+    "name": "Trailer #1",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Trailer #2",
+    "region": "desolation_point"
+  },
+  {
+    "name": "Abandoned Camp #2",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Abandoned Camp #3",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Abandoned Camp #4",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Cave",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Cave to Bleak Inlet",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "forlorn_muskeg"
+  },
+  {
+    "name": "Cabin",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Cave to Zone of Contamination",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Trailer #1",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Trailer #2",
+    "region": "forsaken_airfield"
+  },
+  {
+    "name": "Cave to Mountain Town",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "hushed_river_valley"
+  },
+  {
+    "name": "North & South Connector Cave",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Trailer",
+    "region": "keepers_pass"
+  },
+  {
+    "name": "Cave #2",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Cave to Hushed River Valley",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Cave to Mystery Lake",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Wood Lot #2",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Wood Lot #3",
+    "region": "mountain_town"
+  },
+  {
+    "name": "Cabin",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Cabins",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Cave to Mountain Town",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Ice Fishing Huts",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Trailers #2",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Trapper's Cabin",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Upper Dam",
+    "region": "mystery_lake"
+  },
+  {
+    "name": "Abandoned Mine to Coastal Highway",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Barn #2",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Barn #3",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Basement",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Cave",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Cave System to Winding River",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Farmhouse Basement",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Hunter's Blind #1",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Hunter's Blind #2",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Radio Control Hut",
+    "region": "pleasant_valley"
+  },
+  {
+    "name": "Cabin #2",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Cave to Zone of Contamination",
+    "region": "sundered_pass"
+  },
+  {
+    "name": "Cave #3",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Cave #4",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Cave to Ash Canyon",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Prepper Cache",
+    "region": "timberwolf_mountain"
+  },
+  {
+    "name": "Cave to Forsaken Airfield",
+    "region": "zone_of_contamination"
+  },
+  {
+    "name": "Trailer",
+    "region": "zone_of_contamination"
   }
 ]

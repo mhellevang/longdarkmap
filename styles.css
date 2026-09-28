@@ -228,9 +228,9 @@ body {
     0 0 72px 22px  rgba(244, 164, 164, 0.18);
 }
 
-/* ── Looted places (click a label to mark it) ───────────────────────────── */
+/* ── Visited places (click a label to mark it) ───────────────────────────── */
 /* Invisible targets over every place label; hover shows a soft ring, and a
-   looted place gets a green tint plus a ✓ chip at its top-right corner.
+   visited place gets a green tint plus a ✓ chip at its top-right corner.
    Hidden in dev mode so the bbox editor gets the clicks. */
 #places-layer {
   position: absolute;
@@ -253,11 +253,11 @@ body.dev-mode #places-layer { display: none; }
 .place-target:focus-visible {
   outline: 2px solid rgba(110, 170, 230, 0.75);
 }
-.place-target.looted {
+.place-target.visited {
   background: rgba(46, 160, 67, 0.22);
   outline: 2px solid rgba(46, 160, 67, 0.85);
 }
-.place-target.looted::after {
+.place-target.visited::after {
   content: '✓';
   position: absolute;
   top: -9px;
@@ -271,12 +271,12 @@ body.dev-mode #places-layer { display: none; }
   text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
-#looted-progress {
+#visited-progress {
   font: 12px/1 ui-monospace, Menlo, monospace;
   color: rgba(126, 231, 135, 0.85);
   white-space: nowrap;
 }
-.result-looted { color: #7ee787; }
+.result-visited { color: #7ee787; }
 
 /* ── All-boxes overlay (dev mode) ────────────────────────────────────────── */
 /* Renders every PLACE_BOXES entry for the current region as a labelled

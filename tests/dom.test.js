@@ -507,31 +507,31 @@ test('resources panel: switching region clears the previous active pill', async 
   } finally { close(); }
 });
 
-// ─── looted places ───────────────────────────────────────────────────────────
+// ─── visited places ───────────────────────────────────────────────────────────
 
-test('looted: clicking a place toggles the mark, progress, and storage', async () => {
+test('visited: clicking a place toggles the mark, progress, and storage', async () => {
   const { window, document, close } = await loadPage();
   try {
     window.location.hash = '#coastal_highway';
     fire(window, window, 'hashchange');
     const targets = document.querySelectorAll('#places-layer .place-target');
     assert.ok(targets.length > 0, 'sanity: coastal_highway has place targets');
-    const progress = document.getElementById('looted-progress');
-    assert.equal(progress.textContent, `✓ 0/${targets.length} looted`);
+    const progress = document.getElementById('visited-progress');
+    assert.equal(progress.textContent, `✓ 0/${targets.length} visited`);
 
     fire(window, targets[0], 'click');
-    assert.ok(targets[0].classList.contains('looted'));
-    assert.equal(progress.textContent, `✓ 1/${targets.length} looted`);
+    assert.ok(targets[0].classList.contains('visited'));
+    assert.equal(progress.textContent, `✓ 1/${targets.length} visited`);
     const stored = JSON.parse(window.localStorage.getItem('ldm.looted.v1'));
     assert.equal(stored.coastal_highway.length, 1);
 
     fire(window, targets[0], 'click');
-    assert.ok(!targets[0].classList.contains('looted'));
-    assert.equal(progress.textContent, `✓ 0/${targets.length} looted`);
+    assert.ok(!targets[0].classList.contains('visited'));
+    assert.equal(progress.textContent, `✓ 0/${targets.length} visited`);
   } finally { close(); }
 });
 
-test('looted: search results mark looted places with ✓', async () => {
+test('visited: search results mark visited places with ✓', async () => {
   const { window, document, close } = await loadPage();
   try {
     window.location.hash = '#coastal_highway';
@@ -545,7 +545,7 @@ test('looted: search results mark looted places with ✓', async () => {
     const row = [...document.querySelectorAll('.search-result')]
       .find(r => r.querySelector('.result-name').firstChild.textContent === name);
     assert.ok(row, `expected a result row for ${name}`);
-    assert.ok(row.querySelector('.result-looted'), 'looted row carries a ✓');
+    assert.ok(row.querySelector('.result-visited'), 'visited row carries a ✓');
   } finally { close(); }
 });
 

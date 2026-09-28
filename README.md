@@ -11,7 +11,7 @@ Open the [live demo](https://mhellevang.github.io/longdarkmap/), or clone the re
 - **Click** a region label to open its detail map
 - **Scroll** to zoom, **drag** to pan, **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
-- **Click a place name** on a region map to mark it as looted (green ✓; click again to unmark). The header shows `✓ n/N looted` for the region and search results carry a ✓ for looted places. Stored per browser in `localStorage` (`ldm.looted.v1`), nothing leaves the device
+- **Click a place name** on a region map to mark it as visited (green ✓; click again to unmark). The header shows `✓ n/N visited` for the region and search results carry a ✓ for visited places. Stored per browser in `localStorage` (`ldm.looted.v1`), nothing leaves the device
 - **?** opens a legend explaining the tool-badge glyphs and resource-pill colours (detail-view header; bottom-left on phones)
 - **D** (dev server only) toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. The key is a no-op when the page is opened directly or from the public deploy. In the detail view with D on:
   - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
@@ -28,7 +28,7 @@ The world view has a search box for finding any named location across all region
 - **↑ / ↓** to navigate results, **Enter** to open, **Esc** to clear / blur
 - Each result shows the location name and the region it belongs to; clicking opens that region's detail map and **highlights** the matching label: the view zooms in on the box, briefly dims the rest of the map, and leaves a glowing outline around the label
 
-The index (~355 named locations) plus per-label bounding boxes are bundled into `index.html` so search and highlighting work fully offline, including from a static deploy.
+The index (~450 named locations) plus per-label bounding boxes are bundled into `index.html` so search and highlighting work fully offline, including from a static deploy.
 
 ### Crafting-tool keywords
 
@@ -207,7 +207,7 @@ All map artwork is community-made and hosted on Steam. The images bundled here a
 - **World map** (`maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg`) — preview image from [*[spoilers] Tales from the Far Territory map locations*](https://steamcommunity.com/sharedfiles/filedetails/?id=2899955301) by **Krueger**.
 - **Region maps** — from [*Updated Region Maps [2025]*](https://steamcommunity.com/sharedfiles/filedetails/?id=3255435617) by **HokuOwl**. Each region has two difficulty variants: Pilgrim/Voyageur/Stalker (saved as `<region>.webp`, tab "Standard") and Interloper/Misery (saved as `<region>_loper.webp`, tab "Interloper"). Exact image URLs are listed in `data/regions.json`.
 - **Region label positions** — adapted from [*TLD-Interactive-Map*](https://github.com/Elektronixx/TLD-Interactive-Map) by **Elektronixx**, whose image-map hotspot coordinates were converted to percentages and used as the `pos` values in `data/regions.json`.
-- **Place names** — most are scraped from the per-region `Category:Locations_in_*` pages on the [Long Dark Fandom wiki](https://thelongdark.fandom.com/wiki/Locations) (CC-BY-SA 3.0). A handful in `data/places_extra.json` were read off the printed labels on HokuOwl's maps where the wiki had no matching entry.
+- **Place names** — most are scraped from the per-region `Category:Locations_in_*` pages on the [Long Dark Fandom wiki](https://thelongdark.fandom.com/wiki/Locations) (CC-BY-SA 3.0). The rest (`data/places_extra.json`) are official (blue, upper-case) labels printed on HokuOwl's maps that the wiki doesn't list — buildings like Maintenance Shed, plus generic cabins, trailers, caves and prepper caches, numbered per region (`Cabin #1`, `Cabin #2`, …).
 - **Per-place bounding boxes** (`data/place_boxes.json`) — derived locally from Apple Vision OCR run over HokuOwl's region maps via `tools/ocr_run.py`, then matched to the wiki names by a Haiku subagent (`tools/match_prompt.md`). Manual fixes from the in-browser editor live in `data/place_boxes_overrides.json`. No external attribution is needed for the box coordinates themselves; the underlying labels they frame are the map artists' work.
 
 *The Long Dark* is © Hinterland Studio Inc.
