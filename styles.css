@@ -228,6 +228,56 @@ body {
     0 0 72px 22px  rgba(244, 164, 164, 0.18);
 }
 
+/* ── Looted places (click a label to mark it) ───────────────────────────── */
+/* Invisible targets over every place label; hover shows a soft ring, and a
+   looted place gets a green tint plus a ✓ chip at its top-right corner.
+   Hidden in dev mode so the bbox editor gets the clicks. */
+#places-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+body.dev-mode #places-layer { display: none; }
+.place-target {
+  position: absolute;
+  pointer-events: all;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+}
+.place-target:hover,
+.place-target:focus-visible {
+  outline: 2px solid rgba(110, 170, 230, 0.75);
+}
+.place-target.looted {
+  background: rgba(46, 160, 67, 0.22);
+  outline: 2px solid rgba(46, 160, 67, 0.85);
+}
+.place-target.looted::after {
+  content: '✓';
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2ea043;
+  color: #fff;
+  font: bold 12px/18px system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+#looted-progress {
+  font: 12px/1 ui-monospace, Menlo, monospace;
+  color: rgba(126, 231, 135, 0.85);
+  white-space: nowrap;
+}
+.result-looted { color: #7ee787; }
+
 /* ── All-boxes overlay (dev mode) ────────────────────────────────────────── */
 /* Renders every PLACE_BOXES entry for the current region as a labelled
    translucent rectangle so misplaced boxes can be spotted at a glance. */
@@ -484,8 +534,9 @@ body.detail-open #offline-btn { display: none; }
 
 #detail-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 8px 16px;
   padding: 10px 18px;
   background: rgba(8, 12, 18, 0.97);
   border-bottom: 1px solid rgba(110, 170, 230, 0.22);
@@ -574,13 +625,17 @@ body.detail-open #offline-btn { display: none; }
    If the open region has the tool: shows count + a "here" hint, click jumps
    to the first instance with the tool filter active. If not: shows the
    nearest place + hop count via BFS over region adjacencies. */
-#tools-nearby {
+/* Second header row: tool pills, then resource pills. */
+#header-pills {
   display: flex;
-  gap: 6px;
-  margin-left: auto;       /* push to the right edge of the header */
+  flex-basis: 100%;
   flex-wrap: wrap;
   align-items: center;
+  gap: 6px;
 }
+/* The two groups flow as one run of pills (display: contents) so they wrap
+   pill-by-pill instead of as blocks. */
+#tools-nearby { display: contents; }
 .tool-pill {
   display: inline-flex;
   align-items: center;
@@ -672,23 +727,10 @@ body.detail-open #offline-btn { display: none; }
 .tool-pill.cycling .tool-pill-cycle-close { display: inline; }
 
 /* ── Resources panel (legend-icon detections) ───────────────────────────── */
-/* Sits inline on the right of the header, right after #tools-nearby — they
-   share the same conceptual row ("things you can navigate to at a glance").
-   A thin left border visually separates the two groups without adding a
-   second strip. Each pill is one resource type; click cycles through hits.
-   Empty when the open region has no detected resources (hidden via :empty). */
-#resources-panel {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding-left: 10px;
-  margin-left: 4px;
-  border-left: 1px solid rgba(110, 170, 230, 0.18);
-}
-#resources-panel:empty {
-  display: none;
-}
+/* Follows the tool pills in #header-pills; a gap before the first pill sets
+   the two groups apart. Each pill is one resource type; click cycles hits. */
+#resources-panel { display: contents; }
+#resources-panel .resource-pill:first-child { margin-left: 12px; }
 .resource-pill {
   display: inline-flex;
   align-items: center;
@@ -1058,6 +1100,7 @@ body.detail-open #offline-btn { display: none; }
 #map-canvas.map-loading #detail-img,
 #map-canvas.map-loading #region-links-layer,
 #map-canvas.map-loading #tools-layer,
+#map-canvas.map-loading #places-layer,
 #map-canvas.map-loading #all-boxes-layer,
 #map-canvas.map-loading #highlight-box {
   visibility: hidden;
@@ -1117,7 +1160,10 @@ body.detail-open #offline-btn { display: none; }
   bottom: 60px;
   right: 16px;
   font-size: 11px;
-  color: rgba(180, 200, 220, 0.3);
+  color: rgba(220, 230, 240, 0.85);
+  background: rgba(8, 12, 18, 0.75);
+  padding: 3px 8px;
+  border-radius: 4px;
   pointer-events: none;
 }
 
@@ -1208,36 +1254,17 @@ body.detail-open #offline-btn { display: none; }
   #map-tabs::-webkit-scrollbar { display: none; }
   .tab-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
 
-  /* Tools-nearby: same treatment — keep all 4 pills reachable via scroll. */
-  #tools-nearby {
-    margin-left: 0;
+  /* Tool + resource pills share one horizontally scrolling strip, so the
+     header stays at three short rows instead of four. */
+  #header-pills {
     flex-wrap: nowrap;
     overflow-x: auto;
-    flex-basis: 100%;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 2px;
   }
-  #tools-nearby::-webkit-scrollbar { display: none; }
+  #header-pills::-webkit-scrollbar { display: none; }
   .tool-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
-
-  /* Resources-panel: same horizontal-scroll treatment as tools-nearby so
-     all detected resource pills stay reachable on phone-width viewports.
-     Forced to its own row here (the desktop layout uses a left border to
-     sit inline with tools-nearby; on mobile we drop the border and let it
-     break to a new line). */
-  #resources-panel {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    flex-basis: 100%;
-    margin-left: 0;
-    padding-left: 0;
-    border-left: none;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  #resources-panel::-webkit-scrollbar { display: none; }
   .resource-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
 
   /* Route popover: dock as a bottom sheet. The !important overrides override
@@ -1288,16 +1315,15 @@ body.detail-open #offline-btn { display: none; }
   /* Right-edge fade on the horizontally scrolling strips while more pills
      are hidden that way; JS toggles the class from scroll position. */
   #map-tabs.scroll-fade,
-  #tools-nearby.scroll-fade,
-  #resources-panel.scroll-fade {
+  #header-pills.scroll-fade {
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
     mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
   }
 }
 
 /* Phone in landscape: viewport is wide enough to sit map-tabs inline with
-   the title row, saving ~32px of header height. Tools-nearby and
-   resources-panel keep their own rows — they have too many pills to fit. */
+   the title row, saving ~32px of header height. The pill strip keeps its
+   own row — it has too many pills to fit. */
 @media (max-height: 500px) and (orientation: landscape) {
   #detail-header { padding: 6px 10px; gap: 6px; }
   #map-tabs {

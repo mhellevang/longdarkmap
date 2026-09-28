@@ -43,7 +43,7 @@
 
 <!-- PWA: installable + offline-friendly. The SW precaches the small app
      shell and lazy-caches each region map on first view; the "Save all maps
-     offline" button prefetches everything (~72 MB) for fully offline use.
+     offline" button prefetches everything (~29 MB) for fully offline use.
      See manifest.json and sw.js. -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d1117">
@@ -78,7 +78,7 @@
            role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" aria-label="Search for a place">
     <div id="search-results" role="listbox" aria-label="Search results"></div>
   </div>
-  <button id="offline-btn" hidden>Save all maps offline (~72 MB)</button>
+  <button id="offline-btn" hidden>Save all maps offline (~29 MB)</button>
 </div>
 
 <!-- ══════════ DETAIL VIEW (modal) ══════════ -->
@@ -88,10 +88,13 @@
       <button id="back-btn" aria-label="Close region view">✕</button>
       <button id="back-to-origin-btn" hidden></button>
       <h2 id="region-title"></h2>
+      <span id="looted-progress" title="Click a place name on the map to mark it as looted"></span>
       <div id="map-tabs"></div>
-      <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
-      <div id="resources-panel" aria-label="Resources on this map"></div>
       <button id="legend-btn" aria-label="Map legend" aria-expanded="false" title="What do the badges and colours mean?">?</button>
+      <div id="header-pills">
+        <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
+        <div id="resources-panel" aria-label="Resources on this map"></div>
+      </div>
     </div>
     <div id="legend-popover" role="dialog" aria-label="Map legend" hidden>
       <div id="legend-popover-header">
@@ -119,6 +122,7 @@
     <div id="map-canvas">
       <img id="detail-img" alt="" decoding="async">
       <div id="all-boxes-layer"></div>
+      <div id="places-layer"></div>
       <div id="region-links-layer"></div>
       <div id="tools-layer" aria-hidden="true"></div>
       <div id="highlight-box"></div>
@@ -29509,8 +29513,8 @@ const REGIONS = [
       50.61
     ],
     "maps": [
-      "maps/mystery_lake.jpg",
-      "maps/mystery_lake_loper.jpg"
+      "maps/mystery_lake.webp",
+      "maps/mystery_lake_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Mystery Lake"
@@ -29534,8 +29538,8 @@ const REGIONS = [
       67.51
     ],
     "maps": [
-      "maps/coastal_highway.jpg",
-      "maps/coastal_highway_loper.jpg"
+      "maps/coastal_highway.webp",
+      "maps/coastal_highway_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Coastal Highway"
@@ -29558,8 +29562,8 @@ const REGIONS = [
       37.43
     ],
     "maps": [
-      "maps/pleasant_valley.jpg",
-      "maps/pleasant_valley_loper.jpg"
+      "maps/pleasant_valley.webp",
+      "maps/pleasant_valley_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Pleasant Valley"
@@ -29583,8 +29587,8 @@ const REGIONS = [
       77.12
     ],
     "maps": [
-      "maps/desolation_point.jpg",
-      "maps/desolation_point_loper.jpg"
+      "maps/desolation_point.webp",
+      "maps/desolation_point_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Desolation Point"
@@ -29605,8 +29609,8 @@ const REGIONS = [
       22.63
     ],
     "maps": [
-      "maps/timberwolf_mountain.jpg",
-      "maps/timberwolf_mountain_loper.jpg"
+      "maps/timberwolf_mountain.webp",
+      "maps/timberwolf_mountain_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Timberwolf Mountain"
@@ -29629,8 +29633,8 @@ const REGIONS = [
       66.55
     ],
     "maps": [
-      "maps/forlorn_muskeg.jpg",
-      "maps/forlorn_muskeg_loper.jpg"
+      "maps/forlorn_muskeg.webp",
+      "maps/forlorn_muskeg_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Forlorn Muskeg"
@@ -29654,8 +29658,8 @@ const REGIONS = [
       63.36
     ],
     "maps": [
-      "maps/broken_railroad.jpg",
-      "maps/broken_railroad_loper.jpg"
+      "maps/broken_railroad.webp",
+      "maps/broken_railroad_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Broken Railroad"
@@ -29678,8 +29682,8 @@ const REGIONS = [
       78.1
     ],
     "maps": [
-      "maps/bleak_inlet.jpg",
-      "maps/bleak_inlet_loper.jpg"
+      "maps/bleak_inlet.webp",
+      "maps/bleak_inlet_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Bleak Inlet"
@@ -29701,8 +29705,8 @@ const REGIONS = [
       19.41
     ],
     "maps": [
-      "maps/hushed_river_valley.jpg",
-      "maps/hushed_river_valley_loper.jpg"
+      "maps/hushed_river_valley.webp",
+      "maps/hushed_river_valley_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Hushed River Valley"
@@ -29723,8 +29727,8 @@ const REGIONS = [
       40.28
     ],
     "maps": [
-      "maps/mountain_town.jpg",
-      "maps/mountain_town_loper.jpg"
+      "maps/mountain_town.webp",
+      "maps/mountain_town_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Mountain Town"
@@ -29747,8 +29751,8 @@ const REGIONS = [
       16.11
     ],
     "maps": [
-      "maps/ash_canyon.jpg",
-      "maps/ash_canyon_loper.jpg"
+      "maps/ash_canyon.webp",
+      "maps/ash_canyon_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Ash Canyon"
@@ -29769,8 +29773,8 @@ const REGIONS = [
       11.47
     ],
     "maps": [
-      "maps/blackrock.jpg",
-      "maps/blackrock_loper.jpg"
+      "maps/blackrock.webp",
+      "maps/blackrock_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Blackrock"
@@ -29792,8 +29796,8 @@ const REGIONS = [
       68.82
     ],
     "maps": [
-      "maps/forsaken_airfield.jpg",
-      "maps/forsaken_airfield_loper.jpg"
+      "maps/forsaken_airfield.webp",
+      "maps/forsaken_airfield_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Forsaken Airfield"
@@ -29816,8 +29820,8 @@ const REGIONS = [
       47.68
     ],
     "maps": [
-      "maps/sundered_pass.jpg",
-      "maps/sundered_pass_loper.jpg"
+      "maps/sundered_pass.webp",
+      "maps/sundered_pass_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Sundered Pass"
@@ -29839,8 +29843,8 @@ const REGIONS = [
       59.69
     ],
     "maps": [
-      "maps/zone_of_contamination.jpg",
-      "maps/zone_of_contamination_loper.jpg"
+      "maps/zone_of_contamination.webp",
+      "maps/zone_of_contamination_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Zone of Contamination"
@@ -29862,7 +29866,7 @@ const REGIONS = [
       90.02
     ],
     "maps": [
-      "maps/crumbling_highway.jpg"
+      "maps/crumbling_highway.webp"
     ],
     "wiki_categories": [
       "Locations in Crumbling Highway"
@@ -29883,8 +29887,8 @@ const REGIONS = [
       79.54
     ],
     "maps": [
-      "maps/far_range_branch_line.jpg",
-      "maps/far_range_branch_line_loper.jpg"
+      "maps/far_range_branch_line.webp",
+      "maps/far_range_branch_line_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Far Range Branch Line"
@@ -29906,8 +29910,8 @@ const REGIONS = [
       64.7
     ],
     "maps": [
-      "maps/transfer_pass.jpg",
-      "maps/transfer_pass_loper.jpg"
+      "maps/transfer_pass.webp",
+      "maps/transfer_pass_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Transfer Pass"
@@ -29932,8 +29936,8 @@ const REGIONS = [
       61.18
     ],
     "maps": [
-      "maps/ravine.jpg",
-      "maps/ravine_loper.jpg"
+      "maps/ravine.webp",
+      "maps/ravine_loper.webp"
     ],
     "wiki_categories": [
       "Locations in The Ravine"
@@ -29956,8 +29960,8 @@ const REGIONS = [
       56.74
     ],
     "maps": [
-      "maps/winding_river_and_carter_hydro_dam.jpg",
-      "maps/winding_river_and_carter_hydro_dam_loper.jpg"
+      "maps/winding_river_and_carter_hydro_dam.webp",
+      "maps/winding_river_and_carter_hydro_dam_loper.webp"
     ],
     "wiki_categories": [],
     "adjacencies": [
@@ -29977,8 +29981,8 @@ const REGIONS = [
       29.54
     ],
     "maps": [
-      "maps/keepers_pass.jpg",
-      "maps/keepers_pass_loper.jpg"
+      "maps/keepers_pass.webp",
+      "maps/keepers_pass_loper.webp"
     ],
     "wiki_categories": [
       "Locations in Keeper's Pass North",
@@ -30767,6 +30771,7 @@ document.addEventListener('keydown', e => {
   if (!DEV_MODE_ENABLED) return;
   if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   devMode = !devMode;
+  document.body.classList.toggle('dev-mode', devMode);
   const inDetail = detailView.style.display === 'flex';
   coordDisplay.style.display       = (devMode && !inDetail) ? 'block' : 'none';
   detailCoordDisplay.style.display = (devMode &&  inDetail) ? 'block' : 'none';
@@ -31032,6 +31037,13 @@ function renderResults(results, resourceRows) {
     const nameEl = document.createElement('span');
     nameEl.className = 'result-name';
     nameEl.textContent = p.name;
+    if (isLooted(p.region, p.name)) {
+      const mark = document.createElement('span');
+      mark.className = 'result-looted';
+      mark.textContent = ' ✓';
+      mark.title = 'Looted';
+      nameEl.appendChild(mark);
+    }
     const regionEl = document.createElement('span');
     regionEl.className = 'result-region';
     regionEl.textContent = region ? region.name : p.region;
@@ -31149,10 +31161,9 @@ function mapTabLabel(path) {
   const name = path.split('/').pop().replace(/\.[^.]+$/, '');
   if (/annot/i.test(name))   return 'Annotated';
   if (/in.game/i.test(name)) return 'In-game';
-  if (/loper/i.test(name))   return 'Loper';
-  if (/default/i.test(name)) return 'Standard';
+  if (/loper/i.test(name))   return 'Interloper';
   if (/_map$/i.test(name))   return 'Map';
-  return 'Pilgrim/Voyageur/Stalker';
+  return 'Standard';
 }
 
 // Element that had focus before the modal opened, so we can return focus
@@ -31270,6 +31281,7 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
       const btn = document.createElement('button');
       btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
       btn.textContent = mapTabLabel(m);
+      btn.title = /loper/i.test(m) ? 'Interloper / Misery' : 'Pilgrim / Voyageur / Stalker';
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
@@ -31292,6 +31304,7 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
 
   loadDetailMap(region.maps[0]);
   renderAllBoxes();
+  renderPlaces();
   renderRegionLinks();
   renderToolBadges();
   renderToolsNearby(region);
@@ -31321,6 +31334,9 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
 const MIN_ZOOM = 0.05, MAX_ZOOM = 5;
 let imgW = 1, imgH = 1, panX = 0, panY = 0, zoom = 1, fitZoom = 1;
 let dragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
+// Set once a mouse pan travels far enough to count as a drag, so the click
+// that ends it doesn't toggle a place underneath.
+let panMoved = false;
 // highlightTarget: { name, bbox: [x1,y1,x2,y2] in 0..1 of the loaded image },
 // or null. Set when the user opens a region via search; consumed in fitMap.
 let highlightTarget = null;
@@ -31443,6 +31459,7 @@ function applyTransform() {
   detailImg.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
   positionHighlight();
   positionAllBoxes();
+  positionPlaces();
   positionRegionLinks();
   positionToolBadges();
   if (drawBox.style.display === 'block') updateDrawBox();
@@ -31556,15 +31573,12 @@ function positionRegionLinks() {
 const allBoxesLayer = document.getElementById('all-boxes-layer');
 let allBoxItems = [];  // [{ el, name, bbox }]
 
-function renderAllBoxes() {
-  allBoxesLayer.innerHTML = '';
-  allBoxItems = [];
-  if (!currentRegion) return;
-  const boxes = PLACE_BOXES[currentRegion.id] || {};
-  // merge_boxes.py emits both the canonical name and instance-suffix-stripped
-  // aliases for the same bbox; collapse those so we don't render duplicates.
+// merge_boxes.py emits both the canonical name and instance-suffix-stripped
+// aliases for the same bbox; collapse those so we don't render duplicates.
+// Returns Map<bboxKey, canonicalName>.
+function uniqueBoxes(regionId) {
   const seen = new Map();
-  for (const [name, bbox] of Object.entries(boxes)) {
+  for (const [name, bbox] of Object.entries(PLACE_BOXES[regionId] || {})) {
     if (!Array.isArray(bbox) || bbox.length !== 4) continue;
     const key = bbox.map(v => Number(v).toFixed(5)).join(',');
     const prev = seen.get(key);
@@ -31572,7 +31586,15 @@ function renderAllBoxes() {
     // wiki disambiguation suffix) over the bare alias.
     if (!prev || name.length > prev.length) seen.set(key, name);
   }
-  for (const [key, name] of seen) {
+  return seen;
+}
+
+function renderAllBoxes() {
+  allBoxesLayer.innerHTML = '';
+  allBoxItems = [];
+  if (!currentRegion) return;
+  const boxes = PLACE_BOXES[currentRegion.id] || {};
+  for (const name of uniqueBoxes(currentRegion.id).values()) {
     const bbox = boxes[name];
     const el = document.createElement('div');
     el.className = 'all-box';
@@ -31602,6 +31624,79 @@ function positionAllBoxes() {
 function setAllBoxesVisible(visible) {
   allBoxesLayer.classList.toggle('visible', !!visible);
   if (visible) positionAllBoxes();
+}
+
+// ── Looted places ─────────────────────────────────────────────────────────
+// Every labelled place gets an invisible click target; clicking toggles a
+// "looted" mark, persisted per browser in localStorage as
+// { regionId: [canonicalName, ...] }. Purely a personal progress tracker.
+const LOOTED_KEY = 'ldm.looted.v1';
+const placesLayer = document.getElementById('places-layer');
+const lootedProgressEl = document.getElementById('looted-progress');
+let placeItems = [];  // [{ el, name, bbox }]
+let looted = {};
+try { looted = JSON.parse(localStorage.getItem(LOOTED_KEY)) || {}; } catch {}
+
+function isLooted(regionId, name) {
+  const bbox = (PLACE_BOXES[regionId] || {})[name];
+  if (!bbox) return false;
+  // Search results may use an alias; resolve to the canonical name.
+  const canonical = uniqueBoxes(regionId).get(bbox.map(v => Number(v).toFixed(5)).join(','));
+  return (looted[regionId] || []).includes(canonical);
+}
+
+function toggleLooted(name) {
+  const list = new Set(looted[currentRegion.id] || []);
+  if (!list.delete(name)) list.add(name);
+  looted[currentRegion.id] = [...list];
+  try { localStorage.setItem(LOOTED_KEY, JSON.stringify(looted)); } catch {}
+  updateLootedState();
+}
+
+function renderPlaces() {
+  placesLayer.innerHTML = '';
+  placeItems = [];
+  if (!currentRegion) return;
+  const boxes = PLACE_BOXES[currentRegion.id] || {};
+  for (const name of uniqueBoxes(currentRegion.id).values()) {
+    const bbox = boxes[name];
+    if (LDLogic.looksLikeLegendBbox(bbox)) continue;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'place-target';
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (panMoved || touchMoved) return;  // end of a drag, not a click
+      toggleLooted(name);
+    });
+    placesLayer.appendChild(el);
+    placeItems.push({ el, name, bbox: bbox.slice() });
+  }
+  updateLootedState();
+  positionPlaces();
+}
+
+function updateLootedState() {
+  const done = new Set(looted[currentRegion.id] || []);
+  for (const { el, name } of placeItems) {
+    const on = done.has(name);
+    el.classList.toggle('looted', on);
+    el.setAttribute('aria-pressed', on);
+    el.setAttribute('aria-label', `${name}: ${on ? 'looted' : 'not looted'}`);
+    el.title = `${name} — click to ${on ? 'unmark' : 'mark as looted'}`;
+  }
+  const n = placeItems.filter(it => done.has(it.name)).length;
+  lootedProgressEl.textContent = placeItems.length ? `✓ ${n}/${placeItems.length} looted` : '';
+}
+
+function positionPlaces() {
+  for (const it of placeItems) {
+    const { left, top, width, height } = bboxToCanvasRect(it.bbox);
+    it.el.style.left   = (left - 4) + 'px';
+    it.el.style.top    = (top - 4) + 'px';
+    it.el.style.width  = (width + 8) + 'px';
+    it.el.style.height = (height + 8) + 'px';
+  }
 }
 
 // ── Tool badges ───────────────────────────────────────────────────────────
@@ -31723,6 +31818,9 @@ function renderToolsNearby(region) {
   for (const [name, tags] of Object.entries(placesHere)) {
     for (const tag of tags) (hereByTool[tag] ||= []).push(name);
   }
+  // Nearest-tool pills that point at the same place (e.g. ammo workbench and
+  // milling machine both at Last Resort Cannery) collapse into one pill.
+  const nearbyPills = new Map();  // 'regionId|placeName' → pill
   for (const tool of NEARBY_TOOLS) {
     const pill = document.createElement('button');
     pill.className = 'tool-pill';
@@ -31773,6 +31871,16 @@ function renderToolsNearby(region) {
         // haven't tagged yet). Skip the pill rather than show a dead one.
         continue;
       }
+      const key = nearest.regionId + '|' + nearest.placeName;
+      const dup = nearbyPills.get(key);
+      if (dup) {
+        const badges = dup.querySelectorAll('.tool-badge');
+        badges[badges.length - 1].insertAdjacentHTML('afterend',
+          `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`);
+        dup.title = dup.title.replace(' — ', ` + ${toolLabel(tool)} — `);
+        continue;
+      }
+      nearbyPills.set(key, pill);
       const targetRegion = REGIONS_BY_ID[nearest.regionId];
       const regionShort = targetRegion ? targetRegion.name : nearest.regionId;
       pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
@@ -32028,14 +32136,14 @@ const resourcesPanelEl = document.getElementById('resources-panel');
 // On phone widths the tab/pill strips scroll horizontally with hidden
 // scrollbars; fade the right edge while there's more content that way.
 // MutationObserver covers the re-renders on region open/tab switch.
-for (const strip of [mapTabsEl, toolsNearbyEl, resourcesPanelEl]) {
+for (const strip of [mapTabsEl, document.getElementById('header-pills')]) {
   // rAF so the measurement runs after the modal is shown — the strips are
   // repopulated while detail-view is still display:none (all widths 0).
   const update = () => requestAnimationFrame(() =>
     strip.classList.toggle('scroll-fade',
       strip.scrollWidth - strip.clientWidth - strip.scrollLeft > 4));
   strip.addEventListener('scroll', update, { passive: true });
-  new MutationObserver(update).observe(strip, { childList: true });
+  new MutationObserver(update).observe(strip, { childList: true, subtree: true });
   window.addEventListener('resize', update);
 }
 
@@ -32538,6 +32646,7 @@ mapCanvas.addEventListener('mousedown', e => {
     return;
   }
   dragging = true;
+  panMoved = false;
   dragStartX = e.clientX; dragStartY = e.clientY;
   panStartX = panX; panStartY = panY;
   e.preventDefault();
@@ -32557,6 +32666,7 @@ window.addEventListener('mousemove', e => {
     return;
   }
   if (dragging) {
+    if (Math.abs(e.clientX - dragStartX) + Math.abs(e.clientY - dragStartY) > 4) panMoved = true;
     panX = panStartX + (e.clientX - dragStartX);
     panY = panStartY + (e.clientY - dragStartY);
     applyTransform();
@@ -32764,9 +32874,9 @@ if (offlineBtn && 'caches' in window && 'serviceWorker' in navigator) {
     } else {
       // The size in the button text, not just the tooltip — touch users
       // never see title attributes, and they're the ones on mobile data.
-      offlineBtn.textContent = 'Save all maps offline (~72 MB)';
+      offlineBtn.textContent = 'Save all maps offline (~29 MB)';
       offlineBtn.disabled = false;
-      offlineBtn.title = `Download all ${allMapUrls.length} maps (~72 MB) so the app works without signal`;
+      offlineBtn.title = `Download all ${allMapUrls.length} maps (~29 MB) so the app works without signal`;
     }
     offlineBtn.hidden = false;
   }

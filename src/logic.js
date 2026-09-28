@@ -58,12 +58,12 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 // tools/find_resources.py with the colour filter that captures it,
 // (3) add an entry here, (4) re-run find_resources.py --inline.
 const RESOURCES_META = {
-  moose:          { label: 'Moose area',      color: '#1f7a3a', synonyms: ['moose'] },
-  bear:           { label: 'Bear area',       color: '#b85a1a', synonyms: ['bear'] },
-  wolf:           { label: 'Wolf area',       color: '#1a7fb8', synonyms: ['wolf'] },
-  timberwolf:     { label: 'Timberwolf pack', color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
-  cougar:         { label: 'Cougar territory', color: '#777a85', synonyms: ['cougar'] },
-  deer:           { label: 'Deer area',       color: '#2f3540', synonyms: ['deer'] },
+  moose:          { label: 'Moose',           color: '#1f7a3a', synonyms: ['moose'] },
+  bear:           { label: 'Bear',            color: '#b85a1a', synonyms: ['bear'] },
+  wolf:           { label: 'Wolf',            color: '#1a7fb8', synonyms: ['wolf'] },
+  timberwolf:     { label: 'Timberwolf',      color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
+  cougar:         { label: 'Cougar',          color: '#777a85', synonyms: ['cougar'] },
+  deer:           { label: 'Deer',            color: '#2f3540', synonyms: ['deer'] },
   cattails:       { label: 'Cattails',        color: '#a14fb0', synonyms: ['cattails', 'cattail'] },
   sapling:        { label: 'Sapling',         color: '#3a8a3a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
   salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },

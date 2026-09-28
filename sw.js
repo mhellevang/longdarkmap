@@ -5,7 +5,7 @@
 //    Precached on install (a few hundred KB), then served
 //    stale-while-revalidate — instant offline-friendly loads, and deploys
 //    reach users on their next visit without a manual version bump.
-//  - MAPS_CACHE (unversioned): the region map images (~70 MB in total).
+//  - MAPS_CACHE (unversioned): the region map images (~29 MB in total).
 //    Filled lazily as the user opens regions, or in bulk via the page's
 //    "Save all maps offline" button, which writes into this cache directly
 //    (keep the name in sync with MAPS_CACHE_NAME in index.html). Survives
@@ -15,7 +15,7 @@
 // the shell — stale-while-revalidate already picks up changes one visit
 // after a deploy.
 
-const SHELL_VERSION = 'v4';
+const SHELL_VERSION = 'v5';
 const SHELL_CACHE = `longdarkmap-shell-${SHELL_VERSION}`;
 const MAPS_CACHE = 'longdarkmap-maps-v1';
 
@@ -65,6 +65,12 @@ self.addEventListener('activate', event => {
         if (res) await maps.put(req, res);
       }
       await caches.delete(key);
+    }
+    // Region maps moved from .jpg to .webp; drop the orphaned JPEGs (all but
+    // the world map, which stays .jpg) so offline users don't carry both.
+    for (const req of await maps.keys()) {
+      const path = new URL(req.url).pathname;
+      if (path.endsWith('.jpg') && !path.endsWith(WORLD_MAP.slice(1))) await maps.delete(req);
     }
     await self.clients.claim();
   })());

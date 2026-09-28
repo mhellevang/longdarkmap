@@ -140,7 +140,7 @@ test('search: resource keyword lists region-scoped resource rows first', async (
     const first = document.querySelector('#search-results .search-result');
     assert.ok(first.classList.contains('resource-result'),
       'resource rows should come before place-name matches');
-    assert.equal(first.querySelector('.result-name').textContent, 'Moose area');
+    assert.equal(first.querySelector('.result-name').textContent, 'Moose');
     assert.ok(first.querySelector('.result-count').textContent.match(/^\d+$/),
       'row should show the hit count');
   } finally { close(); }
@@ -504,5 +504,62 @@ test('resources panel: switching region clears the previous active pill', async 
     const activePills = document.querySelectorAll('#resources-panel .resource-pill.active');
     assert.equal(activePills.length, 0,
       'no pill should remain active after switching to a non-resource hash');
+  } finally { close(); }
+});
+
+// ─── looted places ───────────────────────────────────────────────────────────
+
+test('looted: clicking a place toggles the mark, progress, and storage', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+    const targets = document.querySelectorAll('#places-layer .place-target');
+    assert.ok(targets.length > 0, 'sanity: coastal_highway has place targets');
+    const progress = document.getElementById('looted-progress');
+    assert.equal(progress.textContent, `✓ 0/${targets.length} looted`);
+
+    fire(window, targets[0], 'click');
+    assert.ok(targets[0].classList.contains('looted'));
+    assert.equal(progress.textContent, `✓ 1/${targets.length} looted`);
+    const stored = JSON.parse(window.localStorage.getItem('ldm.looted.v1'));
+    assert.equal(stored.coastal_highway.length, 1);
+
+    fire(window, targets[0], 'click');
+    assert.ok(!targets[0].classList.contains('looted'));
+    assert.equal(progress.textContent, `✓ 0/${targets.length} looted`);
+  } finally { close(); }
+});
+
+test('looted: search results mark looted places with ✓', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+    fire(window, document.querySelector('#places-layer .place-target'), 'click');
+    const [name] = JSON.parse(window.localStorage.getItem('ldm.looted.v1')).coastal_highway;
+
+    const input = document.getElementById('place-search');
+    input.value = name;
+    fire(window, input, 'input');
+    const row = [...document.querySelectorAll('.search-result')]
+      .find(r => r.querySelector('.result-name').firstChild.textContent === name);
+    assert.ok(row, `expected a result row for ${name}`);
+    assert.ok(row.querySelector('.result-looted'), 'looted row carries a ✓');
+  } finally { close(); }
+});
+
+test('tool pills: nearest tools at the same place share one pill', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    // From Coastal Highway, ammo workbench + milling machine are both nearest
+    // at Last Resort Cannery (Bleak Inlet).
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+    const pills = [...document.querySelectorAll('#tools-nearby .tool-pill')]
+      .filter(p => p.querySelector('.tool-pill-label').textContent.startsWith('Last Resort'));
+    assert.equal(pills.length, 1);
+    const badges = [...pills[0].querySelectorAll('.tool-badge')].map(b => b.textContent);
+    assert.deepEqual(badges, ['A', 'M']);
   } finally { close(); }
 });
