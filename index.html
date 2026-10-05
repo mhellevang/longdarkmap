@@ -30856,6 +30856,41 @@ const REGIONS = [
       "https://images.steamusercontent.com/ugc/15159145128947408591/484B84DD777B5E0742837BB86857EAA524315342/",
       "https://images.steamusercontent.com/ugc/16055965560201475697/BF5677731E7CEA8A282819D01C96AB5486A6E478/"
     ]
+  },
+  {
+    "id": "langston_mine",
+    "name": "Langston Mine",
+    "pos": null,
+    "maps": [
+      "maps/langston_mine.webp"
+    ],
+    "wiki_categories": [],
+    "adjacencies": [
+      "zone_of_contamination"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/2298590116010964948/CD7B37AC9443188805A8F319C7F6808109379138/"
+    ]
+  },
+  {
+    "id": "transition_cave",
+    "name": "Transition Cave",
+    "pos": [
+      17.3,
+      53.61
+    ],
+    "maps": [
+      "maps/transition_cave.webp"
+    ],
+    "wiki_categories": [],
+    "adjacencies": [
+      "forsaken_airfield",
+      "zone_of_contamination",
+      "sundered_pass"
+    ],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/2529416016912058547/B3B1BC18D40080358198B357C1F717A612BDC794/"
+    ]
   }
 ];
 // REGIONS_END
@@ -31326,6 +31361,16 @@ const REGION_LINKS = {
         0.72864
       ],
       "text": "To Transfer Pass"
+    },
+    {
+      "target": "langston_mine",
+      "bbox": [
+        0.18704,
+        0.17655,
+        0.24453,
+        0.18546
+      ],
+      "text": "Langston Mine"
     }
   ],
   "crumbling_highway": [
@@ -31468,7 +31513,9 @@ const REGION_LINKS = {
       ],
       "text": "To Pleasant Valley"
     }
-  ]
+  ],
+  "langston_mine": [],
+  "transition_cave": []
 };
 // REGION_LINKS_END
 
@@ -31568,6 +31615,8 @@ function layoutWorldMap() {
 function renderLabels() {
   labelLayer.innerHTML = '';
   for (const region of REGIONS) {
+    // Langston Mine isn't printed on the world map; it opens from its label on the ZOC map.
+    if (!region.pos) continue;
     const btn = document.createElement('button');
     btn.className = 'region-btn';
     btn.textContent = region.name;

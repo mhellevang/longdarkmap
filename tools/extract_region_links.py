@@ -230,12 +230,20 @@ def extract_region(region_id: str) -> list[dict]:
     return merged
 
 
+# Sub-maps opened from a place label rather than a "To <region>" label.
+EXTRA_LINKS: dict[str, list[dict]] = {
+    "zone_of_contamination": [
+        {"target": "langston_mine", "bbox": [0.18704, 0.17655, 0.24453, 0.18546], "text": "Langston Mine"},
+    ],
+}
+
+
 def main(argv: list[str]) -> int:
     region_ids = [r["id"] for r in json.loads(REGIONS_FILE.read_text())]
     out: dict[str, list[dict]] = {}
     total = 0
     for region_id in region_ids:
-        links = extract_region(region_id)
+        links = extract_region(region_id) + EXTRA_LINKS.get(region_id, [])
         out[region_id] = links
         total += len(links)
         targets = ", ".join(sorted({l["target"] for l in links})) or "(none)"

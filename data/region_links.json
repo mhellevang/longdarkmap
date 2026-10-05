@@ -457,6 +457,16 @@
         0.72864
       ],
       "text": "To Transfer Pass"
+    },
+    {
+      "target": "langston_mine",
+      "bbox": [
+        0.18704,
+        0.17655,
+        0.24453,
+        0.18546
+      ],
+      "text": "Langston Mine"
     }
   ],
   "crumbling_highway": [
@@ -599,5 +609,7 @@
       ],
       "text": "To Pleasant Valley"
     }
-  ]
+  ],
+  "langston_mine": [],
+  "transition_cave": []
 }
