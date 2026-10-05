@@ -525,5 +525,18 @@
     "download_urls": [
       "https://images.steamusercontent.com/ugc/2529416016912058547/B3B1BC18D40080358198B357C1F717A612BDC794/"
     ]
+  },
+  {
+    "id": "connections",
+    "name": "Connections between regions",
+    "pos": null,
+    "maps": [
+      "maps/connections.webp"
+    ],
+    "wiki_categories": [],
+    "adjacencies": [],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/13036389424810677653/1424E21B04EADA5BE64A48B12FD4AB6C29FC76B4/"
+    ]
   }
 ]

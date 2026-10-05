@@ -485,7 +485,7 @@ body.dev-mode #places-layer { display: none; }
 body.detail-open #search-wrap { display: none; }
 
 /* ── Offline bulk download ───────────────────────────────────────────────── */
-#offline-btn {
+#offline-btn, #connections-btn {
   position: fixed;
   right: 14px;
   bottom: 14px;
@@ -501,7 +501,8 @@ body.detail-open #search-wrap { display: none; }
   backdrop-filter: blur(4px);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-#offline-btn:hover:not(:disabled) {
+#connections-btn { right: auto; left: 14px; }
+#offline-btn:hover:not(:disabled), #connections-btn:hover {
   background: rgba(110, 170, 230, 0.18);
   border-color: rgba(110, 170, 230, 0.72);
   color: #f0f6ff;
@@ -512,7 +513,7 @@ body.detail-open #search-wrap { display: none; }
   cursor: default;
 }
 #offline-btn[hidden] { display: none; }
-body.detail-open #offline-btn { display: none; }
+body.detail-open #offline-btn, body.detail-open #connections-btn { display: none; }
 
 /* ── Detail view (modal) ─────────────────────────────────────────────────── */
 #detail-view {

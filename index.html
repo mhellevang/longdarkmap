@@ -78,6 +78,7 @@
            role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="search-results" aria-label="Search for a place">
     <div id="search-results" role="listbox" aria-label="Search results"></div>
   </div>
+  <button id="connections-btn" type="button">Region connections</button>
   <button id="offline-btn" hidden>Save all maps offline (~29 MB)</button>
 </div>
 
@@ -30891,6 +30892,19 @@ const REGIONS = [
     "download_urls": [
       "https://images.steamusercontent.com/ugc/2529416016912058547/B3B1BC18D40080358198B357C1F717A612BDC794/"
     ]
+  },
+  {
+    "id": "connections",
+    "name": "Connections between regions",
+    "pos": null,
+    "maps": [
+      "maps/connections.webp"
+    ],
+    "wiki_categories": [],
+    "adjacencies": [],
+    "download_urls": [
+      "https://images.steamusercontent.com/ugc/13036389424810677653/1424E21B04EADA5BE64A48B12FD4AB6C29FC76B4/"
+    ]
   }
 ];
 // REGIONS_END
@@ -31515,7 +31529,8 @@ const REGION_LINKS = {
     }
   ],
   "langston_mine": [],
-  "transition_cave": []
+  "transition_cave": [],
+  "connections": []
 };
 // REGION_LINKS_END
 
@@ -31615,7 +31630,7 @@ function layoutWorldMap() {
 function renderLabels() {
   labelLayer.innerHTML = '';
   for (const region of REGIONS) {
-    // Langston Mine isn't printed on the world map; it opens from its label on the ZOC map.
+    // Langston Mine opens from its label on the ZOC map, connections from #connections-btn.
     if (!region.pos) continue;
     const btn = document.createElement('button');
     btn.className = 'region-btn';
@@ -31634,6 +31649,8 @@ function renderLabels() {
 // whichever button happens to be on top, not the one closest to the tap.
 // Listen on labelLayer instead of per-button, and when the tap lands
 // inside multiple hitboxes pick the region whose centre is nearest.
+document.getElementById('connections-btn').addEventListener('click', () => openRegion(REGIONS_BY_ID.connections));
+
 labelLayer.addEventListener('click', e => {
   const targetBtn = e.target.closest('.region-btn');
   if (!targetBtn) return;
