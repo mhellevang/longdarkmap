@@ -584,6 +584,22 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   outline: 2px solid rgba(110, 170, 230, 0.6);
   outline-offset: 4px;
 }
+/* Experience level from the in-game region description. */
+#region-difficulty {
+  --c: #8bb8e8;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-radius: 3px;
+  color: var(--c);
+  font: 10px/1.4 ui-monospace, Menlo, monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#region-difficulty[hidden] { display: none; }
+#region-difficulty[data-level="beginner"]     { --c: #7ee787; }
+#region-difficulty[data-level="intermediate"] { --c: #f5d36b; }
+#region-difficulty[data-level="advanced"]     { --c: #f4a4a4; }
 #region-select {
   position: absolute;
   inset: 0;
@@ -704,6 +720,15 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   overflow-y: auto;
   padding: 4px 6px 8px;
   border-top: 1px solid rgba(110, 170, 230, 0.14);
+}
+#region-description {
+  padding: 8px 8px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(110, 170, 230, 0.14);
+  color: #9aa7b4;
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.45;
 }
 .layer-row {
   --c: var(--layer-color, var(--tool-color, #6eaae6));

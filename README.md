@@ -10,6 +10,7 @@ Open the [live demo](https://longdarkmap.helledb.dev/), or clone the repo and op
 
 - **Click** a region label to open its detail map
 - **Click the region name** in the detail-view header to switch region without going back to the world map
+- The header shows the region's **difficulty** (Beginner / Intermediate / Advanced) and the layers panel opens with the **in-game region description**; hovering a region label on the world map shows both
 - **Scroll** to zoom, **drag** to pan (stops at the map edge), **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
 - **Click a place name** on a region map to mark it as visited (green ✓; click again to unmark). The header shows `✓ n/N visited` for the region and search results carry a ✓ for visited places. Stored per browser in `localStorage` (`ldm.looted.v1`), nothing leaves the device
@@ -67,6 +68,14 @@ The prep step (`amenity_prep.py`) crops each `PLACE_BOXES` entry from the region
 The subagent prompt (`amenity_prompt.md`) constrains the output to a fixed canonical-tag set — `forge`, `workbench`, `ammunition_workbench`, `milling_machine`, `bed`, `stove`, `first_aid`, `ice_fishing_hut`, `ice_fishing_hole` — and instructs the agent to ignore loot icons, animal areas, foraging markers, and DLC trinkets, since those are visible on the map already. False positives are worse than false negatives: the wiki layer authoritatively covers `forge` and `workbench`.
 
 Recall is uneven by map style: regions where amenities cluster in styled "info chips" next to each label (e.g. Quonset Garage in Coastal Highway) come back well-tagged; regions where amenity icons are drawn at their actual workshop building inside a building cluster (e.g. Coastal Townsite) often produce empty crops because the icon is outside the label-centred crop window. The wiki layer is what catches those.
+
+### Region difficulty and description
+
+```sh
+cd tools && python3 scrape_region_info.py && python3 inline_regions.py
+```
+
+`scrape_region_info.py` reads each region's wiki page: the `difficulty` field of the Infobox/Region and the `{{Quote2|...|In-game description}}` quote of the region-select blurb (marketing quotes on the same page are skipped). When the infobox has no difficulty, it comes from the blurb's "For advanced players." opening, which is then stripped. Transition zones mostly have neither and are left out. Output: `data/region_info.json`, inlined as `REGION_INFO` between the `REGION_INFO_START` / `REGION_INFO_END` sentinels.
 
 ### Layers panel
 

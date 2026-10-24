@@ -446,6 +446,25 @@ test('region picker: choosing a region opens it with a way back', async () => {
   } finally { close(); }
 });
 
+test('region info: difficulty and in-game description show when the wiki has them', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    const badge = document.getElementById('region-difficulty');
+    const desc = document.getElementById('region-description');
+    window.location.hash = '#forlorn_muskeg';
+    fire(window, window, 'hashchange');
+    assert.equal(badge.hidden, false);
+    assert.equal(badge.textContent, 'Advanced');
+    assert.equal(badge.dataset.level, 'advanced');
+    assert.match(desc.textContent, /marshland/);
+
+    window.location.hash = '#winding_river';
+    fire(window, window, 'hashchange');
+    assert.equal(badge.hidden, true);
+    assert.equal(desc.hidden, true);
+  } finally { close(); }
+});
+
 // ─── visited places ───────────────────────────────────────────────────────────
 
 test('visited: clicking a place toggles the mark, progress, and storage', async () => {

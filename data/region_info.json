@@ -1,0 +1,70 @@
+{
+  "mystery_lake": {
+    "difficulty": "Beginner",
+    "description": "Ideal for new players. A balance between wilderness and man-made shelters, resources, and wildlife."
+  },
+  "coastal_highway": {
+    "difficulty": "Intermediate",
+    "description": "A weather-battered coastline rich in shelters and resources. Watch out for wildlife."
+  },
+  "pleasant_valley": {
+    "difficulty": "Advanced",
+    "description": "A challenging, vast mountain wilderness region with a few key shelters, originally settled by hardy homesteaders."
+  },
+  "desolation_point": {
+    "difficulty": "Intermediate",
+    "description": "Several key shelters, plenty of hostile wildlife, and harsh weather conditions to be found around these remnants of a once-thriving whaling industry."
+  },
+  "timberwolf_mountain": {
+    "difficulty": "Advanced",
+    "description": "An isolated alpine region with very few shelters or resources. A true test of wilderness survival skills."
+  },
+  "forlorn_muskeg": {
+    "difficulty": "Advanced",
+    "description": "A frigid open marshland bisected by a railway line. Weak ice and constant winds make this area highly dangerous."
+  },
+  "broken_railroad": {
+    "difficulty": "Intermediate",
+    "description": "Previous seismic activity means this section of the Trans-Island Railway Line is dramatically interrupted. Be careful you don't become lost in its many twisting routes."
+  },
+  "bleak_inlet": {
+    "difficulty": "Advanced",
+    "description": "Once home to a thriving industrial Cannery, seismic instability has cut Bleak Inlet off from the rest of the Great Bear mainland. Inaccessible and in the heart of Timberwolf territory, exploring Bleak Inlet is not for the faint of heart. The Cannery industrial complex holds a useful treasure for those hardy enough to access it."
+  },
+  "hushed_river_valley": {
+    "difficulty": "Advanced",
+    "description": "A remote, wind-blown valley known for its sheer cliffs, dense forests, and steep, winding paths. Although devoid of human settlements, it has long been a destination for the area's toughest mountaineers, and may still have a few secrets to reveal."
+  },
+  "mountain_town": {
+    "difficulty": "Beginner",
+    "description": "Although deep in decline, Milton still offers many sturdy shelters and plentiful wildlife. But if you leave town for the surrounding hills and fields, beware!"
+  },
+  "ash_canyon": {
+    "difficulty": "Advanced",
+    "description": "A climber's paradise dotted with narrow ravines, towering cliffs, and multiple high plateaus. Its burnt forests and mining settlements also hint at a darker history."
+  },
+  "blackrock": {
+    "difficulty": "Intermediate",
+    "description": "Home to Blackrock Penitentiary, this Region’s icy rivers, deep ravines, and challenging weather act as a natural extension of the notorious prison. Its many caves and winding roads offer additional security if a storm moves in."
+  },
+  "forsaken_airfield": {
+    "difficulty": "Advanced",
+    "description": "Once an active entry point for the Far Territory's wild interior, Forsaken Airfield lives in the shadow of better days, long departed. Its broken landing strip and support buildings sit wedged between various natural obstacles, including frozen fields, a broad lake, and sheer cliffs along the Region’s perimeter. Travelers here need guile, and warm clothes."
+  },
+  "sundered_pass": {
+    "difficulty": "Advanced",
+    "description": "Once a favoured destination for far Territory climbers, it's become an isolated Region devastated by extreme avalanche activity. Beyond the lower elevations and treeline, minimal shelters are available. Only the most-prepared survivors can expect a successful journey through its snowy fields and up its high ridgelines."
+  },
+  "zone_of_contamination": {
+    "difficulty": "Advanced",
+    "description": "A Cold War relic of industrial hubris, the Zone is littered with Chemical Hazards and forgotten infrastructure. Its secrets remain hidden by environmental devastation. Prepare yourself, and take care. Stay above ground and see the remnants, or dive into the deep mine, at your peril."
+  },
+  "transfer_pass": {
+    "difficulty": "Intermediate",
+    "description": "A crossroads dug out of the looming mountains, Transfer Pass is quiet since the trains stopped. But it remains a critical junction for anyone wishing to access the Far Territory."
+  },
+  "ravine": {
+    "difficulty": "Beginner",
+    "description": null
+  }
+}

@@ -1,4 +1,4 @@
-"""Inline data/regions.json and data/region_links.json into index.html.
+"""Inline data/regions.json, region_links.json and region_info.json into index.html.
 
 The frontend, build_tiles.py, scrape_places.py, and download_maps.py all read
 regions.json directly. The inlined copy in index.html exists so the page stays
@@ -7,6 +7,9 @@ single-file and works offline / on file://.
 `region_links.json` (produced by `extract_region_links.py`) maps each region
 to the red "To <region>" perimeter labels that should render as clickable
 exits in the detail view.
+
+`region_info.json` (produced by `scrape_region_info.py`) holds each region's
+difficulty and in-game description.
 
 Usage:
     python3 tools/inline_regions.py
@@ -34,6 +37,12 @@ BLOCKS = [
         "start": "// REGION_LINKS_START",
         "end": "// REGION_LINKS_END",
         "var": "REGION_LINKS",
+    },
+    {
+        "file": ROOT / "data" / "region_info.json",
+        "start": "// REGION_INFO_START",
+        "end": "// REGION_INFO_END",
+        "var": "REGION_INFO",
     },
 ]
 

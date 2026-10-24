@@ -93,6 +93,7 @@
         <span id="region-picker-caret" aria-hidden="true">▾</span>
         <select id="region-select" aria-label="Switch region"></select>
       </div>
+      <span id="region-difficulty" title="Difficulty from the in-game region description" hidden></span>
       <span id="visited-progress" title="Click a place name on the map to mark it as visited"></span>
       <div id="map-tabs"></div>
       <button id="legend-btn" aria-label="Map legend" aria-expanded="false" title="What do the badges and colours mean?">?</button>
@@ -146,6 +147,7 @@
           <span>Layers</span><span id="layers-active-count"></span><span id="layers-caret" aria-hidden="true">▾</span>
         </button>
         <div id="layers-body">
+          <p id="region-description" hidden></p>
           <div id="layers-list" role="group" aria-label="Show on map"></div>
           <div id="nearest-section">
             <h3>Nearest</h3>
@@ -31548,6 +31550,85 @@ const REGION_LINKS = {
 // REGION_LINKS_END
 
 // ════════════════════════════════════════════════════════════════════════════
+// REGION INFO
+// Inlined from data/region_info.json by tools/inline_regions.py.
+// Each entry: { difficulty: Beginner|Intermediate|Advanced|null,
+// description: in-game region-select blurb or null }.
+// ════════════════════════════════════════════════════════════════════════════
+// REGION_INFO_START
+const REGION_INFO = {
+  "mystery_lake": {
+    "difficulty": "Beginner",
+    "description": "Ideal for new players. A balance between wilderness and man-made shelters, resources, and wildlife."
+  },
+  "coastal_highway": {
+    "difficulty": "Intermediate",
+    "description": "A weather-battered coastline rich in shelters and resources. Watch out for wildlife."
+  },
+  "pleasant_valley": {
+    "difficulty": "Advanced",
+    "description": "A challenging, vast mountain wilderness region with a few key shelters, originally settled by hardy homesteaders."
+  },
+  "desolation_point": {
+    "difficulty": "Intermediate",
+    "description": "Several key shelters, plenty of hostile wildlife, and harsh weather conditions to be found around these remnants of a once-thriving whaling industry."
+  },
+  "timberwolf_mountain": {
+    "difficulty": "Advanced",
+    "description": "An isolated alpine region with very few shelters or resources. A true test of wilderness survival skills."
+  },
+  "forlorn_muskeg": {
+    "difficulty": "Advanced",
+    "description": "A frigid open marshland bisected by a railway line. Weak ice and constant winds make this area highly dangerous."
+  },
+  "broken_railroad": {
+    "difficulty": "Intermediate",
+    "description": "Previous seismic activity means this section of the Trans-Island Railway Line is dramatically interrupted. Be careful you don't become lost in its many twisting routes."
+  },
+  "bleak_inlet": {
+    "difficulty": "Advanced",
+    "description": "Once home to a thriving industrial Cannery, seismic instability has cut Bleak Inlet off from the rest of the Great Bear mainland. Inaccessible and in the heart of Timberwolf territory, exploring Bleak Inlet is not for the faint of heart. The Cannery industrial complex holds a useful treasure for those hardy enough to access it."
+  },
+  "hushed_river_valley": {
+    "difficulty": "Advanced",
+    "description": "A remote, wind-blown valley known for its sheer cliffs, dense forests, and steep, winding paths. Although devoid of human settlements, it has long been a destination for the area's toughest mountaineers, and may still have a few secrets to reveal."
+  },
+  "mountain_town": {
+    "difficulty": "Beginner",
+    "description": "Although deep in decline, Milton still offers many sturdy shelters and plentiful wildlife. But if you leave town for the surrounding hills and fields, beware!"
+  },
+  "ash_canyon": {
+    "difficulty": "Advanced",
+    "description": "A climber's paradise dotted with narrow ravines, towering cliffs, and multiple high plateaus. Its burnt forests and mining settlements also hint at a darker history."
+  },
+  "blackrock": {
+    "difficulty": "Intermediate",
+    "description": "Home to Blackrock Penitentiary, this Region\u2019s icy rivers, deep ravines, and challenging weather act as a natural extension of the notorious prison. Its many caves and winding roads offer additional security if a storm moves in."
+  },
+  "forsaken_airfield": {
+    "difficulty": "Advanced",
+    "description": "Once an active entry point for the Far Territory's wild interior, Forsaken Airfield lives in the shadow of better days, long departed. Its broken landing strip and support buildings sit wedged between various natural obstacles, including frozen fields, a broad lake, and sheer cliffs along the Region\u2019s perimeter. Travelers here need guile, and warm clothes."
+  },
+  "sundered_pass": {
+    "difficulty": "Advanced",
+    "description": "Once a favoured destination for far Territory climbers, it's become an isolated Region devastated by extreme avalanche activity. Beyond the lower elevations and treeline, minimal shelters are available. Only the most-prepared survivors can expect a successful journey through its snowy fields and up its high ridgelines."
+  },
+  "zone_of_contamination": {
+    "difficulty": "Advanced",
+    "description": "A Cold War relic of industrial hubris, the Zone is littered with Chemical Hazards and forgotten infrastructure. Its secrets remain hidden by environmental devastation. Prepare yourself, and take care. Stay above ground and see the remnants, or dive into the deep mine, at your peril."
+  },
+  "transfer_pass": {
+    "difficulty": "Intermediate",
+    "description": "A crossroads dug out of the looming mountains, Transfer Pass is quiet since the trains stopped. But it remains a critical junction for anyone wishing to access the Far Territory."
+  },
+  "ravine": {
+    "difficulty": "Beginner",
+    "description": null
+  }
+};
+// REGION_INFO_END
+
+// ════════════════════════════════════════════════════════════════════════════
 // WORLD VIEW
 // ════════════════════════════════════════════════════════════════════════════
 const WORLD_W = 4017, WORLD_H = 2048;
@@ -31648,6 +31729,8 @@ function renderLabels() {
     const btn = document.createElement('button');
     btn.className = 'region-btn';
     btn.textContent = region.name;
+    const info = REGION_INFO[region.id];
+    if (info) btn.title = [info.difficulty, info.description].filter(Boolean).join(' · ');
     btn.dataset.regionId = region.id;
     btn.style.left = region.pos[0] + '%';
     btn.style.top  = region.pos[1] + '%';
@@ -32109,6 +32192,18 @@ regionSelect.addEventListener('change', () => {
   }
 });
 
+const regionDifficultyEl = document.getElementById('region-difficulty');
+const regionDescriptionEl = document.getElementById('region-description');
+
+function renderRegionInfo(region) {
+  const info = REGION_INFO[region.id] || {};
+  regionDifficultyEl.hidden = !info.difficulty;
+  regionDifficultyEl.textContent = info.difficulty || '';
+  regionDifficultyEl.dataset.level = (info.difficulty || '').toLowerCase();
+  regionDescriptionEl.hidden = !info.description;
+  regionDescriptionEl.textContent = info.description || '';
+}
+
 function mapTabLabel(path) {
   const name = path.split('/').pop().replace(/\.[^.]+$/, '');
   if (/annot/i.test(name))   return 'Annotated';
@@ -32217,6 +32312,7 @@ function _openRegion(region, target, tool, historyOp) {
   if (firstOpen) lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
   regionSelect.value = region.id;
+  renderRegionInfo(region);
   mapTabsEl.innerHTML = '';
   currentRegion = region;
   // target: { name, bbox: [x1,y1,x2,y2] in 0..1 } or null. Persists across
