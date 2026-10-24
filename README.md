@@ -9,10 +9,11 @@ A no-build, offline-friendly interactive map for *The Long Dark*. The world view
 Open the [live demo](https://longdarkmap.helledb.dev/), or clone the repo and open `index.html` in any modern browser. No build step, no server required.
 
 - **Click** a region label to open its detail map
-- **Scroll** to zoom, **drag** to pan, **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
+- **Click the region name** in the detail-view header to switch region without going back to the world map
+- **Scroll** to zoom, **drag** to pan (stops at the map edge), **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
 - **Click a place name** on a region map to mark it as visited (green ✓; click again to unmark). The header shows `✓ n/N visited` for the region and search results carry a ✓ for visited places. Stored per browser in `localStorage` (`ldm.looted.v1`), nothing leaves the device
-- **?** opens a legend explaining the tool-badge glyphs and resource-pill colours (detail-view header; bottom-left on phones)
+- **?** opens a legend explaining the tool-badge glyphs and layer colours (detail-view header; bottom-left on phones)
 - **D** (dev server only) toggles a coordinate overlay: `[x%, y%]` of the world map on the world view, `[x, y]` as 0..1 of the region map on the detail view. The key is a no-op when the page is opened directly or from the public deploy. In the detail view with D on:
   - Every stored bounding box for the region is drawn as a labelled blue rectangle, so misplaced ones jump out.
   - **Click any box** (including the search highlight) to grab it for editing.
@@ -49,7 +50,7 @@ Output: `data/crafting_tools.json` plus an inlined `PLACE_TOOLS` block in `index
 
 ### Resource keywords
 
-Typing a resource name (`moose`, `bear`, `wolf`, `timberwolf`, `cougar`, `deer`, `cattails`, `sapling`, `salt`, …) lists the regions where that resource was detected, biggest count first, above any place-name matches. Each row shows the resource swatch, the region, and the hit count; opening one jumps straight into that region's resource cycle (`#region/$resource:moose`). The synonym table lives in `RESOURCES_META` in `src/logic.js`.
+Typing a resource name (`moose`, `bear`, `wolf`, `timberwolf`, `cougar`, `deer`, `cattails`, `sapling`, `salt`, …) lists the regions where that resource was detected, biggest count first, above any place-name matches. Each row shows the resource swatch, the region, and the hit count; opening one jumps straight into that region with the resource's layer on (`#region/$resource:moose`). The synonym table lives in `RESOURCES_META` in `src/logic.js`.
 
 ### Vision-LLM amenity pass (per region)
 
@@ -67,29 +68,18 @@ The subagent prompt (`amenity_prompt.md`) constrains the output to a fixed canon
 
 Recall is uneven by map style: regions where amenities cluster in styled "info chips" next to each label (e.g. Quonset Garage in Coastal Highway) come back well-tagged; regions where amenity icons are drawn at their actual workshop building inside a building cluster (e.g. Coastal Townsite) often produce empty crops because the icon is outside the label-centred crop window. The wiki layer is what catches those.
 
-### Region resources
+### Layers panel
 
-The detail-view header carries a row of resource pills — one per legend pictogram detected on that region's map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit). Each pill shows the resource's name, total count, and a colour swatch.
+A floating panel in the top-left of the detail view (collapsible, starts collapsed on phones; the choice is remembered in `localStorage` as `ldm.layersCollapsed.v1`).
 
-- **Click** a pill to highlight the first hit (reuses the existing dim-and-pulse animation).
-- **Click again** to cycle to the next hit — the pill shows `1 / N`, `2 / N`, … and wraps around.
-- **Click another pill** to switch resource and start from its first hit.
-- Closing the modal clears the cycle.
+- **Show on map** lists the rare crafting tools present in the region (forge, workbench, ammunition workbench, milling machine) and every legend pictogram detected on its map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit), each with a count. Click a row to toggle that layer: every location gets a coloured ring and the map is desaturated so the rings stand out. Several layers can be on at once, and they stay on when you switch region; closing the detail view clears them.
+- **Nearest** lists rare tools that aren't in this region, with the closest place that has one and the hop count via BFS over the region adjacency graph (e.g. *"The Riken · Desolation Point · 2 hops"* from Coastal Highway). Click to preview the route. Tools whose nearest place is the same (e.g. ammunition workbench + milling machine at Last Resort Cannery) share one row.
 
-The URL hash carries the cycle state, so any view is shareable:
-- `index.html#coastal_highway/$resource:moose` → opens Coastal Highway and highlights moose hit #1
-- `index.html#mystery_lake/$resource:cattails/7` → opens Mystery Lake and highlights cattails hit #7
+A `$resource:` hash turns layers on, so search results and links can open a region with them showing:
+- `index.html#coastal_highway/$resource:moose` → Coastal Highway with the moose layer on
+- `index.html#mystery_lake/$resource:bear,wolf` → Mystery Lake with bears and wolves ringed
 
-Hits are detected by `tools/find_resources.py` (see "Refreshing the region resources" below) and inlined into `index.html` between the `REGION_RESOURCES_START` / `REGION_RESOURCES_END` sentinels.
-
-### Nearest-tool lookup
-
-Every region in `data/regions.json` carries an `adjacencies` field — a list of region IDs reachable via in-game transition zones, seeded from the Long Dark wiki's `connections` infobox field. The detail view shows a small pill row in its header for each rare crafting tool (forge, workbench, ammunition workbench, milling machine):
-
-- If the open region has the tool, the pill shows the count and a `here` accent. Click it to jump to the first instance with the tool filter active.
-- If not, the pill shows the closest place that does, with the hop count via BFS over the adjacency graph (e.g. *"Forge → The Riken (Desolation Point) · 1 hop"* from Coastal Highway). Click to navigate. Tools whose nearest place is the same (e.g. ammunition workbench + milling machine at Last Resort Cannery) share one pill with both badges.
-
-The graph is undirected and seeded once. To regenerate after wiki changes, run `python3 tools/scrape_connections.py` to dump each region's parsed connections to `data/regions_connections_raw.json`; the symmetric union is hand-merged into `data/regions.json` and re-inlined via `python3 tools/inline_regions.py`.
+Resource hits are detected by `tools/find_resources.py` (see "Refreshing the region resources" below) and inlined into `index.html` between the `REGION_RESOURCES_START` / `REGION_RESOURCES_END` sentinels. Region adjacencies live in the `adjacencies` field of `data/regions.json`, seeded from the Long Dark wiki's `connections` infobox field. The graph is undirected and seeded once. To regenerate after wiki changes, run `python3 tools/scrape_connections.py` to dump each region's parsed connections to `data/regions_connections_raw.json`; the symmetric union is hand-merged into `data/regions.json` and re-inlined via `python3 tools/inline_regions.py`.
 
 ## Offline / PWA
 
@@ -158,7 +148,7 @@ The overrides file is the source of manual fixes; running `merge_boxes.py` on it
 
 ## Refreshing the region resources
 
-`data/region_resources.json` holds detected legend-icon positions (moose, bear, wolf, deer, cougar, cattails, sapling, salt deposit, …) per region — fed straight into the detail-view's resource pills. To regenerate:
+`data/region_resources.json` holds detected legend-icon positions (moose, bear, wolf, deer, cougar, cattails, sapling, salt deposit, …) per region — fed straight into the detail-view's layers panel. To regenerate:
 
 ```sh
 .venv/bin/python tools/find_resources.py             # all regions
@@ -193,8 +183,8 @@ npm test      # runs the full suite (~2s, ~60 tests)
 
 Two layers, both running on Node's built-in `node:test`:
 
-- **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format (including the resource-cycle hash form).
-- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, region-button clicks, and the resources panel (pill rendering, click-to-activate, cycle progression, hash deep-link).
+- **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format (including the `$resource:` hash form).
+- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, region-button clicks, the layers panel (rows, toggling rings on and off, `$resource:` deep links, persistence across regions) and the region picker.
 
 `src/logic.js` dual-exports — it attaches `window.LDLogic` in the browser and `module.exports = LDLogic` in Node — so the same code is exercised in both environments. The inline `<script>` in `index.html` uses thin wrappers that pass the bundled data tables (`PLACES_INDEX`, `PLACE_TOOLS`, `REGIONS`, `REGIONS_BY_ID`) into those helpers.
 

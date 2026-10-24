@@ -10,12 +10,12 @@
 
 // Single source of truth for crafting-tool tags. Each entry carries:
 //   glyph    — one-char badge text shown on map overlays + search rows
-//   label    — human-readable name for tooltips / pill text
+//   label    — human-readable name for tooltips / panel text
 //   synonyms — words the user might type to surface this tool in search
 //              (include the canonical tag itself so identity matches work)
 //   nearby   — true if the detail-view "nearest tool" strip should surface
 //              this tool. Rare crafting stations only; common amenities
-//              (bed, stove, first_aid) aren't worth a nearest pill.
+//              (bed, stove, first_aid) aren't worth a nearest row.
 //
 // TOOL_SYNONYMS, TOOL_GLYPHS, NEARBY_TOOLS, toolLabel are all derived from
 // this. Adding a tool means adding one entry here.
@@ -37,12 +37,11 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 }
 
 // Single source of truth for legend-icon resources surfaced in the detail
-// view's "Resources" pill row. Each entry carries:
-//   label    — display name shown on the pill and used in the search-result
-//              "highlighted name" (e.g. "Moose area #2")
-//   color    — CSS colour for the pill border + swatch when the pill is
-//              active. Picked roughly to match the legend pictogram's
-//              palette so the active pill reads as "this kind of icon".
+// view's layers panel. Each entry carries:
+//   label    — display name shown in the layers panel and search results
+//   color    — layer colour for the map rings and swatches. Bright and
+//              well separated so rings stay visible on the pale map sheet
+//              and several layers can be told apart at once.
 //   synonyms — words the user might type to surface this resource in the
 //              world-view search (consumed by matchResourceKeyword /
 //              searchResources). Include the canonical tag itself so
@@ -50,7 +49,7 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 //
 // Source of detections is tools/find_resources.py → REGION_RESOURCES inlined
 // in index.html as `REGION_RESOURCES[region_id][tag] = [{bbox, score}]`.
-// Iteration order here is the visual order of the pills (regions don't
+// Iteration order here is the visual order of the layer rows (regions don't
 // reorder them per-region — common resources first, rarer ones last).
 //
 // To add a resource: (1) add a canonical PNG to
@@ -58,15 +57,15 @@ for (const [tag, meta] of Object.entries(TOOLS_META)) {
 // tools/find_resources.py with the colour filter that captures it,
 // (3) add an entry here, (4) re-run find_resources.py --inline.
 const RESOURCES_META = {
-  moose:          { label: 'Moose',           color: '#1f7a3a', synonyms: ['moose'] },
-  bear:           { label: 'Bear',            color: '#b85a1a', synonyms: ['bear'] },
-  wolf:           { label: 'Wolf',            color: '#1a7fb8', synonyms: ['wolf'] },
-  timberwolf:     { label: 'Timberwolf',      color: '#947010', synonyms: ['timberwolf', 'timberwolves'] },
-  cougar:         { label: 'Cougar',          color: '#777a85', synonyms: ['cougar'] },
-  deer:           { label: 'Deer',            color: '#2f3540', synonyms: ['deer'] },
-  cattails:       { label: 'Cattails',        color: '#a14fb0', synonyms: ['cattails', 'cattail'] },
-  sapling:        { label: 'Sapling',         color: '#3a8a3a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
-  salt_deposit:   { label: 'Salt deposit',    color: '#444b58', synonyms: ['salt'] },
+  moose:          { label: 'Moose',           color: '#2bb673', synonyms: ['moose'] },
+  bear:           { label: 'Bear',            color: '#e8742a', synonyms: ['bear'] },
+  wolf:           { label: 'Wolf',            color: '#2f8fe8', synonyms: ['wolf'] },
+  timberwolf:     { label: 'Timberwolf',      color: '#d9a400', synonyms: ['timberwolf', 'timberwolves'] },
+  cougar:         { label: 'Cougar',          color: '#e0457b', synonyms: ['cougar'] },
+  deer:           { label: 'Deer',            color: '#8a63e8', synonyms: ['deer'] },
+  cattails:       { label: 'Cattails',        color: '#c94fd0', synonyms: ['cattails', 'cattail'] },
+  sapling:        { label: 'Sapling',         color: '#7cc23a', synonyms: ['sapling', 'saplings', 'maple', 'birch'] },
+  salt_deposit:   { label: 'Salt deposit',    color: '#19b5b5', synonyms: ['salt'] },
 };
 
 const RESOURCE_SYNONYMS = {};
@@ -84,7 +83,7 @@ function matchResourceKeyword(q) {
 function searchResources(q, ctx) {
   // Region-scoped resource results for the world-view search: typing "moose"
   // lists the regions with detected moose areas, biggest count first, so the
-  // user can jump straight into a #region/$resource:moose cycle.
+  // user can jump straight into a #region/$resource:moose layer.
   //   ctx: { regionResources, regions, maxResults? }
   // Returns [{ tag, region, count }].
   const tag = matchResourceKeyword(q);
@@ -113,21 +112,6 @@ function looksLikeLegendBbox(bbox) {
   if (!Array.isArray(bbox) || bbox.length !== 4) return false;
   const cy = (bbox[1] + bbox[3]) / 2;
   return cy < 0.025 || cy > 0.92;
-}
-
-// Pure cycle-step helper for the resources panel: given the currently active
-// resource state and a click on some pill, return the next state.
-//   currentTag    — resource tag the user is currently cycling through, or null
-//   currentIndex  — 0-indexed hit within that resource (ignored if tag changes)
-//   clickedTag    — the pill the user just clicked
-//   hitCount      — how many hits the clicked resource has on this region (>= 1)
-//
-// Clicking a different pill resets the cycle to hit 0 of the new resource;
-// clicking the same pill again advances and wraps. Returns { tag, index }.
-function nextResourceCycle(currentTag, currentIndex, clickedTag, hitCount) {
-  if (hitCount <= 0) return { tag: clickedTag, index: 0 };
-  if (currentTag !== clickedTag) return { tag: clickedTag, index: 0 };
-  return { tag: clickedTag, index: (currentIndex + 1) % hitCount };
 }
 
 function matchToolKeyword(q) {
@@ -234,7 +218,7 @@ function pathSummary(path, regionsById) {
   return 'via ' + middle.join(', ');
 }
 
-// Sentinel prefix that distinguishes a resource-cycle segment from a normal
+// Sentinel prefix that distinguishes a resource-layer segment from a normal
 // place name. Real place names never start with '$', so collisions are out.
 const RESOURCE_HASH_PREFIX = '$resource:';
 
@@ -243,8 +227,10 @@ function parseHash(hashStr) {
   //   #region                         — open region only
   //   #region/place                   — open + highlight a named place
   //   #region/place/tool              — same + carry a tool filter
-  //   #region/$resource:moose         — open + cycle 1st moose hit
-  //   #region/$resource:moose/3       — same + cycle 3rd hit (1-indexed)
+  //   #region/$resource:moose         — open with the moose layer on
+  //   #region/$resource:bear,wolf     — several layers (comma-separated)
+  //   #region/$resource:moose/3       — legacy cycle link; index is parsed
+  //                                     but the page shows every hit
   const raw = (hashStr || '').replace(/^#/, '');
   if (!raw) return null;
   const parts = raw.split('/').map(decodeURIComponent);
@@ -293,7 +279,6 @@ const LDLogic = {
   RESOURCES_META,
   RESOURCE_HASH_PREFIX,
   looksLikeLegendBbox,
-  nextResourceCycle,
   matchToolKeyword,
   matchResourceKeyword,
   searchPlaces,

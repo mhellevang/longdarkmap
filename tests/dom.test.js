@@ -146,7 +146,7 @@ test('search: resource keyword lists region-scoped resource rows first', async (
   } finally { close(); }
 });
 
-test('search: clicking a resource row opens the region with the resource cycle active', async () => {
+test('search: clicking a resource row opens the region with that layer on', async () => {
   const { window, document, close } = await loadPage();
   try {
     const input = document.getElementById('place-search');
@@ -158,8 +158,8 @@ test('search: clicking a resource row opens the region with the resource cycle a
 
     assert.equal(document.getElementById('detail-view').style.display, 'flex');
     assert.match(window.location.hash, /(?:\$|%24)resource(?:%3A|:)moose/);
-    const activePill = document.querySelector('#resources-panel .resource-pill.active[data-tag="moose"]');
-    assert.ok(activePill, 'moose pill should be active after opening a resource result');
+    const layer = document.querySelector('#layers-list .layer-row[data-tag="moose"]');
+    assert.equal(layer.getAttribute('aria-pressed'), 'true', 'moose layer should be on after opening a resource result');
   } finally { close(); }
 });
 
@@ -319,191 +319,130 @@ test('world view: mobile viewport defaults to a centred cover zoom, desktop to f
   } finally { close(); }
 });
 
-// ─── resources panel (legend-icon cycle) ────────────────────────────────────
+// ─── layers panel ───────────────────────────────────────────────────────────
 
-test('resources panel: opening a region populates pills for present resources', async () => {
+const layerRow = (document, tag) =>
+  document.querySelector(`#layers-list .layer-row[data-tag="${tag}"]`);
+const markerCount = (document) =>
+  document.querySelectorAll('#markers-layer .layer-marker').length;
+
+test('layers panel: opening a region lists its resources and local tools', async () => {
   const { window, document, close } = await loadPage();
   try {
-    // Mystery Lake has hits in all 5 resource classes.
+    window.location.hash = '#coastal_highway';
+    fire(window, window, 'hashchange');
+    assert.ok(layerRow(document, 'cattails'), 'expected a cattails row on Coastal Highway');
+    assert.ok(layerRow(document, 'workbench'), 'expected a workbench row on Coastal Highway');
+    assert.ok(Number(layerRow(document, 'workbench').querySelector('.layer-count').textContent) > 1);
+    assert.equal(layerRow(document, 'cattails').getAttribute('aria-pressed'), 'false');
+    assert.equal(markerCount(document), 0);
+  } finally { close(); }
+});
+
+test('layers panel: toggling a layer rings every hit and dims the map', async () => {
+  const { window, document, close } = await loadPage();
+  try {
     window.location.hash = '#mystery_lake';
     fire(window, window, 'hashchange');
+    const row = layerRow(document, 'bear');
+    const count = Number(row.querySelector('.layer-count').textContent);
 
-    const pills = document.querySelectorAll('#resources-panel .resource-pill');
-    assert.ok(pills.length >= 1, 'expected at least one resource pill');
+    fire(window, row, 'click');
+    assert.equal(row.getAttribute('aria-pressed'), 'true');
+    assert.equal(markerCount(document), count);
+    assert.ok(document.getElementById('map-canvas').classList.contains('layers-on'));
+    assert.equal(document.getElementById('layers-active-count').textContent, '1');
+
+    // A second layer adds its rings on top.
+    const wolf = layerRow(document, 'wolf');
+    fire(window, wolf, 'click');
+    assert.equal(markerCount(document),
+      count + Number(wolf.querySelector('.layer-count').textContent));
+
+    fire(window, row, 'click');
+    fire(window, wolf, 'click');
+    assert.equal(row.getAttribute('aria-pressed'), 'false');
+    assert.equal(markerCount(document), 0);
+    assert.ok(!document.getElementById('map-canvas').classList.contains('layers-on'));
   } finally { close(); }
 });
 
-test('resources panel: clicking a pill activates it and updates the hash to $resource:', async () => {
-  const { window, document, close } = await loadPage();
-  try {
-    window.location.hash = '#mystery_lake';
-    fire(window, window, 'hashchange');
-
-    const moosePill = document.querySelector('#resources-panel .resource-pill[data-tag="moose"]');
-    assert.ok(moosePill, 'expected a moose pill on Mystery Lake');
-    fire(window, moosePill, 'click');
-
-    assert.ok(moosePill.classList.contains('active'), 'pill should be active after click');
-    // $ encodes to %24, : encodes to %3A in the URL fragment.
-    assert.match(window.location.hash, /(?:\$|%24)resource(?:%3A|:)moose/);
-  } finally { close(); }
-});
-
-test('resources panel: re-clicking the same pill cycles to the next hit (index shown)', async () => {
-  const { window, document, close } = await loadPage();
-  try {
-    window.location.hash = '#coastal_highway';
-    fire(window, window, 'hashchange');
-
-    // Coastal Highway has many cattail hits, so cycling is observable.
-    const cattPill = document.querySelector('#resources-panel .resource-pill[data-tag="cattails"]');
-    assert.ok(cattPill, 'expected a cattails pill on Coastal Highway');
-
-    fire(window, cattPill, 'click');
-    const firstIdx = cattPill.querySelector('.resource-pill-index').textContent;
-    assert.match(firstIdx, /^1 \/ \d+$/, `first click should show "1 / N", got "${firstIdx}"`);
-
-    fire(window, cattPill, 'click');
-    const secondIdx = cattPill.querySelector('.resource-pill-index').textContent;
-    assert.match(secondIdx, /^2 \/ \d+$/, `second click should show "2 / N", got "${secondIdx}"`);
-  } finally { close(); }
-});
-
-test('resources panel: hash deep-link to a resource hit activates the pill', async () => {
-  const { window, document, close } = await loadPage();
-  try {
-    // Direct URL hit: open Coastal Highway at cattails hit #2.
-    window.location.hash = '#coastal_highway/' + encodeURIComponent('$resource:cattails') + '/2';
-    fire(window, window, 'hashchange');
-
-    const cattPill = document.querySelector('#resources-panel .resource-pill[data-tag="cattails"]');
-    assert.ok(cattPill, 'expected a cattails pill after deep-link');
-    assert.ok(cattPill.classList.contains('active'), 'deep-linked pill should be active');
-    assert.equal(cattPill.querySelector('.resource-pill-index').textContent.startsWith('2 / '), true);
-  } finally { close(); }
-});
-
-test('tool pill: clicking "Workbench here" cycles through instances', async () => {
+test('layers panel: tool layer rings each place with that tool', async () => {
   const { window, document, close } = await loadPage();
   try {
     window.location.hash = '#coastal_highway';
     fire(window, window, 'hashchange');
-
-    let pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"].here');
-    assert.ok(pill, 'expected "Workbench here" pill on CH');
-
-    // First click: cycle activates, index shows "1 / N", pill goes .cycling.
-    fire(window, pill, 'click');
-    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
-    assert.ok(pill.classList.contains('cycling'), 'pill should be cycling after first click');
-    const idx1 = pill.querySelector('.tool-pill-cycle-index').textContent;
-    assert.match(idx1, /^1 \/ \d+$/, `first click should show "1 / N", got "${idx1}"`);
-    const hashAfter1 = decodeURIComponent(window.location.hash);
-    assert.match(hashAfter1, /\/.+\/workbench$/, 'hash should carry place + workbench filter');
-
-    // Second click: advances to "2 / N", hash points at a different place.
-    fire(window, pill, 'click');
-    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
-    const idx2 = pill.querySelector('.tool-pill-cycle-index').textContent;
-    assert.match(idx2, /^2 \/ \d+$/, `second click should show "2 / N", got "${idx2}"`);
-    const hashAfter2 = decodeURIComponent(window.location.hash);
-    assert.notEqual(hashAfter1, hashAfter2,
-      'second click should navigate to a different place');
+    const row = layerRow(document, 'workbench');
+    fire(window, row, 'click');
+    assert.equal(markerCount(document), Number(row.querySelector('.layer-count').textContent));
   } finally { close(); }
 });
 
-test('tool pill: ✕ exits the cycle and drops the place from the hash', async () => {
+test('layers panel: $resource deep link turns the layer on; toggling off drops it from the hash', async () => {
   const { window, document, close } = await loadPage();
   try {
-    window.location.hash = '#coastal_highway';
+    window.location.hash = '#coastal_highway/' + encodeURIComponent('$resource:cattails');
     fire(window, window, 'hashchange');
+    const row = layerRow(document, 'cattails');
+    assert.equal(row.getAttribute('aria-pressed'), 'true');
+    assert.ok(markerCount(document) > 0);
 
-    let pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"].here');
-    fire(window, pill, 'click');
-    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
-    assert.ok(pill.classList.contains('cycling'), 'sanity: cycling after click');
-
-    const xBtn = pill.querySelector('.tool-pill-cycle-close');
-    assert.ok(xBtn, 'expected ✕ on cycling tool pill');
-    fire(window, xBtn, 'click');
-
-    pill = document.querySelector('#tools-nearby .tool-pill[data-tool="workbench"]');
-    assert.ok(!pill.classList.contains('cycling'), '✕ should exit cycling');
-    assert.equal(window.location.hash, '#coastal_highway',
-      'hash should drop the place segment after ✕');
-    assert.equal(document.getElementById('detail-view').style.display, 'flex',
-      'modal should stay open after ✕');
-  } finally { close(); }
-});
-
-test('resources panel: pill ✕ deselects the active resource (keeps modal open)', async () => {
-  const { window, document, close } = await loadPage();
-  try {
-    window.location.hash = '#coastal_highway/' + encodeURIComponent('$resource:cattails') + '/2';
-    fire(window, window, 'hashchange');
-
-    const cattPill = document.querySelector('#resources-panel .resource-pill[data-tag="cattails"]');
-    assert.ok(cattPill && cattPill.classList.contains('active'),
-      'sanity: cattails pill should be active before exit');
-
-    const closeBtn = cattPill.querySelector('.resource-pill-close');
-    assert.ok(closeBtn, 'expected a ✕ inside the active pill');
-    fire(window, closeBtn, 'click');
-
-    assert.ok(!cattPill.classList.contains('active'),
-      'pill should no longer be active after ✕ click');
-    // Modal stays open — only the cycle is cleared.
-    assert.equal(document.getElementById('detail-view').style.display, 'flex',
-      'modal should remain open after pill ✕');
-    // Hash drops the resource segment but keeps the region.
+    fire(window, row, 'click');
     assert.equal(window.location.hash, '#coastal_highway');
+    assert.equal(markerCount(document), 0);
   } finally { close(); }
 });
 
-test('resources panel: ESC clears the active resource before closing the modal', async () => {
+test('layers panel: layers follow region switches and clear on close', async () => {
   const { window, document, close } = await loadPage();
   try {
-    window.location.hash = '#mystery_lake/' + encodeURIComponent('$resource:moose') + '/2';
+    window.location.hash = '#mystery_lake';
     fire(window, window, 'hashchange');
+    fire(window, layerRow(document, 'bear'), 'click');
 
-    const moosePill = document.querySelector('#resources-panel .resource-pill[data-tag="moose"]');
-    assert.ok(moosePill && moosePill.classList.contains('active'),
-      'sanity: moose pill should be active before ESC');
+    window.location.hash = '#pleasant_valley';
+    fire(window, window, 'hashchange');
+    const pvBear = layerRow(document, 'bear');
+    assert.ok(pvBear, 'expected a bear row on Pleasant Valley');
+    assert.equal(pvBear.getAttribute('aria-pressed'), 'true');
+    assert.equal(markerCount(document), Number(pvBear.querySelector('.layer-count').textContent));
 
-    // First ESC: clears the cycle, modal stays open.
-    fire(window, document, 'keydown', { key: 'Escape' });
-    assert.ok(!moosePill.classList.contains('active'),
-      'first ESC should clear the active pill');
-    assert.equal(document.getElementById('detail-view').style.display, 'flex',
-      'first ESC should leave the modal open');
-    assert.equal(window.location.hash, '#mystery_lake');
-
-    // Second ESC: closes the modal as before.
-    fire(window, document, 'keydown', { key: 'Escape' });
-    assert.notEqual(document.getElementById('detail-view').style.display, 'flex',
-      'second ESC should close the modal');
+    fire(window, document.getElementById('back-btn'), 'click');
+    window.location.hash = '#mystery_lake';
+    fire(window, window, 'hashchange');
+    assert.equal(layerRow(document, 'bear').getAttribute('aria-pressed'), 'false');
+    assert.equal(markerCount(document), 0);
   } finally { close(); }
 });
 
-test('resources panel: switching region clears the previous active pill', async () => {
+test('layers panel: collapse state toggles and is remembered', async () => {
   const { window, document, close } = await loadPage();
   try {
-    // Open Mystery Lake on moose hit #2.
-    window.location.hash = '#mystery_lake/' + encodeURIComponent('$resource:moose') + '/2';
-    fire(window, window, 'hashchange');
-    const mooseBefore = document.querySelector('#resources-panel .resource-pill[data-tag="moose"]');
-    assert.ok(mooseBefore && mooseBefore.classList.contains('active'),
-      'sanity: moose pill should be active before switching region');
+    const panel = document.getElementById('layers-panel');
+    const toggle = document.getElementById('layers-toggle');
+    assert.ok(!panel.classList.contains('collapsed'), 'desktop starts expanded');
+    fire(window, toggle, 'click');
+    assert.ok(panel.classList.contains('collapsed'));
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(window.localStorage.getItem('ldm.layersCollapsed.v1'), '1');
+  } finally { close(); }
+});
 
-    // Switch to Coastal Highway with no resource hash — moose pill should
-    // no longer exist (different region's pill set) and no pill should be
-    // marked active.
-    window.location.hash = '#coastal_highway';
+test('region picker: choosing a region opens it with a way back', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#mystery_lake';
     fire(window, window, 'hashchange');
+    const select = document.getElementById('region-select');
+    assert.equal(select.value, 'mystery_lake');
 
-    const activePills = document.querySelectorAll('#resources-panel .resource-pill.active');
-    assert.equal(activePills.length, 0,
-      'no pill should remain active after switching to a non-resource hash');
+    select.value = 'forlorn_muskeg';
+    fire(window, select, 'change');
+    assert.equal(window.location.hash, '#forlorn_muskeg');
+    assert.equal(document.getElementById('region-title').textContent, 'Forlorn Muskeg');
+    const back = document.getElementById('back-to-origin-btn');
+    assert.ok(!back.hidden);
+    assert.match(back.textContent, /Mystery Lake/);
   } finally { close(); }
 });
 
@@ -549,17 +488,17 @@ test('visited: search results mark visited places with ✓', async () => {
   } finally { close(); }
 });
 
-test('tool pills: nearest tools at the same place share one pill', async () => {
+test('layers panel: nearest tools at the same place share one row', async () => {
   const { window, document, close } = await loadPage();
   try {
     // From Coastal Highway, ammo workbench + milling machine are both nearest
     // at Last Resort Cannery (Bleak Inlet).
     window.location.hash = '#coastal_highway';
     fire(window, window, 'hashchange');
-    const pills = [...document.querySelectorAll('#tools-nearby .tool-pill')]
-      .filter(p => p.querySelector('.tool-pill-label').textContent.startsWith('Last Resort'));
-    assert.equal(pills.length, 1);
-    const badges = [...pills[0].querySelectorAll('.tool-badge')].map(b => b.textContent);
+    const rows = [...document.querySelectorAll('#nearest-list .nearest-row')]
+      .filter(r => r.querySelector('.nearest-place').textContent.startsWith('Last Resort'));
+    assert.equal(rows.length, 1);
+    const badges = [...rows[0].querySelectorAll('.tool-badge')].map(b => b.textContent);
     assert.deepEqual(badges, ['A', 'M']);
   } finally { close(); }
 });

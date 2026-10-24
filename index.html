@@ -88,14 +88,14 @@
     <div id="detail-header">
       <button id="back-btn" aria-label="Close region view">✕</button>
       <button id="back-to-origin-btn" hidden></button>
-      <h2 id="region-title"></h2>
+      <div id="region-picker">
+        <h2 id="region-title"></h2>
+        <span id="region-picker-caret" aria-hidden="true">▾</span>
+        <select id="region-select" aria-label="Switch region"></select>
+      </div>
       <span id="visited-progress" title="Click a place name on the map to mark it as visited"></span>
       <div id="map-tabs"></div>
       <button id="legend-btn" aria-label="Map legend" aria-expanded="false" title="What do the badges and colours mean?">?</button>
-      <div id="header-pills">
-        <div id="tools-nearby" aria-label="Nearest crafting stations from this region"></div>
-        <div id="resources-panel" aria-label="Resources on this map"></div>
-      </div>
     </div>
     <div id="legend-popover" role="dialog" aria-label="Map legend" hidden>
       <div id="legend-popover-header">
@@ -107,8 +107,8 @@
         <div id="legend-tools" class="legend-rows"></div>
       </div>
       <div class="legend-section">
-        <h3>Resource pills</h3>
-        <p class="legend-note">One pill per pictogram type found on this map; click a pill to jump between its locations.</p>
+        <h3>Map layers</h3>
+        <p class="legend-note">Turn a layer on in the panel to ring every location of that resource on the map.</p>
         <div id="legend-resources" class="legend-rows"></div>
       </div>
     </div>
@@ -122,6 +122,7 @@
     </div>
     <div id="map-canvas">
       <img id="detail-img" alt="" decoding="async">
+      <div id="markers-layer" aria-hidden="true"></div>
       <div id="all-boxes-layer"></div>
       <div id="places-layer"></div>
       <div id="region-links-layer"></div>
@@ -140,6 +141,18 @@
         <button id="bbox-cancel-btn" class="cancel">Cancel</button>
       </div>
       <div id="detail-coord-display"></div>
+      <aside id="layers-panel" aria-label="Map layers">
+        <button id="layers-toggle" type="button" aria-expanded="true" aria-controls="layers-body">
+          <span>Layers</span><span id="layers-active-count"></span><span id="layers-caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="layers-body">
+          <div id="layers-list" role="group" aria-label="Show on map"></div>
+          <div id="nearest-section">
+            <h3>Nearest</h3>
+            <div id="nearest-list"></div>
+          </div>
+        </div>
+      </aside>
       <div id="zoom-controls">
         <button class="zoom-btn" id="zoom-out" aria-label="Zoom out">−</button>
         <span id="zoom-level">100%</span>
@@ -32082,6 +32095,19 @@ const regionTitle = document.getElementById('region-title');
 const mapTabsEl   = document.getElementById('map-tabs');
 const mapCanvas   = document.getElementById('map-canvas');
 const detailImg   = document.getElementById('detail-img');
+// Native <select> laid invisibly over the title, so the title itself opens
+// the platform's region picker.
+const regionSelect = document.getElementById('region-select');
+
+for (const r of [...REGIONS].sort((a, b) => a.name.localeCompare(b.name))) {
+  regionSelect.add(new Option(r.name, r.id));
+}
+regionSelect.addEventListener('change', () => {
+  const target = REGIONS_BY_ID[regionSelect.value];
+  if (target && currentRegion && target.id !== currentRegion.id) {
+    navigateFromPill(currentRegion, target, null, null);
+  }
+});
 
 function mapTabLabel(path) {
   const name = path.split('/').pop().replace(/\.[^.]+$/, '');
@@ -32140,16 +32166,15 @@ function applyHashState(historyOp) {
   const region = REGIONS_BY_ID[parsed.regionId];
   if (!region) return;  // unknown region in hash — leave the world view up
 
-  // Resource-cycle hash: open the region (if not already) and jump straight
-  // to the i-th hit of the named resource.
+  // Resource hash (#region/$resource:bear,wolf): turn those layers on.
   if (parsed.resource) {
-    const resourceArg = { tag: parsed.resource, index: parsed.resourceIndex - 1 };
+    for (const tag of parsed.resource.split(',')) activeLayers.add(tag);
     if (currentRegion && currentRegion.id === region.id) {
-      // Already in this region — just switch the selected hit, don't re-open.
-      selectResource(resourceArg.tag, resourceArg.index, { pushHash: false });
+      renderLayersPanel(region);
+      renderMarkers();
       return;
     }
-    _openRegion(region, null, null, historyOp, resourceArg);
+    _openRegion(region, null, null, historyOp);
     return;
   }
 
@@ -32161,7 +32186,7 @@ function applyHashState(historyOp) {
   // Already on this region/place/tool? Don't tear down + re-open.
   const currentPlace = highlightTarget ? highlightTarget.name : null;
   const wantedPlace  = target ? target.name : null;
-  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool && !resourceCycle) {
+  if (currentRegion && currentRegion.id === region.id && currentPlace === wantedPlace && currentToolFilter === parsed.tool) {
     return;
   }
   _openRegion(region, target, parsed.tool, historyOp);
@@ -32185,22 +32210,18 @@ function closeModal() {
   applyHashState({ op: 'reset' });
 }
 
-function _openRegion(region, target, tool, historyOp, resourceArg) {
-  lastFocusBeforeModal = document.activeElement;
+function _openRegion(region, target, tool, historyOp) {
+  // Region hops keep focus inside the modal; only remember the opener on
+  // first open so close returns focus to it.
+  const firstOpen = detailView.style.display !== 'flex';
+  if (firstOpen) lastFocusBeforeModal = document.activeElement;
   regionTitle.textContent = region.name;
+  regionSelect.value = region.id;
   mapTabsEl.innerHTML = '';
   currentRegion = region;
   // target: { name, bbox: [x1,y1,x2,y2] in 0..1 } or null. Persists across
   // tab switches so the highlight survives swapping standard ↔ loper.
-  // resourceArg ({ tag, index }) overrides target when a hash like
-  // #region/$resource:moose/2 is loaded — selectResource will set up the
-  // highlight after the resources panel renders.
   highlightTarget = target || null;
-  // Reset cycle state when switching regions; resource/tool pill rendering
-  // below rebuilds the pill rows from scratch, so direct assignment is fine
-  // (no need to round-trip through the setters).
-  resourceCycle = null;
-  toolHereCycle = null;
 
   if (region.maps.length > 1) {
     region.maps.forEach((m, i) => {
@@ -32233,19 +32254,14 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
   renderPlaces();
   renderRegionLinks();
   renderToolBadges();
-  renderToolsNearby(region);
-  renderResourcesPanel(region);
+  renderLayersPanel(region);
+  renderMarkers();
   // tool: optional crafting-tool tag (forge/workbench/...). When set, the
   // matching badges in the detail view stay accented while others dim, so
   // the user knows where in the region they're looking.
   currentToolFilter = tool || null;
   setToolFilter(currentToolFilter);
   setAllBoxesVisible(devMode);
-  // Resource-cycle deep-link: set state up so loadDetailMap's onload focuses
-  // on the right hit. Note this also pushes a synthetic hash if needed.
-  if (resourceArg) {
-    selectResource(resourceArg.tag, resourceArg.index, { pushHash: false });
-  }
   detailView.style.display = 'flex';
   detailView.setAttribute('aria-hidden', 'false');
   // inert prevents Tab from reaching the world view's region buttons and
@@ -32253,7 +32269,7 @@ function _openRegion(region, target, tool, historyOp, resourceArg) {
   // aria-modal this gives keyboard users a proper modal experience.
   worldView.setAttribute('inert', '');
   document.body.classList.add('detail-open');
-  backBtn.focus();
+  if (firstOpen) backBtn.focus();
 }
 
 // ── Pan / zoom ────────────────────────────────────────────────────────────
@@ -32272,18 +32288,10 @@ let currentRegion = null;
 // currentToolFilter: the tool tag carried in the URL hash, if any. Used by
 // applyHashState to decide whether a no-op short-circuit is safe.
 let currentToolFilter = null;
-// resourceCycle: { tag, index } when the user is cycling through a resource
-// (moose / bear / cattails / ...), or null when no pill is active. `tag` is
-// a key in RESOURCES_META; `index` is 0-indexed into
-// REGION_RESOURCES[currentRegion.id][tag]. Cleared on region switch and on
-// modal close. Mutate via setResourceCycle so the pill state stays in sync.
-let resourceCycle = null;
-// toolHereCycle: { tool, places, index } when the user is cycling through
-// the in-this-region instances of a crafting tool (e.g. all 5 CH
-// workbenches). `places` is the cycle-ordered list of place names (with
-// suspect/legend-strip bboxes filtered out so clicks always land on real
-// labels). Same null-when-idle pattern as resourceCycle.
-let toolHereCycle = null;
+// activeLayers: resource tags (RESOURCES_META) and tool tags (TOOLS_META)
+// whose locations are ringed on the map. Survives region switches so a
+// "show me the bears" choice follows the user around; cleared on close.
+const activeLayers = new Set();
 const highlightBox = document.getElementById('highlight-box');
 
 const zoomOutBtn  = document.getElementById('zoom-out');
@@ -32379,11 +32387,22 @@ function focusHighlight() {
   highlightBox.style.animation = '';
 }
 
+// Keep the map on screen: an axis larger than the canvas can't be dragged
+// past its edges, a smaller one stays centred.
+function clampPan() {
+  const cw = mapCanvas.clientWidth, ch = mapCanvas.clientHeight;
+  const sw = imgW * zoom, sh = imgH * zoom;
+  panX = sw > cw ? Math.min(0, Math.max(cw - sw, panX)) : (cw - sw) / 2;
+  panY = sh > ch ? Math.min(0, Math.max(ch - sh, panY)) : (ch - sh) / 2;
+}
+
 function applyTransform() {
+  if (imgW > 1) clampPan();
   detailImg.style.width  = imgW + 'px';
   detailImg.style.height = imgH + 'px';
   detailImg.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
   positionHighlight();
+  positionMarkers();
   positionAllBoxes();
   positionPlaces();
   positionRegionLinks();
@@ -32727,108 +32746,207 @@ function pathSummary(path) {
   return LDLogic.pathSummary(path, REGIONS_BY_ID);
 }
 
-// Tools the strip surfaces: rare crafting stations the user might travel
-// for. Common amenities (bed/stove/first_aid) aren't worth a "nearest"
-// pill — they're everywhere. Derived from TOOLS_META's `nearby` flag.
+// ── Layers panel ──────────────────────────────────────────────────────────
+// Floating panel over the map. "Show on map" rows toggle a layer that rings
+// every location of a resource (REGION_RESOURCES) or of a rare crafting tool
+// present in this region; "Nearest" lists rare tools found only elsewhere,
+// with hop counts. Common amenities (bed/stove/first_aid) are everywhere, so
+// only TOOLS_META entries flagged `nearby` get rows.
 const NEARBY_TOOLS = Object.entries(LDLogic.TOOLS_META)
   .filter(([, m]) => m.nearby)
   .map(([tag]) => tag);
 
-const toolsNearbyEl = document.getElementById('tools-nearby');
+const layersPanel = document.getElementById('layers-panel');
+const layersToggle = document.getElementById('layers-toggle');
+const layersActiveCountEl = document.getElementById('layers-active-count');
+const layersListEl = document.getElementById('layers-list');
+const nearestSection = document.getElementById('nearest-section');
+const nearestListEl = document.getElementById('nearest-list');
+const markersLayer = document.getElementById('markers-layer');
+let markerItems = [];  // [{ el, bbox }]
 
-function renderToolsNearby(region) {
-  toolsNearbyEl.innerHTML = '';
-  if (!region) return;
-  const placesHere = PLACE_TOOLS[region.id] || {};
-  const hereByTool = {};
-  for (const [name, tags] of Object.entries(placesHere)) {
-    for (const tag of tags) (hereByTool[tag] ||= []).push(name);
+const LAYERS_COLLAPSED_KEY = 'ldm.layersCollapsed.v1';
+
+function setLayersCollapsed(collapsed) {
+  layersPanel.classList.toggle('collapsed', collapsed);
+  layersToggle.setAttribute('aria-expanded', String(!collapsed));
+}
+
+{
+  let stored = null;
+  try { stored = localStorage.getItem(LAYERS_COLLAPSED_KEY); } catch {}
+  setLayersCollapsed(stored === null ? phoneLayout() : stored === '1');
+}
+
+layersToggle.addEventListener('click', () => {
+  const collapsed = !layersPanel.classList.contains('collapsed');
+  setLayersCollapsed(collapsed);
+  try { localStorage.setItem(LAYERS_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch {}
+});
+
+// The panel lives inside the map canvas; keep its clicks and scrolls from
+// panning or zooming the map underneath.
+for (const type of ['mousedown', 'touchstart', 'wheel', 'dblclick']) {
+  layersPanel.addEventListener(type, e => e.stopPropagation(), { passive: true });
+}
+
+function isResourceTag(tag) {
+  return !!LDLogic.RESOURCES_META[tag];
+}
+
+// 0..1 bboxes for one layer in a region. Tool places are deduped by bbox
+// (alias names share one) and skip bboxes that landed in the legend strip.
+function layerHits(regionId, tag) {
+  if (isResourceTag(tag)) {
+    return ((REGION_RESOURCES[regionId] || {})[tag] || []).map(h => h.bbox);
   }
-  // Nearest-tool pills that point at the same place (e.g. ammo workbench and
-  // milling machine both at Last Resort Cannery) collapse into one pill.
-  const nearbyPills = new Map();  // 'regionId|placeName' → pill
+  const boxes = PLACE_BOXES[regionId] || {};
+  const seen = new Map();
+  for (const [name, tags] of Object.entries(PLACE_TOOLS[regionId] || {})) {
+    const bbox = boxes[name];
+    if (!tags.includes(tag) || !bbox || LDLogic.looksLikeLegendBbox(bbox)) continue;
+    seen.set(bbox.map(v => Number(v).toFixed(5)).join(','), bbox);
+  }
+  return [...seen.values()];
+}
+
+function styleLayer(el, tag) {
+  if (isResourceTag(tag)) el.style.setProperty('--layer-color', LDLogic.RESOURCES_META[tag].color);
+  else el.classList.add('tool-' + tag);
+}
+
+function layerRow(tag, count) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'layer-row';
+  btn.dataset.tag = tag;
+  styleLayer(btn, tag);
+  const key = document.createElement('span');
+  key.className = 'layer-key';
+  if (!isResourceTag(tag)) key.textContent = TOOL_GLYPHS[tag] || '';
+  const label = document.createElement('span');
+  label.className = 'layer-label';
+  label.textContent = isResourceTag(tag) ? LDLogic.RESOURCES_META[tag].label : toolLabel(tag);
+  const countEl = document.createElement('span');
+  countEl.className = 'layer-count';
+  countEl.textContent = count;
+  btn.append(key, label, countEl);
+  btn.addEventListener('click', () => toggleLayer(tag));
+  return btn;
+}
+
+function renderLayersPanel(region) {
+  layersListEl.innerHTML = '';
+  nearestListEl.innerHTML = '';
+  const placeTools = Object.values(PLACE_TOOLS[region.id] || {});
+  // Nearest tools that point at the same place (e.g. ammo workbench and
+  // milling machine both at Last Resort Cannery) share one row.
+  const nearestRows = new Map();  // 'regionId|placeName' → row
+  const shown = [];
   for (const tool of NEARBY_TOOLS) {
-    const pill = document.createElement('button');
-    pill.className = 'tool-pill';
-    pill.dataset.tool = tool;
-    const here = hereByTool[tool];
-    if (here && here.length) {
-      // Tool is present in this region → click cycles through every instance.
-      pill.classList.add('here');
-      // Build the cycle list once: skip places whose stored bbox is sitting
-      // inside the map's legend strip (OCR-to-wiki-name matcher sometimes
-      // misbinds names to legend text, e.g. "Coal Mine" → the legend's
-      // "Coal" entry). Falls back to the raw list so a region where every
-      // bbox is suspect still cycles through *something*.
-      const placeBoxes = PLACE_BOXES[region.id] || {};
-      const goodPlaces = here.filter(n => placeBoxes[n] && !LDLogic.looksLikeLegendBbox(placeBoxes[n]));
-      const cyclePlaces = goodPlaces.length ? goodPlaces : here.slice();
-      pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
-                     + `<span class="tool-pill-label">${toolLabel(tool)} here</span>`
-                     + `<span class="tool-pill-count">${here.length}</span>`
-                     + `<span class="tool-pill-cycle-index" aria-hidden="true"></span>`
-                     + `<span class="tool-pill-cycle-close" aria-hidden="true" title="Stop cycling (Esc)">✕</span>`;
-      pill.title = `${toolLabel(tool)}: ${here.join(', ')}`;
-      // ✕ click handler — fires before the outer pill click via stopPropagation.
-      pill.querySelector('.tool-pill-cycle-close').addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        exitToolHereCycle();
-      });
-      pill.addEventListener('click', () => {
-        const next = LDLogic.nextResourceCycle(
-          toolHereCycle?.tool ?? null,
-          toolHereCycle?.index ?? 0,
-          tool,
-          cyclePlaces.length,
-        );
-        const place = cyclePlaces[next.index];
-        const box = placeBoxes[place];
-        // openRegion rebuilds the tools-nearby strip via _openRegion, which
-        // resets toolHereCycle. Set it back *after* the rebuild so the new
-        // pill ends up with the .cycling class and the right "i / N" index.
-        openRegion(region, box ? { name: place, bbox: box } : null, tool);
-        setToolHereCycle({ tool: next.tag, places: cyclePlaces, index: next.index });
-      });
-    } else {
-      const nearest = findNearestTool(region.id, tool);
-      if (!nearest) {
-        // Tag isn't anywhere in the graph (probably a vocabulary tag we
-        // haven't tagged yet). Skip the pill rather than show a dead one.
-        continue;
-      }
-      const key = nearest.regionId + '|' + nearest.placeName;
-      const dup = nearbyPills.get(key);
-      if (dup) {
-        const badges = dup.querySelectorAll('.tool-badge');
-        badges[badges.length - 1].insertAdjacentHTML('afterend',
-          `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`);
-        dup.title = dup.title.replace(' — ', ` + ${toolLabel(tool)} — `);
-        continue;
-      }
-      nearbyPills.set(key, pill);
-      const targetRegion = REGIONS_BY_ID[nearest.regionId];
-      const regionShort = targetRegion ? targetRegion.name : nearest.regionId;
-      pill.innerHTML = `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
-                     + `<span class="tool-pill-label">${nearest.placeName}</span>`
-                     + `<span class="tool-pill-region">${regionShort}</span>`
-                     + `<span class="tool-pill-hops">${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}</span>`;
-      const summary = pathSummary(nearest.path);
-      pill.title = `${toolLabel(tool)} — ${nearest.placeName} in ${regionShort}`
-                 + ` (${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}${summary ? ', ' + summary : ''})`
-                 + `\nClick to preview the route.`;
-      // First click previews; the popover's Travel button commits.
-      pill.addEventListener('click', e => {
-        e.stopPropagation();
-        showRoutePopover(pill, region, tool, nearest);
-      });
+    if (placeTools.some(tags => tags.includes(tool))) {
+      if (layerHits(region.id, tool).length) shown.push(tool);
+      continue;
     }
-    toolsNearbyEl.appendChild(pill);
+    const nearest = findNearestTool(region.id, tool);
+    if (!nearest) continue;
+    const key = nearest.regionId + '|' + nearest.placeName;
+    const dup = nearestRows.get(key);
+    if (dup) {
+      dup.querySelector('.nearest-tools').insertAdjacentHTML('beforeend',
+        `<span class="tool-badge tool-${tool}" title="${toolLabel(tool)}">${TOOL_GLYPHS[tool] || ''}</span>`);
+      continue;
+    }
+    nearestRows.set(key, nearestRow(region, tool, nearest));
+  }
+  for (const tag of Object.keys(LDLogic.RESOURCES_META)) {
+    if (layerHits(region.id, tag).length) shown.push(tag);
+  }
+  for (const tag of shown) layersListEl.appendChild(layerRow(tag, layerHits(region.id, tag).length));
+  for (const row of nearestRows.values()) nearestListEl.appendChild(row);
+  nearestSection.hidden = !nearestRows.size;
+  updateLayerRows();
+}
+
+function nearestRow(region, tool, nearest) {
+  const targetRegion = REGIONS_BY_ID[nearest.regionId];
+  const regionName = targetRegion ? targetRegion.name : nearest.regionId;
+  const row = document.createElement('button');
+  row.type = 'button';
+  row.className = 'nearest-row';
+  row.dataset.tool = tool;
+  row.innerHTML = `<span class="nearest-tools"><span class="tool-badge tool-${tool}" title="${toolLabel(tool)}">${TOOL_GLYPHS[tool] || ''}</span></span>`
+                + `<span class="nearest-place"></span>`
+                + `<span class="nearest-meta"></span>`;
+  row.querySelector('.nearest-place').textContent = nearest.placeName;
+  row.querySelector('.nearest-meta').textContent =
+    `${regionName} · ${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}`;
+  const summary = pathSummary(nearest.path);
+  row.title = `Nearest ${toolLabel(tool)}: ${nearest.placeName} in ${regionName}`
+            + (summary ? ` (${summary})` : '') + '\nClick to preview the route.';
+  // First click previews; the popover's Travel button commits.
+  row.addEventListener('click', e => {
+    e.stopPropagation();
+    showRoutePopover(row, region, tool, nearest);
+  });
+  return row;
+}
+
+function toggleLayer(tag) {
+  if (activeLayers.has(tag)) activeLayers.delete(tag);
+  else activeLayers.add(tag);
+  // A $resource: deep link has served its purpose once the user edits the
+  // layers; drop it so a reload doesn't resurrect a layer they turned off.
+  if (currentRegion && parseHash()?.resource) {
+    history.replaceState(null, '', makeHash({ regionId: currentRegion.id }));
+  }
+  updateLayerRows();
+  renderMarkers();
+}
+
+function updateLayerRows() {
+  let shownActive = 0;
+  layersListEl.querySelectorAll('.layer-row').forEach(row => {
+    const on = activeLayers.has(row.dataset.tag);
+    row.setAttribute('aria-pressed', String(on));
+    if (on) shownActive++;
+  });
+  layersActiveCountEl.textContent = shownActive ? String(shownActive) : '';
+}
+
+function renderMarkers() {
+  markersLayer.innerHTML = '';
+  markerItems = [];
+  if (!currentRegion) return;
+  for (const tag of activeLayers) {
+    for (const bbox of layerHits(currentRegion.id, tag)) {
+      const el = document.createElement('div');
+      el.className = 'layer-marker';
+      styleLayer(el, tag);
+      markersLayer.appendChild(el);
+      markerItems.push({ el, bbox });
+    }
+  }
+  mapCanvas.classList.toggle('layers-on', markerItems.length > 0);
+  positionMarkers();
+}
+
+function positionMarkers() {
+  for (const it of markerItems) {
+    const { left, top, width, height } = bboxToCanvasRect(it.bbox);
+    // Pad by half the short side: square resource icons get a circle at
+    // 1.5×, wide tool-place labels a pill hugging the text. The 16px floor
+    // keeps rings visible when zoomed out to the whole region.
+    const pad = Math.min(width, height) / 2;
+    it.el.style.left = (left + width / 2) + 'px';
+    it.el.style.top = (top + height / 2) + 'px';
+    it.el.style.width = Math.max(16, width + pad) + 'px';
+    it.el.style.height = Math.max(16, height + pad) + 'px';
   }
 }
 
 // ── Route preview popover ─────────────────────────────────────────────────
-// Opened by the nearest-tool pills. Lists each region in the path between
+// Opened by the layers panel's nearest-tool rows. Lists each region in the path between
 // origin and destination so the user can step-into any region one hop at a
 // time, instead of teleporting straight to the destination and losing the
 // trail home. The Travel button commits to the destination directly.
@@ -32842,30 +32960,30 @@ let routePopoverState = null;  // { tool, origin, nearest } when open
 
 function hideRoutePopover() {
   // If focus lives inside the popover (we move it there on open), return it
-  // to the pill that opened it so keyboard users aren't dropped at <body>.
+  // to the row that opened it so keyboard users aren't dropped at <body>.
   if (!routePopover.hidden
       && routePopover.contains(document.activeElement)
       && routePopoverState
-      && routePopoverState.anchorPill
-      && document.contains(routePopoverState.anchorPill)) {
-    routePopoverState.anchorPill.focus();
+      && routePopoverState.anchorRow
+      && document.contains(routePopoverState.anchorRow)) {
+    routePopoverState.anchorRow.focus();
   }
   routePopover.hidden = true;
   routePopoverState = null;
-  document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
+  document.querySelectorAll('.nearest-row.expanded').forEach(p => p.classList.remove('expanded'));
 }
 
-function showRoutePopover(anchorPill, originRegion, tool, nearest) {
-  // Toggle: clicking the same pill twice closes the popover.
+function showRoutePopover(anchorRow, originRegion, tool, nearest) {
+  // Toggle: clicking the same row twice closes the popover.
   if (routePopoverState
       && routePopoverState.tool === tool
       && routePopoverState.origin.id === originRegion.id) {
     hideRoutePopover();
     return;
   }
-  routePopoverState = { tool, origin: originRegion, nearest, anchorPill };
-  document.querySelectorAll('.tool-pill.expanded').forEach(p => p.classList.remove('expanded'));
-  anchorPill.classList.add('expanded');
+  routePopoverState = { tool, origin: originRegion, nearest, anchorRow };
+  document.querySelectorAll('.nearest-row.expanded').forEach(p => p.classList.remove('expanded'));
+  anchorRow.classList.add('expanded');
 
   const targetRegion = REGIONS_BY_ID[nearest.regionId];
   routePopoverTitle.innerHTML =
@@ -32942,15 +33060,16 @@ function showRoutePopover(anchorPill, originRegion, tool, nearest) {
     routePopover.style.left   = '';
     routePopover.style.bottom = '';
   } else {
-    const rect = anchorPill.getBoundingClientRect();
-    routePopover.style.top    = (rect.bottom + 6) + 'px';
-    routePopover.style.right  = (window.innerWidth - rect.right) + 'px';
-    routePopover.style.left   = '';
+    // Beside the layers panel, top-aligned with the clicked row.
+    const rect = anchorRow.getBoundingClientRect();
+    routePopover.style.top    = rect.top + 'px';
+    routePopover.style.right  = '';
+    routePopover.style.left   = (layersPanel.getBoundingClientRect().right + 8) + 'px';
     routePopover.style.bottom = '';
   }
   routePopover.hidden = false;
   // Move focus into the dialog so keyboard/screen-reader users land on it
-  // instead of having to hunt; hideRoutePopover returns focus to the pill.
+  // instead of having to hunt; hideRoutePopover returns focus to the row.
   routePopoverClose.focus();
 }
 
@@ -32958,7 +33077,7 @@ routePopoverClose.addEventListener('click', hideRoutePopover);
 document.addEventListener('click', e => {
   if (routePopover.hidden) return;
   if (e.target.closest('#route-popover')) return;
-  if (e.target.closest('.tool-pill')) return;
+  if (e.target.closest('.nearest-row')) return;
   hideRoutePopover();
 });
 document.addEventListener('keydown', e => {
@@ -32973,7 +33092,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Legend popover ─────────────────────────────────────────────────────────
-// On-screen key for the tool-badge glyphs and resource-pill colours, which
+// On-screen key for the tool-badge glyphs and layer colours, which
 // are otherwise explained only via title tooltips (unavailable on touch).
 // Content is built once from LDLogic.TOOLS_META / RESOURCES_META so it can
 // never drift from the real vocabulary.
@@ -33050,229 +33169,21 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ── Resources panel (region resources cycling) ────────────────────────────
-// One pill per legend-icon resource present in the open region. Clicking
-// a pill cycles through that resource's hits: first click jumps to hit #1
-// and reuses the same dim-and-pulse animation as place search; subsequent
-// clicks advance through #2, #3, ... and wrap around. The URL hash carries
-// the cycle state (e.g. #mystery_lake/$resource:moose/2) so any view is
-// shareable.
-const resourcesPanelEl = document.getElementById('resources-panel');
-
-// On phone widths the tab/pill strips scroll horizontally with hidden
+// On phone widths the map-variant tabs scroll horizontally with hidden
 // scrollbars; fade the right edge while there's more content that way.
-// MutationObserver covers the re-renders on region open/tab switch.
-for (const strip of [mapTabsEl, document.getElementById('header-pills')]) {
-  // rAF so the measurement runs after the modal is shown — the strips are
+{
+  // rAF so the measurement runs after the modal is shown — the tabs are
   // repopulated while detail-view is still display:none (all widths 0).
   const update = () => requestAnimationFrame(() =>
-    strip.classList.toggle('scroll-fade',
-      strip.scrollWidth - strip.clientWidth - strip.scrollLeft > 4));
-  strip.addEventListener('scroll', update, { passive: true });
-  new MutationObserver(update).observe(strip, { childList: true, subtree: true });
+    mapTabsEl.classList.toggle('scroll-fade',
+      mapTabsEl.scrollWidth - mapTabsEl.clientWidth - mapTabsEl.scrollLeft > 4));
+  mapTabsEl.addEventListener('scroll', update, { passive: true });
+  new MutationObserver(update).observe(mapTabsEl, { childList: true });
   window.addEventListener('resize', update);
 }
 
-function renderResourcesPanel(region) {
-  resourcesPanelEl.innerHTML = '';
-  if (!region) return;
-  const byTag = REGION_RESOURCES[region.id] || {};
-  // Preserve the visual order from RESOURCES_META; skip tags with no hits.
-  const tags = Object.keys(LDLogic.RESOURCES_META)
-    .filter(t => Array.isArray(byTag[t]) && byTag[t].length > 0);
-  if (!tags.length) return;
-
-  for (const tag of tags) {
-    const meta = LDLogic.RESOURCES_META[tag];
-    const hits = byTag[tag];
-    const pill = document.createElement('button');
-    pill.type = 'button';
-    pill.className = 'resource-pill';
-    pill.dataset.tag = tag;
-    pill.style.setProperty('--resource-color', meta.color);
-    const noun = hits.length === 1 ? 'location' : 'locations';
-    pill.title = `${hits.length} ${meta.label} ${noun} — click to cycle`;
-
-    const swatch = document.createElement('span');
-    swatch.className = 'resource-swatch';
-    swatch.style.background = meta.color;
-    pill.appendChild(swatch);
-
-    const labelEl = document.createElement('span');
-    labelEl.className = 'resource-pill-label';
-    labelEl.textContent = meta.label;
-    pill.appendChild(labelEl);
-
-    const countEl = document.createElement('span');
-    countEl.className = 'resource-pill-count';
-    countEl.textContent = hits.length;
-    pill.appendChild(countEl);
-
-    const indexEl = document.createElement('span');
-    indexEl.className = 'resource-pill-index';
-    indexEl.setAttribute('aria-hidden', 'true');
-    pill.appendChild(indexEl);
-
-    // Visible only when the pill is active (CSS-driven via .active parent).
-    // Clicking it exits the cycle without closing the region. Spans rather
-    // than <button> so we don't nest interactive elements inside the
-    // outer <button>; keyboard users have ESC for the same purpose.
-    const closeEl = document.createElement('span');
-    closeEl.className = 'resource-pill-close';
-    closeEl.setAttribute('aria-hidden', 'true');
-    closeEl.title = 'Stop cycling this resource (Esc)';
-    closeEl.textContent = '✕';
-    closeEl.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      exitResourceCycle();
-    });
-    pill.appendChild(closeEl);
-
-    pill.addEventListener('click', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      onResourcePillClick(tag);
-    });
-    resourcesPanelEl.appendChild(pill);
-  }
-  updateResourcePillState();
-}
-
-function onResourcePillClick(tag) {
-  if (!currentRegion) return;
-  const hits = (REGION_RESOURCES[currentRegion.id] || {})[tag] || [];
-  if (!hits.length) return;
-  const next = LDLogic.nextResourceCycle(
-    resourceCycle?.tag ?? null,
-    resourceCycle?.index ?? 0,
-    tag,
-    hits.length,
-  );
-  selectResource(next.tag, next.index);
-}
-
-// Only setter for resourceCycle; keeps the pill state in sync with the
-// underlying state so callers never have to remember to update both.
-function setResourceCycle(next) {
-  resourceCycle = next;
-  updateResourcePillState();
-}
-
-function selectResource(tag, index, opts) {
-  if (!currentRegion) return;
-  const hits = (REGION_RESOURCES[currentRegion.id] || {})[tag] || [];
-  if (!hits.length) return;
-  // Normalise index into [0, hits.length).
-  const n = hits.length;
-  const idx = ((index % n) + n) % n;
-  const meta = LDLogic.RESOURCES_META[tag];
-  const hit = hits[idx];
-  // Reuse the search-highlight target so existing focusHighlight /
-  // positionHighlight / clear-on-tab-switch logic just works.
-  highlightTarget = {
-    name: `${meta.label} #${idx + 1}`,
-    bbox: hit.bbox,
-  };
-  // If the image is loaded, focus immediately. If not (e.g. mid-_openRegion
-  // from a hash deep-link), loadDetailMap's onload will call focusHighlight
-  // once the natural dimensions are known.
-  if (imgW > 1) focusHighlight();
-  setResourceCycle({ tag, index: idx });
-  if (!opts || opts.pushHash !== false) {
-    pushHash({
-      regionId: currentRegion.id,
-      resource: tag,
-      resourceIndex: idx + 1,
-    });
-  }
-}
-
-function clearResourceCycle() {
-  setResourceCycle(null);
-}
-
-// User-driven cycle exit (ESC key, pill ✕ click): drop the highlight, clear
-// the pill state, and rewrite the URL to omit the $resource: segment while
-// keeping the region. _closeModal calls clearResourceCycle directly because
-// it handles the hash itself (resets to empty).
-function exitResourceCycle() {
-  if (!resourceCycle) return;
-  clearResourceCycle();
-  clearHighlight();
-  if (currentRegion) pushHash({ regionId: currentRegion.id });
-}
-
-function setToolHereCycle(next) {
-  toolHereCycle = next;
-  updateToolPillState();
-}
-
-function clearToolHereCycle() {
-  setToolHereCycle(null);
-}
-
-// Parallel to exitResourceCycle: ESC / pill ✕ — drop the highlight + cycle
-// state and rewrite the URL to keep just the region. The tool *filter*
-// (badge accent) follows the URL, so dropping the place segment also drops
-// the filter; that matches the user's mental model of "stop showing me
-// this tool" when they press ESC.
-function exitToolHereCycle() {
-  if (!toolHereCycle) return;
-  clearToolHereCycle();
-  clearHighlight();
-  if (currentRegion) pushHash({ regionId: currentRegion.id });
-}
-
-function updateToolPillState() {
-  if (!toolsNearbyEl) return;
-  const pills = toolsNearbyEl.querySelectorAll('.tool-pill');
-  pills.forEach(p => {
-    const isActive = !!toolHereCycle && p.dataset.tool === toolHereCycle.tool;
-    p.classList.toggle('cycling', isActive);
-    // The ✕ inside the pill is a decorative span (a real <button> can't nest
-    // inside the pill button), so the cycle state + how to leave it must be
-    // conveyed on the pill itself for assistive tech.
-    if (isActive) {
-      p.setAttribute('aria-label',
-        `${toolLabel(toolHereCycle.tool)} — showing location ${toolHereCycle.index + 1} of ${toolHereCycle.places.length}. Click for the next one, press Escape to stop.`);
-    } else {
-      p.removeAttribute('aria-label');
-    }
-    const idxEl = p.querySelector('.tool-pill-cycle-index');
-    if (!idxEl) return;  // "nearest" pills don't have a cycle index slot
-    if (isActive) {
-      idxEl.textContent = `${toolHereCycle.index + 1} / ${toolHereCycle.places.length}`;
-    } else {
-      idxEl.textContent = '';
-    }
-  });
-}
-
-function updateResourcePillState() {
-  if (!resourcesPanelEl) return;
-  const pills = resourcesPanelEl.querySelectorAll('.resource-pill');
-  pills.forEach(p => {
-    const isActive = !!resourceCycle && p.dataset.tag === resourceCycle.tag;
-    p.classList.toggle('active', isActive);
-    const idxEl = p.querySelector('.resource-pill-index');
-    if (isActive && currentRegion) {
-      const hits = (REGION_RESOURCES[currentRegion.id] || {})[resourceCycle.tag] || [];
-      idxEl.textContent = `${resourceCycle.index + 1} / ${hits.length}`;
-      // Same reasoning as updateToolPillState: the ✕ span is invisible to
-      // assistive tech, so the pill itself must carry the cycle state.
-      const meta = LDLogic.RESOURCES_META[resourceCycle.tag];
-      p.setAttribute('aria-label',
-        `${meta.label} — showing hit ${resourceCycle.index + 1} of ${hits.length}. Click for the next one, press Escape to stop.`);
-    } else {
-      idxEl.textContent = '';
-      p.removeAttribute('aria-label');
-    }
-  });
-}
-
 // ── Back-to-origin breadcrumb ─────────────────────────────────────────────
-// Tracks the chain of regions the user hopped through via tool pills, route
+// Tracks the chain of regions the user hopped through via nearest-tool rows, route
 // steps, and region-link overlays so they can step back through the whole
 // path without using browser history. The stack is cleared on a fresh entry
 // (search, world-map click, direct hash) and on modal close.
@@ -33696,8 +33607,7 @@ function _closeModal() {
   worldView.removeAttribute('inert');
   document.body.classList.remove('detail-open');
   clearHighlight();
-  clearResourceCycle();
-  clearToolHereCycle();
+  activeLayers.clear();
   exitEditing();
   drawBox.style.display = 'none';
   detailCoordDisplay.style.display = 'none';
@@ -33718,13 +33628,6 @@ detailView.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  // Layered dismiss: ESC peels off whichever cycle is active before closing
-  // the modal. Order: resource cycle > tool cycle > modal close. A user
-  // who's been clicking around can press ESC two or three times to retrace.
-  if (detailView.style.display === 'flex') {
-    if (resourceCycle) { exitResourceCycle(); return; }
-    if (toolHereCycle) { exitToolHereCycle(); return; }
-  }
   closeModal();
 });
 
@@ -33734,7 +33637,7 @@ document.addEventListener('keydown', e => {
 // is held (avoid clashing with browser shortcuts like Ctrl+= page zoom).
 document.addEventListener('keydown', e => {
   if (detailView.style.display !== 'flex') return;
-  if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
   const step = e.shiftKey ? 200 : 60;

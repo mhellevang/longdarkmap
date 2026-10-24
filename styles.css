@@ -357,19 +357,20 @@ body.dev-mode #places-layer { display: none; }
   font: 600 10px/16px ui-monospace, Menlo, monospace;
   text-align: center;
   color: #0b1018;
-  background: #f5d36b;
+  background: var(--tool-color, #f5d36b);
   border: 1px solid rgba(8, 12, 18, 0.85);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-.tool-badge.tool-forge             { background: #f5996b; }
-.tool-badge.tool-workbench         { background: #9ec5ff; }
-.tool-badge.tool-ammunition_workbench { background: #c9a3ff; }
-.tool-badge.tool-milling_machine   { background: #ff9ec5; }
-.tool-badge.tool-bed               { background: #b5e8a3; }
-.tool-badge.tool-stove             { background: #ffb070; }
-.tool-badge.tool-first_aid         { background: #f4a4a4; }
-.tool-badge.tool-ice_fishing_hut   { background: #a3e0ff; }
-.tool-badge.tool-ice_fishing_hole  { background: #cce8ff; }
+/* Tool colours, shared by badges, layer rows and layer rings. */
+.tool-forge                 { --tool-color: #f5996b; }
+.tool-workbench             { --tool-color: #9ec5ff; }
+.tool-ammunition_workbench  { --tool-color: #c9a3ff; }
+.tool-milling_machine       { --tool-color: #ff9ec5; }
+.tool-bed                   { --tool-color: #b5e8a3; }
+.tool-stove                 { --tool-color: #ffb070; }
+.tool-first_aid             { --tool-color: #f4a4a4; }
+.tool-ice_fishing_hut       { --tool-color: #a3e0ff; }
+.tool-ice_fishing_hole      { --tool-color: #cce8ff; }
 /* Filtered mode: dim non-matching badges, accent matching ones. */
 #tools-layer.filtered .tool-badge { opacity: 0.18; }
 #tools-layer.filtered .tool-badge.match { opacity: 1; outline: 2px solid #fff; }
@@ -568,6 +569,30 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   color: #e6edf3;
   letter-spacing: 0.4px;
 }
+/* The invisible <select> covers title + caret, so clicking the title opens
+   the native region picker. */
+#region-picker {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  border-radius: 3px;
+}
+#region-picker-caret { color: #8bb8e8; font-size: 12px; }
+#region-picker:hover #region-title { color: #fff; }
+#region-picker:focus-within {
+  outline: 2px solid rgba(110, 170, 230, 0.6);
+  outline-offset: 4px;
+}
+#region-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+  /* ≥16px stops iOS Safari zooming the page when the picker opens. */
+  font-size: 16px;
+}
 
 #zoom-controls {
   position: absolute;
@@ -621,191 +646,184 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   flex-wrap: wrap;
 }
 
-/* ── Tools nearby (detail-view header strip) ────────────────────────────── */
-/* One pill per rare crafting tool (forge / workbench / ammo / milling).
-   If the open region has the tool: shows count + a "here" hint, click jumps
-   to the first instance with the tool filter active. If not: shows the
-   nearest place + hop count via BFS over region adjacencies. */
-/* Second header row: tool pills, then resource pills. */
-#header-pills {
+/* ── Layers panel (floating over the detail map) ────────────────────────── */
+/* "Show on map" rows are toggles: the key is a hollow ring in the layer
+   colour when off and filled when on, echoing the rings drawn on the map.
+   "Nearest" lists rare crafting tools found only in other regions. */
+#layers-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  width: 232px;
+  max-height: calc(100% - 24px);
   display: flex;
-  flex-basis: 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-/* The two groups flow as one run of pills (display: contents) so they wrap
-   pill-by-pill instead of as blocks. */
-#tools-nearby { display: contents; }
-.tool-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 6px;
-  background: rgba(20, 28, 40, 0.72);
+  flex-direction: column;
+  background: rgba(8, 12, 18, 0.84);
   border: 1px solid rgba(110, 170, 230, 0.22);
-  border-radius: 14px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  cursor: default;
+}
+#layers-panel.collapsed { width: auto; }
+#layers-panel.collapsed #layers-body { display: none; }
+#layers-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: #e6edf3;
+  font: 14px Georgia, serif;
+  letter-spacing: 0.4px;
+  text-align: left;
   cursor: pointer;
-  color: #c9d1d9;
-  font: 11px/1.2 inherit;
-  transition: background 0.12s, border-color 0.12s;
 }
-.tool-pill:hover {
-  background: rgba(110, 170, 230, 0.18);
-  border-color: rgba(110, 170, 230, 0.55);
-  color: #f0f6ff;
+#layers-toggle:hover { color: #fff; }
+#layers-active-count:not(:empty) {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: rgba(110, 170, 230, 0.25);
+  color: #c9d8f0;
+  font: 11px/18px ui-monospace, Menlo, monospace;
+  text-align: center;
 }
-.tool-pill.here {
-  border-color: rgba(150, 220, 150, 0.45);
+#layers-caret {
+  margin-left: auto;
+  color: #8bb8e8;
+  font-size: 12px;
+  transition: transform 0.15s;
 }
-.tool-pill .tool-badge {
-  width: 14px;
-  height: 14px;
-  font-size: 9px;
-  line-height: 14px;
-  border-width: 1px;
-  box-shadow: none;
+#layers-panel.collapsed #layers-caret { transform: rotate(-90deg); }
+#layers-body {
+  overflow-y: auto;
+  padding: 4px 6px 8px;
+  border-top: 1px solid rgba(110, 170, 230, 0.14);
 }
-.tool-pill-label {
-  font-weight: 500;
-  max-width: 14ch;
+.layer-row {
+  --c: var(--layer-color, var(--tool-color, #6eaae6));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  color: #9aa7b4;
+  font: 13px Georgia, serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.layer-row:hover { background: rgba(110, 170, 230, 0.1); color: #e6edf3; }
+.layer-row[aria-pressed="true"] { color: #f0f6ff; }
+.layer-key {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid var(--c);
+  border-radius: 50%;
+  color: var(--c);
+  font: 700 8px/12px ui-monospace, Menlo, monospace;
+  text-align: center;
+  transition: background 0.12s;
+}
+.layer-row[aria-pressed="true"] .layer-key { background: var(--c); color: #0b1018; }
+.layer-label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.tool-pill-region {
-  color: rgba(180, 200, 220, 0.6);
-  font-size: 10px;
+.layer-count {
+  font: 11px ui-monospace, Menlo, monospace;
+  color: rgba(160, 175, 190, 0.7);
 }
-.tool-pill-hops {
-  color: #8bb8e8;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
-  padding-left: 4px;
-  border-left: 1px solid rgba(110, 170, 230, 0.22);
+#nearest-section {
+  margin-top: 6px;
+  border-top: 1px solid rgba(110, 170, 230, 0.14);
 }
-.tool-pill-count {
-  color: rgba(180, 220, 180, 0.85);
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
+#nearest-section h3 {
+  padding: 10px 8px 4px;
+  font: 10px ui-monospace, Menlo, monospace;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(139, 184, 232, 0.6);
 }
-.tool-pill.expanded {
-  background: rgba(110, 170, 230, 0.22);
-  border-color: rgba(110, 170, 230, 0.7);
-  color: #f0f6ff;
-}
-/* "Tool here" cycling — same UX shape as resource-pill cycling. The index
-   chip and ✕ are only visible when the pill is .cycling (i.e. there's a
-   live toolHereCycle pointed at this tool). */
-.tool-pill.cycling {
-  background: rgba(110, 170, 230, 0.22);
-  border-color: rgba(110, 170, 230, 0.7);
-  color: #f0f6ff;
-}
-.tool-pill-cycle-index {
-  color: #8bb8e8;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
-  padding-left: 6px;
-  border-left: 1px solid rgba(110, 170, 230, 0.22);
-}
-.tool-pill-cycle-index:empty { display: none; }
-.tool-pill-cycle-close {
-  display: none;
-  margin-left: 4px;
-  padding: 0 4px;
-  color: rgba(220, 230, 245, 0.55);
-  font-size: 11px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.12s, background 0.12s;
-}
-.tool-pill-cycle-close:hover {
-  color: #ffd1d1;
-  background: rgba(244, 164, 164, 0.18);
-}
-.tool-pill.cycling .tool-pill-cycle-close { display: inline; }
-
-/* ── Resources panel (legend-icon detections) ───────────────────────────── */
-/* Follows the tool pills in #header-pills; a gap before the first pill sets
-   the two groups apart. Each pill is one resource type; click cycles hits. */
-#resources-panel { display: contents; }
-#resources-panel .resource-pill:first-child { margin-left: 12px; }
-.resource-pill {
-  display: inline-flex;
+.nearest-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px 4px 6px;
-  background: rgba(20, 28, 40, 0.72);
-  border: 1px solid rgba(110, 170, 230, 0.22);
-  border-radius: 14px;
-  cursor: pointer;
+  column-gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  background: none;
+  border: 0;
+  border-radius: 5px;
   color: #c9d1d9;
-  font: 11px/1.2 inherit;
-  transition: background 0.12s, border-color 0.12s;
+  font: 13px Georgia, serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
 }
-.resource-pill:hover {
-  background: rgba(110, 170, 230, 0.18);
-  border-color: rgba(110, 170, 230, 0.55);
-  color: #f0f6ff;
+.nearest-row:hover,
+.nearest-row.expanded { background: rgba(110, 170, 230, 0.1); }
+.nearest-tools {
+  grid-row: span 2;
+  display: flex;
+  gap: 2px;
 }
-.resource-pill.active {
-  /* Echo the resource colour in the border so the active pill's identity
-     is unambiguous, even across very different resource types. */
-  border-color: var(--resource-color, rgba(110, 170, 230, 0.7));
-  background: color-mix(in srgb, var(--resource-color, #6eaae6) 18%, rgba(20, 28, 40, 0.72));
-  color: #f0f6ff;
+.nearest-place {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.nearest-meta {
+  grid-column: 2;
+  font: 11px ui-monospace, Menlo, monospace;
+  color: rgba(160, 175, 190, 0.7);
+}
+
+/* ── Layer markers (rings on the map) ───────────────────────────────────── */
+/* One ring per location of each active layer. The white edge and dark halo
+   keep rings readable on both the pale sheet and the blue water; the map
+   itself is desaturated while any layer is on so the colours pop. */
+#markers-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+.layer-marker {
+  --c: var(--layer-color, var(--tool-color, #6eaae6));
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--c);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.95),
+    0 0 0 4px rgba(8, 12, 18, 0.3),
+    0 0 14px 2px var(--c);
+}
+#detail-img { transition: filter 0.2s; }
+#map-canvas.layers-on #detail-img { filter: saturate(0.35) brightness(0.85); }
+
+/* Resource colour dot in search results and the legend. */
 .resource-swatch {
   width: 10px;
   height: 10px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.18);
   flex-shrink: 0;
-}
-.resource-pill-label {
-  font-weight: 500;
-  white-space: nowrap;
-}
-.resource-pill-count {
-  color: rgba(180, 220, 180, 0.85);
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
-}
-.resource-pill-index {
-  /* Only rendered when the pill is active; empty otherwise. The leading
-     border-left visually separates "1 / 5" from the count. */
-  color: #8bb8e8;
-  font-family: ui-monospace, Menlo, monospace;
-  font-size: 10px;
-  padding-left: 6px;
-  border-left: 1px solid rgba(110, 170, 230, 0.22);
-}
-.resource-pill-index:empty {
-  display: none;
-}
-/* Pill ✕ — only rendered for the active pill (CSS-driven via .active
-   parent). Click clears the cycle without closing the region. Padding is
-   generous so the ✕ has a reasonable tap target without enlarging the pill
-   when inactive. */
-.resource-pill-close {
-  display: none;
-  margin-left: 4px;
-  padding: 0 4px;
-  color: rgba(220, 230, 245, 0.55);
-  font-size: 11px;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: color 0.12s, background 0.12s;
-}
-.resource-pill-close:hover {
-  color: #ffd1d1;
-  background: rgba(244, 164, 164, 0.18);
-}
-.resource-pill.active .resource-pill-close {
-  display: inline;
 }
 
 /* ── Legend popover ─────────────────────────────────────────────────────── */
@@ -905,7 +923,7 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 }
 
 /* ── Route preview popover ──────────────────────────────────────────────── */
-/* Anchored below a clicked tool pill; lists each region in the path so the
+/* Anchored beside a clicked nearest-tool row; lists each region in the path so the
    user can step through one transition at a time, instead of teleporting. */
 #route-popover {
   position: fixed;
@@ -1080,7 +1098,7 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   cursor: grab;
   /* Stop the browser running its own pinch-zoom on top of ours: without
      this, two-finger pinch on the canvas also scales the visual viewport,
-     dragging the detail header (pills, tabs) off-screen as a side effect. */
+     dragging the detail header (title, tabs) off-screen as a side effect. */
   touch-action: none;
 }
 #map-canvas:active { cursor: grabbing; }
@@ -1169,8 +1187,8 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 }
 
 /* ── Mobile / narrow viewport ────────────────────────────────────────────── */
-/* Phone-sized layout: stack the detail header into rows, turn the tab and
-   tool-pill rows into horizontally scrollable strips, dock the route popover
+/* Phone-sized layout: stack the detail header into rows, turn the map-tab
+   row into a horizontally scrollable strip, dock the route popover
    as a bottom sheet, and grow tap targets to ~44px. The world map and detail
    map already pinch-zoom; this block fixes the chrome around them.
    The second condition (short + landscape) catches phones held sideways —
@@ -1225,14 +1243,27 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
     font-size: 20px;
     background: rgba(8, 12, 18, 0.75);
   }
+  #region-picker {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   #region-title {
     font-size: 16px;
-    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Leave room for the legend button docked bottom-left. */
+  #layers-panel {
+    top: 8px;
+    left: 8px;
+    width: 210px;
+    max-height: calc(100% - 84px);
+  }
+  #layers-toggle { padding: 10px 12px; }
+  .layer-row, .nearest-row { padding: 8px; }
   #back-btn {
     padding: 8px 12px;
     font-size: 16px;
@@ -1255,21 +1286,8 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   #map-tabs::-webkit-scrollbar { display: none; }
   .tab-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
 
-  /* Tool + resource pills share one horizontally scrolling strip, so the
-     header stays at three short rows instead of four. */
-  #header-pills {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  #header-pills::-webkit-scrollbar { display: none; }
-  .tool-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
-  .resource-pill { flex-shrink: 0; padding: 6px 12px 6px 8px; }
-
   /* Route popover: dock as a bottom sheet. The !important overrides override
-     the inline top/right that anchorRoutePopover() sets relative to a pill —
+     the inline top/right that anchorRoutePopover() sets relative to a row —
      on a phone-width viewport that anchor would push the popover off-screen. */
   #route-popover {
     top: auto !important;
@@ -1313,18 +1331,16 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   /* The hint references scroll wheels and arrow keys — not useful on touch. */
   #zoom-hint { display: none; }
 
-  /* Right-edge fade on the horizontally scrolling strips while more pills
-     are hidden that way; JS toggles the class from scroll position. */
-  #map-tabs.scroll-fade,
-  #header-pills.scroll-fade {
+  /* Right-edge fade on the scrolling tab strip while more tabs are hidden
+     that way; JS toggles the class from scroll position. */
+  #map-tabs.scroll-fade {
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
     mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
   }
 }
 
 /* Phone in landscape: viewport is wide enough to sit map-tabs inline with
-   the title row, saving ~32px of header height. The pill strip keeps its
-   own row — it has too many pills to fit. */
+   the title row, saving ~32px of header height. */
 @media (max-height: 500px) and (orientation: landscape) {
   #detail-header { padding: 6px 10px; gap: 6px; }
   #map-tabs {

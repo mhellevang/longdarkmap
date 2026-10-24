@@ -316,49 +316,6 @@ test('looksLikeLegendBbox: malformed input returns false (no false-positive supp
   assert.equal(L.looksLikeLegendBbox('not a bbox'), false);
 });
 
-// ─── nextResourceCycle ───────────────────────────────────────────────────────
-
-test('nextResourceCycle: clicking a different pill resets to index 0', () => {
-  assert.deepEqual(
-    L.nextResourceCycle('moose', 3, 'wolf', 5),
-    { tag: 'wolf', index: 0 },
-  );
-});
-
-test('nextResourceCycle: clicking same pill advances to next index', () => {
-  assert.deepEqual(
-    L.nextResourceCycle('moose', 0, 'moose', 4),
-    { tag: 'moose', index: 1 },
-  );
-  assert.deepEqual(
-    L.nextResourceCycle('moose', 2, 'moose', 4),
-    { tag: 'moose', index: 3 },
-  );
-});
-
-test('nextResourceCycle: same pill at last index wraps to 0', () => {
-  assert.deepEqual(
-    L.nextResourceCycle('moose', 4, 'moose', 5),
-    { tag: 'moose', index: 0 },
-  );
-});
-
-test('nextResourceCycle: from null current state starts at 0', () => {
-  assert.deepEqual(
-    L.nextResourceCycle(null, 0, 'moose', 3),
-    { tag: 'moose', index: 0 },
-  );
-});
-
-test('nextResourceCycle: zero hits guards against divide-by-zero', () => {
-  // Caller should normally filter empty resources upstream, but the helper
-  // shouldn't blow up if it slips through.
-  assert.deepEqual(
-    L.nextResourceCycle('moose', 0, 'wolf', 0),
-    { tag: 'wolf', index: 0 },
-  );
-});
-
 // ─── parseHash ───────────────────────────────────────────────────────────────
 
 test('parseHash: empty / null returns null', () => {
