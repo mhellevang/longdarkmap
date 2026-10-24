@@ -164,7 +164,7 @@ The overrides file is the source of manual fixes; running `merge_boxes.py` on it
 .venv/bin/python tools/find_resources.py mystery_lake # one region
 .venv/bin/python tools/find_resources.py --inline    # all + refresh index.html block
 .venv/bin/python tools/find_resources.py --inline-only # re-inline existing JSON, skip matching
-.venv/bin/python tools/find_resources.py --recheck-deer --inline # only redo the deer/rabbit check (step 6) on existing JSON
+.venv/bin/python tools/find_resources.py --recheck-deer --inline # only redo the deer recheck (step 6) on existing JSON
 ```
 
 The matcher uses OpenCV template matching against canonical legend swatches in `data/legend_icons/canonical/` (one PNG per resource). HokuOwl reuses the same vector icons across all 21 regions, so a single canonical set suffices.
@@ -175,7 +175,10 @@ Pipeline per region:
 3. Cross-class NMS keeps each spatial cluster's highest-scoring class so moose / bear / wolf / timberwolf get disambiguated despite sharing the maroon palette.
 4. Auto legend-area suppression: clusters of high-score multi-class hits that touch a map edge get treated as legend swatches and zeroed out.
 5. Disambiguator templates (rabbit, coal, rose hips, lichen, reishi) compete in NMS but get dropped from the output — they exist to claim their own legend swatches and any on-map locations that look like them, so the user-facing classes don't false-positive on those.
-6. Deer recheck: maps are drawn at different scales (icons on Bleak Inlet or Timberwolf Mountain are ~0.6–0.75× the legend swatch, below the matcher's scale range), so small rabbits used to slip through as low-score deer. Every deer hit is re-scored against the deer and rabbit templates over a 0.5–1.2× range and dropped when rabbit wins.
+6. Deer recheck: every deer hit is re-scored at its own position (template placements centred inside the hit, so a neighbouring icon can't interfere) and dropped when it is
+   - a **rabbit**: maps are drawn at different scales (icons on Bleak Inlet or Timberwolf Mountain are ~0.6–0.75× the legend swatch, below the matcher's scale range), so the rabbit template is re-run over 0.5–1.2× and wins;
+   - a **railway sleeper**: deer doesn't beat a rotated `railway.png` template by 0.2 (real deer lead by ≥ 0.27, tracks by ≤ 0.14);
+   - a **legend swatch**: the deer template was cut from one, so swatches score ≥ 0.96 while deer on a map top out at 0.94.
 
 Per-group tuning knobs live in `CLASS_GROUPS` at the top of `find_resources.py`: morphological opening (kills thin text strokes for black/gray groups), a density floor on the matched bbox (rejects CCOEFF-high but sparse text-fragment matches), and a stricter score threshold for noisy groups.
 

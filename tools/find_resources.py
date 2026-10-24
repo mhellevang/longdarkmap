@@ -27,8 +27,8 @@ Usage:
     .venv/bin/python tools/find_resources.py            # all regions
     .venv/bin/python tools/find_resources.py mystery_lake desolation_point
     .venv/bin/python tools/find_resources.py --recheck-deer --inline
-        # only re-run the deer/rabbit check on the existing data (seconds,
-        # leaves every other class untouched)
+        # only re-run the deer recheck (rabbits, railways, legend swatches)
+        # on the existing data; leaves every other class untouched
 """
 from __future__ import annotations
 
@@ -337,40 +337,90 @@ def _inside(bbox, rects):
     return any(rx1 <= cx <= rx2 and ry1 <= cy <= ry2 for rx1, ry1, rx2, ry2 in rects)
 
 
-# Deer vs rabbit: both are black silhouettes, and maps are drawn at different
-# scales (icons on Bleak Inlet / Timberwolf Mountain are ~0.6-0.75× the
-# legend swatch), below SCALES' range. There the rabbit template never fires
-# and rabbits slip through as low-score deer. Re-score every deer hit against
-# both templates over a wide scale range and drop it when rabbit wins.
+# Deer recheck. The black-icon group's deer hits pick up three kinds of
+# false positive, each removed by re-scoring the hit (pre-computed template
+# variants on a crop around it):
+#   rabbits  — maps are drawn at different scales (icons on Bleak Inlet /
+#              Timberwolf Mountain are ~0.6-0.75× the legend swatch), below
+#              SCALES' range, so the rabbit template never fired there.
+#              Dropped when the rabbit template beats deer over a wide scale
+#              range.
+#   railways — a single track sleeper matches the deer's body. Dropped unless
+#              deer beats a railway template (rotated, tracks run at any
+#              angle) by RAIL_MARGIN. Real deer lead by >= 0.27 in practice,
+#              tracks by <= 0.14.
+# All scores only count placements centred inside the hit, so a rabbit, bird
+# or track right beside a real deer can't outscore it.
+#   legend   — the deer template was cut from a legend swatch, so other maps'
+#              swatches score >= 0.96; real deer on a map top out at 0.94.
 RECHECK_SCALES = np.arange(0.5, 1.25, 0.05)
-RECHECK_PAD = 40  # px around the hit, room for the template to slide
+RAIL_SCALES = np.arange(0.5, 1.3, 0.1)
+RAIL_ANGLES = range(-80, 91, 10)
+RECHECK_PAD = 60  # px around the hit, room for the templates to slide
+RAIL_MARGIN = 0.2
+LEGEND_SWATCH_SCORE = 0.96
 
 
-def _best_score(crop: np.ndarray, tpl: np.ndarray) -> float:
-    best = 0.0
-    for s in RECHECK_SCALES:
+def _variants(tpl: np.ndarray, scales, angles=(0,)) -> list[np.ndarray]:
+    out = []
+    for s in scales:
         t = cv2.resize(tpl, (max(8, round(tpl.shape[1] * s)), max(8, round(tpl.shape[0] * s))),
-                       interpolation=cv2.INTER_AREA).astype(np.float32)
-        if t.shape[0] > crop.shape[0] or t.shape[1] > crop.shape[1]:
+                       interpolation=cv2.INTER_AREA)
+        for ang in angles:
+            if ang == 0:
+                out += [t, cv2.flip(t, 1)]
+                continue
+            h, w = t.shape
+            M = cv2.getRotationMatrix2D((w / 2, h / 2), ang, 1.0)
+            cos, sin = abs(M[0, 0]), abs(M[0, 1])
+            nw, nh = int(h * sin + w * cos), int(h * cos + w * sin)
+            M[0, 2] += nw / 2 - w / 2
+            M[1, 2] += nh / 2 - h / 2
+            out.append(cv2.warpAffine(t, M, (nw, nh)))
+    return [v.astype(np.float32) for v in out if v.sum() >= 50]
+
+
+def _best_score(crop: np.ndarray, variants: list[np.ndarray], box=None) -> float:
+    """Best TM_CCOEFF_NORMED over all variants. With box (x1, y1, x2, y2 in
+    crop px), only placements whose centre falls inside the box count."""
+    best = 0.0
+    for t in variants:
+        th, tw = t.shape
+        if th > crop.shape[0] or tw > crop.shape[1]:
             continue
-        for v in (t, cv2.flip(t, 1)):
-            best = max(best, float(cv2.matchTemplate(crop, v, cv2.TM_CCOEFF_NORMED).max()))
+        res = cv2.matchTemplate(crop, t, cv2.TM_CCOEFF_NORMED)
+        if box:
+            x1, y1, x2, y2 = box
+            ya, yb = max(0, int(y1 - th / 2)), min(res.shape[0], int(y2 - th / 2) + 1)
+            xa, xb = max(0, int(x1 - tw / 2)), min(res.shape[1], int(x2 - tw / 2) + 1)
+            if ya >= yb or xa >= xb:
+                continue
+            res = res[ya:yb, xa:xb]
+        best = max(best, float(res.max()))
     return best
 
 
-def drop_rabbits(map_bgr: np.ndarray, deer_hits: list[dict]) -> list[dict]:
+def recheck_deer(map_bgr: np.ndarray, deer_hits: list[dict]) -> list[dict]:
     _, _, ranges, open_k, *_ = next(g for g in CLASS_GROUPS if g[0] == "black_icons")
     mask = color_mask(map_bgr, ranges, open_k=open_k).astype(np.float32)
-    tpls = {c: color_mask(cv2.imread(str(TEMPLATES_DIR / f"{c}.png")), ranges, open_k=open_k)
-            for c in ("deer", "rabbit")}
+    tpl = {c: color_mask(cv2.imread(str(TEMPLATES_DIR / f"{c}.png")), ranges, open_k=open_k)
+           for c in ("deer", "rabbit", "railway")}
+    deer_v = _variants(tpl["deer"], RECHECK_SCALES)
+    rabbit_v = _variants(tpl["rabbit"], RECHECK_SCALES)
+    rail_v = _variants(tpl["railway"], RAIL_SCALES, RAIL_ANGLES)
     H, W = mask.shape
     kept = []
     for h in deer_hits:
         x1, y1, x2, y2 = h["bbox"]
-        crop = mask[max(0, int(y1 * H) - RECHECK_PAD):int(y2 * H) + RECHECK_PAD,
-                    max(0, int(x1 * W) - RECHECK_PAD):int(x2 * W) + RECHECK_PAD]
-        if _best_score(crop, tpls["rabbit"]) <= _best_score(crop, tpls["deer"]):
-            kept.append(h)
+        a, b = max(0, int(x1 * W) - RECHECK_PAD), max(0, int(y1 * H) - RECHECK_PAD)
+        crop = mask[b:int(y2 * H) + RECHECK_PAD, a:int(x2 * W) + RECHECK_PAD]
+        box = (x1 * W - a, y1 * H - b, x2 * W - a, y2 * H - b)
+        deer = _best_score(crop, deer_v, box)
+        if deer >= LEGEND_SWATCH_SCORE or _best_score(crop, rabbit_v, box) > deer:
+            continue
+        if deer - _best_score(crop, rail_v, box) < RAIL_MARGIN:
+            continue
+        kept.append(h)
     return kept
 
 
@@ -423,7 +473,7 @@ def process_region(region_id: str, map_path: Path) -> dict[str, list[dict]]:
             del per_resource[cls]
 
     if per_resource.get("deer"):
-        per_resource["deer"] = drop_rabbits(map_bgr, per_resource["deer"])
+        per_resource["deer"] = recheck_deer(map_bgr, per_resource["deer"])
         if not per_resource["deer"]:
             del per_resource["deer"]
 
@@ -436,7 +486,7 @@ def process_region(region_id: str, map_path: Path) -> dict[str, list[dict]]:
 def main(argv: list[str]) -> int:
     do_inline = "--inline" in argv
     inline_only = "--inline-only" in argv
-    recheck_deer = "--recheck-deer" in argv
+    recheck_only = "--recheck-deer" in argv
     argv = [a for a in argv if a not in ("--inline", "--inline-only", "--recheck-deer")]
 
     # --inline-only: skip the matcher entirely; just re-inline the existing
@@ -466,13 +516,13 @@ def main(argv: list[str]) -> int:
     if OUT_FILE.exists():
         out = json.loads(OUT_FILE.read_text())
 
-    if recheck_deer:
+    if recheck_only:
         for region_id in targets:
             deer = out.get(region_id, {}).get("deer")
             if not deer:
                 continue
             map_bgr = cv2.imread(str(ROOT / by_id[region_id]["maps"][0]))
-            kept = drop_rabbits(map_bgr, deer)
+            kept = recheck_deer(map_bgr, deer)
             print(f"  {region_id:<24} deer {len(deer):>3} -> {len(kept):>3}")
             if kept:
                 out[region_id]["deer"] = kept
@@ -480,7 +530,7 @@ def main(argv: list[str]) -> int:
                 del out[region_id]["deer"]
 
     t_total = time.time()
-    for region_id in ([] if recheck_deer else targets):
+    for region_id in ([] if recheck_only else targets):
         if region_id not in by_id:
             print(f"  unknown region: {region_id}", file=sys.stderr)
             continue
