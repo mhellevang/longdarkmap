@@ -31013,7 +31013,6 @@ function _openRegion(region, target, tool, historyOp) {
   hideLegend();
   renderBackToOrigin();
 
-  loadDetailMap(region.maps[0]);
   renderAllBoxes();
   renderPlaces();
   renderRegionLinks();
@@ -31033,6 +31032,10 @@ function _openRegion(region, target, tool, historyOp) {
   // aria-modal this gives keyboard users a proper modal experience.
   worldView.setAttribute('inert', '');
   document.body.classList.add('detail-open');
+  // Load (or re-fit an already loaded map) only once the dialog is laid
+  // out: fitting while it's still display:none measures a 0×0 canvas and
+  // leaves the map at scale(0) with a NaN/Infinity zoom readout.
+  loadDetailMap(region.maps[0]);
   if (firstOpen) backBtn.focus();
 }
 
