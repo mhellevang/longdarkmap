@@ -93,7 +93,10 @@
         <span id="region-picker-caret" aria-hidden="true">▾</span>
         <select id="region-select" aria-label="Switch region"></select>
       </div>
-      <span id="region-difficulty" title="Difficulty from the in-game region description" hidden></span>
+      <div id="region-info" hidden>
+        <button id="region-difficulty" type="button" aria-expanded="false" aria-controls="region-description"></button>
+        <p id="region-description" role="tooltip"></p>
+      </div>
       <span id="visited-progress" title="Click a place name on the map to mark it as visited"></span>
       <div id="map-tabs"></div>
       <button id="legend-btn" aria-label="Map legend" aria-expanded="false" title="What do the badges and colours mean?">?</button>
@@ -147,10 +150,9 @@
           <span>Layers</span><span id="layers-active-count"></span><span id="layers-caret" aria-hidden="true">▾</span>
         </button>
         <div id="layers-body">
-          <p id="region-description" hidden></p>
           <div id="layers-list" role="group" aria-label="Show on map"></div>
           <div id="nearest-section">
-            <h3>Nearest</h3>
+            <h3>Closest elsewhere</h3>
             <div id="nearest-list"></div>
           </div>
         </div>
@@ -32192,17 +32194,39 @@ regionSelect.addEventListener('change', () => {
   }
 });
 
+// Difficulty badge in the header; when the region has an in-game
+// description the badge also reveals it in a bubble (hover, or click/tap).
+const regionInfoEl = document.getElementById('region-info');
 const regionDifficultyEl = document.getElementById('region-difficulty');
 const regionDescriptionEl = document.getElementById('region-description');
 
+function setRegionInfoOpen(open) {
+  regionInfoEl.classList.toggle('open', open);
+  regionDifficultyEl.setAttribute('aria-expanded', String(open));
+}
+
 function renderRegionInfo(region) {
   const info = REGION_INFO[region.id] || {};
-  regionDifficultyEl.hidden = !info.difficulty;
+  setRegionInfoOpen(false);
+  regionInfoEl.hidden = !info.difficulty;
+  regionInfoEl.classList.toggle('has-description', !!info.description);
   regionDifficultyEl.textContent = info.difficulty || '';
   regionDifficultyEl.dataset.level = (info.difficulty || '').toLowerCase();
-  regionDescriptionEl.hidden = !info.description;
+  regionDifficultyEl.disabled = !info.description;
   regionDescriptionEl.textContent = info.description || '';
 }
+
+regionDifficultyEl.addEventListener('click', () =>
+  setRegionInfoOpen(!regionInfoEl.classList.contains('open')));
+document.addEventListener('click', e => {
+  if (!e.target.closest('#region-info')) setRegionInfoOpen(false);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && regionInfoEl.classList.contains('open')) {
+    e.stopImmediatePropagation();  // don't also close the modal
+    setRegionInfoOpen(false);
+  }
+});
 
 function mapTabLabel(path) {
   const name = path.split('/').pop().replace(/\.[^.]+$/, '');
@@ -32949,8 +32973,7 @@ function renderLayersPanel(region) {
     const key = nearest.regionId + '|' + nearest.placeName;
     const dup = nearestRows.get(key);
     if (dup) {
-      dup.querySelector('.nearest-tools').insertAdjacentHTML('beforeend',
-        `<span class="tool-badge tool-${tool}" title="${toolLabel(tool)}">${TOOL_GLYPHS[tool] || ''}</span>`);
+      dup.querySelector('.nearest-tools').textContent += ', ' + toolLabel(tool);
       continue;
     }
     nearestRows.set(key, nearestRow(region, tool, nearest));
@@ -32971,12 +32994,12 @@ function nearestRow(region, tool, nearest) {
   row.type = 'button';
   row.className = 'nearest-row';
   row.dataset.tool = tool;
-  row.innerHTML = `<span class="nearest-tools"><span class="tool-badge tool-${tool}" title="${toolLabel(tool)}">${TOOL_GLYPHS[tool] || ''}</span></span>`
-                + `<span class="nearest-place"></span>`
-                + `<span class="nearest-meta"></span>`;
-  row.querySelector('.nearest-place').textContent = nearest.placeName;
-  row.querySelector('.nearest-meta').textContent =
-    `${regionName} · ${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}`;
+  row.innerHTML = `<span class="nearest-tools"></span>`
+                + `<span class="nearest-hops"></span>`
+                + `<span class="nearest-place"></span>`;
+  row.querySelector('.nearest-tools').textContent = toolLabel(tool);
+  row.querySelector('.nearest-hops').textContent = `${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}`;
+  row.querySelector('.nearest-place').textContent = `${nearest.placeName} · ${regionName}`;
   const summary = pathSummary(nearest.path);
   row.title = `Nearest ${toolLabel(tool)}: ${nearest.placeName} in ${regionName}`
             + (summary ? ` (${summary})` : '') + '\nClick to preview the route.';

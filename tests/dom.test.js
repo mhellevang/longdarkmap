@@ -449,19 +449,34 @@ test('region picker: choosing a region opens it with a way back', async () => {
 test('region info: difficulty and in-game description show when the wiki has them', async () => {
   const { window, document, close } = await loadPage();
   try {
+    const info = document.getElementById('region-info');
     const badge = document.getElementById('region-difficulty');
     const desc = document.getElementById('region-description');
     window.location.hash = '#forlorn_muskeg';
     fire(window, window, 'hashchange');
-    assert.equal(badge.hidden, false);
+    assert.equal(info.hidden, false);
     assert.equal(badge.textContent, 'Advanced');
     assert.equal(badge.dataset.level, 'advanced');
     assert.match(desc.textContent, /marshland/);
 
+    // Click opens the bubble; Escape closes it without closing the region.
+    fire(window, badge, 'click');
+    assert.ok(info.classList.contains('open'));
+    assert.equal(badge.getAttribute('aria-expanded'), 'true');
+    fire(window, document, 'keydown', { key: 'Escape' });
+    assert.ok(!info.classList.contains('open'));
+    assert.equal(document.getElementById('detail-view').style.display, 'flex');
+
+    // Difficulty without a description: badge only, nothing to open.
+    window.location.hash = '#ravine';
+    fire(window, window, 'hashchange');
+    assert.equal(info.hidden, false);
+    assert.ok(!info.classList.contains('has-description'));
+    assert.equal(badge.disabled, true);
+
     window.location.hash = '#winding_river';
     fire(window, window, 'hashchange');
-    assert.equal(badge.hidden, true);
-    assert.equal(desc.hidden, true);
+    assert.equal(info.hidden, true);
   } finally { close(); }
 });
 
@@ -517,7 +532,8 @@ test('layers panel: nearest tools at the same place share one row', async () => 
     const rows = [...document.querySelectorAll('#nearest-list .nearest-row')]
       .filter(r => r.querySelector('.nearest-place').textContent.startsWith('Last Resort'));
     assert.equal(rows.length, 1);
-    const badges = [...rows[0].querySelectorAll('.tool-badge')].map(b => b.textContent);
-    assert.deepEqual(badges, ['A', 'M']);
+    assert.equal(rows[0].querySelector('.nearest-tools').textContent,
+      'Ammunition Workbench, Milling Machine');
+    assert.match(rows[0].querySelector('.nearest-place').textContent, /Bleak Inlet/);
   } finally { close(); }
 });

@@ -584,10 +584,15 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   outline: 2px solid rgba(110, 170, 230, 0.6);
   outline-offset: 4px;
 }
-/* Experience level from the in-game region description. */
+/* Experience level from the in-game region description. With a
+   description, the badge gets an ⓘ and reveals it in a bubble below on
+   hover or click (tap on phones). */
+#region-info { position: relative; }
+#region-info[hidden] { display: none; }
 #region-difficulty {
   --c: #8bb8e8;
   padding: 2px 7px;
+  background: none;
   border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
   border-radius: 3px;
   color: var(--c);
@@ -596,10 +601,40 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   text-transform: uppercase;
   white-space: nowrap;
 }
-#region-difficulty[hidden] { display: none; }
+#region-difficulty:disabled { cursor: default; }
+#region-info.has-description #region-difficulty { cursor: pointer; }
+#region-info.has-description #region-difficulty::after {
+  content: 'ⓘ';
+  margin-left: 6px;
+  letter-spacing: 0;
+}
+#region-info.has-description #region-difficulty:hover {
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+}
 #region-difficulty[data-level="beginner"]     { --c: #7ee787; }
 #region-difficulty[data-level="intermediate"] { --c: #f5d36b; }
 #region-difficulty[data-level="advanced"]     { --c: #f4a4a4; }
+#region-description {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 10px 12px;
+  background: rgba(8, 12, 18, 0.97);
+  border: 1px solid rgba(110, 170, 230, 0.42);
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  color: #c9d1d9;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.45;
+  white-space: normal;
+}
+#region-info.has-description:hover #region-description,
+#region-info.has-description.open #region-description { display: block; }
 #region-select {
   position: absolute;
   inset: 0;
@@ -665,7 +700,8 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 /* ── Layers panel (floating over the detail map) ────────────────────────── */
 /* "Show on map" rows are toggles: the key is a hollow ring in the layer
    colour when off and filled when on, echoing the rings drawn on the map.
-   "Nearest" lists rare crafting tools found only in other regions. */
+   "Closest elsewhere" names rare crafting tools found only in other regions,
+   with the place, region and hop count. */
 #layers-panel {
   position: absolute;
   top: 12px;
@@ -721,15 +757,6 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   padding: 4px 6px 8px;
   border-top: 1px solid rgba(110, 170, 230, 0.14);
 }
-#region-description {
-  padding: 8px 8px 10px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid rgba(110, 170, 230, 0.14);
-  color: #9aa7b4;
-  font-size: 12px;
-  font-style: italic;
-  line-height: 1.45;
-}
 .layer-row {
   --c: var(--layer-color, var(--tool-color, #6eaae6));
   display: flex;
@@ -784,9 +811,10 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 }
 .nearest-row {
   display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
   column-gap: 10px;
+  row-gap: 1px;
   width: 100%;
   padding: 6px 8px;
   background: none;
@@ -800,20 +828,16 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 }
 .nearest-row:hover,
 .nearest-row.expanded { background: rgba(110, 170, 230, 0.1); }
-.nearest-tools {
-  grid-row: span 2;
-  display: flex;
-  gap: 2px;
-}
-.nearest-place {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.nearest-meta {
-  grid-column: 2;
+.nearest-tools { color: #e6edf3; }
+.nearest-hops {
   font: 11px ui-monospace, Menlo, monospace;
   color: rgba(160, 175, 190, 0.7);
+  white-space: nowrap;
+}
+.nearest-place {
+  grid-column: 1 / -1;
+  color: #9aa7b4;
+  font-size: 12px;
 }
 
 /* ── Layer markers (rings on the map) ───────────────────────────────────── */
@@ -1271,6 +1295,17 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   #region-picker {
     flex: 1 1 auto;
     min-width: 0;
+  }
+  /* The bubble spans the header width instead of hanging off the badge,
+     which sits too far right for it to fit. */
+  #detail-header { position: relative; }
+  #region-info { position: static; }
+  #region-description {
+    top: calc(100% + 4px);
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
   }
   #region-title {
     font-size: 16px;

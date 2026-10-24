@@ -10,7 +10,7 @@ Open the [live demo](https://longdarkmap.helledb.dev/), or clone the repo and op
 
 - **Click** a region label to open its detail map
 - **Click the region name** in the detail-view header to switch region without going back to the world map
-- The header shows the region's **difficulty** (Beginner / Intermediate / Advanced) and the layers panel opens with the **in-game region description**; hovering a region label on the world map shows both
+- The header shows the region's **difficulty** (Beginner / Intermediate / Advanced); hover or click the badge for the **in-game region description**. Hovering a region label on the world map shows both
 - **Scroll** to zoom, **drag** to pan (stops at the map edge), **double-click** to reset — on phones, **pinch** to zoom and **double-tap** to zoom in; both views open at a centred cover crop instead of the letterboxed fit
 - **+ / − / ⊡** zoom controls in the bottom-right of the detail view
 - **Click a place name** on a region map to mark it as visited (green ✓; click again to unmark). The header shows `✓ n/N visited` for the region and search results carry a ✓ for visited places. Stored per browser in `localStorage` (`ldm.looted.v1`), nothing leaves the device
@@ -82,7 +82,7 @@ cd tools && python3 scrape_region_info.py && python3 inline_regions.py
 A floating panel in the top-left of the detail view (collapsible, starts collapsed on phones; the choice is remembered in `localStorage` as `ldm.layersCollapsed.v1`).
 
 - **Show on map** lists the rare crafting tools present in the region (forge, workbench, ammunition workbench, milling machine) and every legend pictogram detected on its map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit), each with a count. Click a row to toggle that layer: every location gets a coloured ring and the map is desaturated so the rings stand out. Several layers can be on at once, and they stay on when you switch region; closing the detail view clears them.
-- **Nearest** lists rare tools that aren't in this region, with the closest place that has one and the hop count via BFS over the region adjacency graph (e.g. *"The Riken · Desolation Point · 2 hops"* from Coastal Highway). Click to preview the route. Tools whose nearest place is the same (e.g. ammunition workbench + milling machine at Last Resort Cannery) share one row.
+- **Closest elsewhere** names the rare tools that aren't in this region, with the closest place that has one and the hop count via BFS over the region adjacency graph (e.g. *"Forge · 2 hops · The Riken · Desolation Point"* from Coastal Highway). Click to preview the route. Tools whose closest place is the same (e.g. ammunition workbench + milling machine at Last Resort Cannery) share one row.
 
 A `$resource:` hash turns layers on, so search results and links can open a region with them showing:
 - `index.html#coastal_highway/$resource:moose` → Coastal Highway with the moose layer on
