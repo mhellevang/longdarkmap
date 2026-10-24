@@ -26,6 +26,9 @@ NMS resolves intra-color-family overlap.
 Usage:
     .venv/bin/python tools/find_resources.py            # all regions
     .venv/bin/python tools/find_resources.py mystery_lake desolation_point
+    .venv/bin/python tools/find_resources.py --recheck-deer --inline
+        # only re-run the deer/rabbit check on the existing data (seconds,
+        # leaves every other class untouched)
 """
 from __future__ import annotations
 
@@ -334,6 +337,43 @@ def _inside(bbox, rects):
     return any(rx1 <= cx <= rx2 and ry1 <= cy <= ry2 for rx1, ry1, rx2, ry2 in rects)
 
 
+# Deer vs rabbit: both are black silhouettes, and maps are drawn at different
+# scales (icons on Bleak Inlet / Timberwolf Mountain are ~0.6-0.75× the
+# legend swatch), below SCALES' range. There the rabbit template never fires
+# and rabbits slip through as low-score deer. Re-score every deer hit against
+# both templates over a wide scale range and drop it when rabbit wins.
+RECHECK_SCALES = np.arange(0.5, 1.25, 0.05)
+RECHECK_PAD = 40  # px around the hit, room for the template to slide
+
+
+def _best_score(crop: np.ndarray, tpl: np.ndarray) -> float:
+    best = 0.0
+    for s in RECHECK_SCALES:
+        t = cv2.resize(tpl, (max(8, round(tpl.shape[1] * s)), max(8, round(tpl.shape[0] * s))),
+                       interpolation=cv2.INTER_AREA).astype(np.float32)
+        if t.shape[0] > crop.shape[0] or t.shape[1] > crop.shape[1]:
+            continue
+        for v in (t, cv2.flip(t, 1)):
+            best = max(best, float(cv2.matchTemplate(crop, v, cv2.TM_CCOEFF_NORMED).max()))
+    return best
+
+
+def drop_rabbits(map_bgr: np.ndarray, deer_hits: list[dict]) -> list[dict]:
+    _, _, ranges, open_k, *_ = next(g for g in CLASS_GROUPS if g[0] == "black_icons")
+    mask = color_mask(map_bgr, ranges, open_k=open_k).astype(np.float32)
+    tpls = {c: color_mask(cv2.imread(str(TEMPLATES_DIR / f"{c}.png")), ranges, open_k=open_k)
+            for c in ("deer", "rabbit")}
+    H, W = mask.shape
+    kept = []
+    for h in deer_hits:
+        x1, y1, x2, y2 = h["bbox"]
+        crop = mask[max(0, int(y1 * H) - RECHECK_PAD):int(y2 * H) + RECHECK_PAD,
+                    max(0, int(x1 * W) - RECHECK_PAD):int(x2 * W) + RECHECK_PAD]
+        if _best_score(crop, tpls["rabbit"]) <= _best_score(crop, tpls["deer"]):
+            kept.append(h)
+    return kept
+
+
 def process_region(region_id: str, map_path: Path) -> dict[str, list[dict]]:
     """Returns {resource: [{bbox, score}]} with bbox as [x1,y1,x2,y2] in 0..1."""
     map_bgr = cv2.imread(str(map_path))
@@ -382,6 +422,11 @@ def process_region(region_id: str, map_path: Path) -> dict[str, list[dict]]:
         if cls in DISAMBIGUATOR_CLASSES:
             del per_resource[cls]
 
+    if per_resource.get("deer"):
+        per_resource["deer"] = drop_rabbits(map_bgr, per_resource["deer"])
+        if not per_resource["deer"]:
+            del per_resource["deer"]
+
     # Sort each resource's hits by descending score for stable output.
     for cls in per_resource:
         per_resource[cls].sort(key=lambda h: -h["score"])
@@ -391,7 +436,8 @@ def process_region(region_id: str, map_path: Path) -> dict[str, list[dict]]:
 def main(argv: list[str]) -> int:
     do_inline = "--inline" in argv
     inline_only = "--inline-only" in argv
-    argv = [a for a in argv if a not in ("--inline", "--inline-only")]
+    recheck_deer = "--recheck-deer" in argv
+    argv = [a for a in argv if a not in ("--inline", "--inline-only", "--recheck-deer")]
 
     # --inline-only: skip the matcher entirely; just re-inline the existing
     # data/region_resources.json into index.html (useful after editing the
@@ -420,8 +466,21 @@ def main(argv: list[str]) -> int:
     if OUT_FILE.exists():
         out = json.loads(OUT_FILE.read_text())
 
+    if recheck_deer:
+        for region_id in targets:
+            deer = out.get(region_id, {}).get("deer")
+            if not deer:
+                continue
+            map_bgr = cv2.imread(str(ROOT / by_id[region_id]["maps"][0]))
+            kept = drop_rabbits(map_bgr, deer)
+            print(f"  {region_id:<24} deer {len(deer):>3} -> {len(kept):>3}")
+            if kept:
+                out[region_id]["deer"] = kept
+            else:
+                del out[region_id]["deer"]
+
     t_total = time.time()
-    for region_id in targets:
+    for region_id in ([] if recheck_deer else targets):
         if region_id not in by_id:
             print(f"  unknown region: {region_id}", file=sys.stderr)
             continue
