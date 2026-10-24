@@ -77,12 +77,12 @@ cd tools && python3 scrape_region_info.py && python3 inline_regions.py
 
 `scrape_region_info.py` reads each region's wiki page: the `difficulty` field of the Infobox/Region and the `{{Quote2|...|In-game description}}` quote of the region-select blurb (marketing quotes on the same page are skipped). When the infobox has no difficulty, it comes from the blurb's "For advanced players." opening, which is then stripped. Transition zones mostly have neither and are left out. Output: `data/region_info.json`, inlined as `REGION_INFO` between the `REGION_INFO_START` / `REGION_INFO_END` sentinels.
 
-### Layers panel
+### Show on map panel
 
-A floating panel in the top-left of the detail view (collapsible, starts collapsed on phones; the choice is remembered in `localStorage` as `ldm.layersCollapsed.v1`).
+A floating panel in the top-left of the detail view (collapsible, starts collapsed on phones; the choice is remembered in `localStorage` as `ldm.layersCollapsed.v1`). Each row is a checkbox with a count; checking it rings every location on the map and desaturates the map so the rings stand out. Several layers can be on at once and they stay on when you switch region. **Clear (n)** in the panel head turns them all off (it stays visible when the panel is collapsed); closing the detail view clears them too.
 
-- **Show on map** lists the rare crafting tools present in the region (forge, workbench, ammunition workbench, milling machine) and every legend pictogram detected on its map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit), each with a count. Click a row to toggle that layer: every location gets a coloured ring and the map is desaturated so the rings stand out. Several layers can be on at once, and they stay on when you switch region; closing the detail view clears them.
-- **Closest elsewhere** names the rare tools that aren't in this region, with the closest place that has one and the hop count via BFS over the region adjacency graph (e.g. *"Forge · 2 hops · The Riken · Desolation Point"* from Coastal Highway). Click to preview the route. Tools whose closest place is the same (e.g. ammunition workbench + milling machine at Last Resort Cannery) share one row.
+- **Crafting**: the rare crafting tools (forge, workbench, ammunition workbench, milling machine). Tools present in the region are checkboxes. Missing ones get a dashed box and **Find on map**, which switches to the world map in find mode: every region that has the tool lights up in its colour, the region you came from is marked *You are here*, a dashed line traces the shortest route (BFS over the region adjacency graph) to the nearest one, and a banner names it (e.g. *"Closest to Mystery Lake: Old Spence Family Homestead, Forlorn Muskeg (next region)"*). Opening a lit region turns that tool's layer on. ✕ or Escape ends find mode.
+- **Wildlife & foraging**: every legend pictogram detected on the region's map (moose, bear, wolf, timberwolf, deer, cougar, cattails, sapling, salt deposit).
 
 A `$resource:` hash turns layers on, so search results and links can open a region with them showing:
 - `index.html#coastal_highway/$resource:moose` → Coastal Highway with the moose layer on
@@ -157,7 +157,7 @@ The overrides file is the source of manual fixes; running `merge_boxes.py` on it
 
 ## Refreshing the region resources
 
-`data/region_resources.json` holds detected legend-icon positions (moose, bear, wolf, deer, cougar, cattails, sapling, salt deposit, …) per region — fed straight into the detail-view's layers panel. To regenerate:
+`data/region_resources.json` holds detected legend-icon positions (moose, bear, wolf, deer, cougar, cattails, sapling, salt deposit, …) per region — fed straight into the detail-view's Show on map panel. To regenerate:
 
 ```sh
 .venv/bin/python tools/find_resources.py             # all regions
@@ -195,7 +195,7 @@ npm test      # runs the full suite (~2s, ~60 tests)
 Two layers, both running on Node's built-in `node:test`:
 
 - **Unit tests** (`tests/logic.test.js`) cover the pure helpers extracted into `src/logic.js`: search ranking, tool-keyword synonym expansion, BFS region pathfinding (`findNearestTool` + tie-breaks), and the hash-routing format (including the `$resource:` hash form).
-- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, region-button clicks, the layers panel (rows, toggling rings on and off, `$resource:` deep links, persistence across regions) and the region picker.
+- **DOM tests** (`tests/dom.test.js`) boot `index.html` into jsdom via `tests/harness.js` and drive it: typing into the search box, ↑/↓/Enter/Esc keyboard nav, tool-badge accents, hash deep-links opening the right region, region-button clicks, the Show on map panel (rows, toggling rings on and off, Clear, `$resource:` deep links, persistence across regions), world-map find mode and the region picker.
 
 `src/logic.js` dual-exports — it attaches `window.LDLogic` in the browser and `module.exports = LDLogic` in Node — so the same code is exercised in both environments. The inline `<script>` in `index.html` uses thin wrappers that pass the bundled data tables (`PLACES_INDEX`, `PLACE_TOOLS`, `REGIONS`, `REGIONS_BY_ID`) into those helpers.
 

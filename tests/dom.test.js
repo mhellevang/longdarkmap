@@ -322,7 +322,7 @@ test('world view: mobile viewport defaults to a centred cover zoom, desktop to f
 // ─── layers panel ───────────────────────────────────────────────────────────
 
 const layerRow = (document, tag) =>
-  document.querySelector(`#layers-list .layer-row[data-tag="${tag}"]`);
+  document.querySelector(`#layers-panel .layer-row[data-tag="${tag}"]`);
 const markerCount = (document) =>
   document.querySelectorAll('#markers-layer .layer-marker').length;
 
@@ -351,7 +351,9 @@ test('layers panel: toggling a layer rings every hit and dims the map', async ()
     assert.equal(row.getAttribute('aria-pressed'), 'true');
     assert.equal(markerCount(document), count);
     assert.ok(document.getElementById('map-canvas').classList.contains('layers-on'));
-    assert.equal(document.getElementById('layers-active-count').textContent, '1');
+    const clear = document.getElementById('layers-clear');
+    assert.equal(clear.hidden, false);
+    assert.equal(clear.textContent, 'Clear (1)');
 
     // A second layer adds its rings on top.
     const wolf = layerRow(document, 'wolf');
@@ -522,18 +524,50 @@ test('visited: search results mark visited places with ✓', async () => {
   } finally { close(); }
 });
 
-test('layers panel: nearest tools at the same place share one row', async () => {
+test('layers panel: Clear turns every layer off', async () => {
   const { window, document, close } = await loadPage();
   try {
-    // From Coastal Highway, ammo workbench + milling machine are both nearest
-    // at Last Resort Cannery (Bleak Inlet).
-    window.location.hash = '#coastal_highway';
+    window.location.hash = '#mystery_lake';
     fire(window, window, 'hashchange');
-    const rows = [...document.querySelectorAll('#nearest-list .nearest-row')]
-      .filter(r => r.querySelector('.nearest-place').textContent.startsWith('Last Resort'));
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].querySelector('.nearest-tools').textContent,
-      'Ammunition Workbench, Milling Machine');
-    assert.match(rows[0].querySelector('.nearest-place').textContent, /Bleak Inlet/);
+    fire(window, layerRow(document, 'bear'), 'click');
+    fire(window, layerRow(document, 'wolf'), 'click');
+    const clear = document.getElementById('layers-clear');
+    assert.equal(clear.textContent, 'Clear (2)');
+    fire(window, clear, 'click');
+    assert.equal(markerCount(document), 0);
+    assert.equal(clear.hidden, true);
+    assert.equal(layerRow(document, 'bear').getAttribute('aria-pressed'), 'false');
+  } finally { close(); }
+});
+
+test('find on map: a missing tool lights up regions that have it', async () => {
+  const { window, document, close } = await loadPage();
+  try {
+    window.location.hash = '#mystery_lake';
+    fire(window, window, 'hashchange');
+    // Mystery Lake has workbenches but no forge.
+    assert.ok(layerRow(document, 'workbench'), 'workbench is a toggle here');
+    const forge = document.querySelector('#crafting-list .find-row[data-tool="forge"]');
+    assert.ok(forge, 'forge gets a Find on map row');
+
+    fire(window, forge, 'click');
+    assert.notEqual(document.getElementById('detail-view').style.display, 'flex');
+    const banner = document.getElementById('find-banner');
+    assert.equal(banner.hidden, false);
+    assert.match(document.getElementById('find-sub').textContent, /Forlorn Muskeg/);
+    const lit = [...document.querySelectorAll('.region-btn.find-has')].map(b => b.dataset.regionId);
+    assert.ok(lit.includes('forlorn_muskeg'));
+    assert.ok(!lit.includes('mystery_lake'));
+    assert.ok(document.querySelector('.region-btn.find-here[data-region-id="mystery_lake"]'));
+    assert.ok(document.querySelector('#find-route polyline'));
+
+    // Opening a lit region turns the forge layer on there.
+    fire(window, document.querySelector('.region-btn.find-has[data-region-id="forlorn_muskeg"]'), 'click');
+    assert.equal(layerRow(document, 'forge').getAttribute('aria-pressed'), 'true');
+
+    fire(window, document.getElementById('back-btn'), 'click');
+    fire(window, document.getElementById('find-close'), 'click');
+    assert.equal(banner.hidden, true);
+    assert.equal(document.querySelectorAll('.region-btn.find-has').length, 0);
   } finally { close(); }
 });

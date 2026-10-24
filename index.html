@@ -70,7 +70,13 @@
 <div id="world-view">
   <div id="map-container">
     <img id="world-map" src="maps/2899955301_preview_GREAT_BEAR_ISLAND_MAP_v12.jpg" alt="Great Bear Island" width="4017" height="2048" decoding="async">
+    <svg id="find-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
     <div id="label-layer"></div>
+  </div>
+  <div id="find-banner" role="status" hidden>
+    <div id="find-title"></div>
+    <div id="find-sub"></div>
+    <button id="find-close" type="button" aria-label="Stop finding">✕</button>
   </div>
   <div id="coord-display"></div>
   <div id="search-wrap">
@@ -111,18 +117,10 @@
         <div id="legend-tools" class="legend-rows"></div>
       </div>
       <div class="legend-section">
-        <h3>Map layers</h3>
+        <h3>Show on map</h3>
         <p class="legend-note">Turn a layer on in the panel to ring every location of that resource on the map.</p>
         <div id="legend-resources" class="legend-rows"></div>
       </div>
-    </div>
-    <div id="route-popover" role="dialog" aria-label="Route preview" hidden>
-      <div id="route-popover-header">
-        <div id="route-popover-title"></div>
-        <button id="route-popover-close" aria-label="Close route preview">✕</button>
-      </div>
-      <ol id="route-popover-steps"></ol>
-      <button id="route-popover-travel"></button>
     </div>
     <div id="map-canvas">
       <img id="detail-img" alt="" decoding="async">
@@ -145,16 +143,22 @@
         <button id="bbox-cancel-btn" class="cancel">Cancel</button>
       </div>
       <div id="detail-coord-display"></div>
-      <aside id="layers-panel" aria-label="Map layers">
-        <button id="layers-toggle" type="button" aria-expanded="true" aria-controls="layers-body">
-          <span>Layers</span><span id="layers-active-count"></span><span id="layers-caret" aria-hidden="true">▾</span>
-        </button>
+      <aside id="layers-panel" aria-label="Show on map">
+        <div id="layers-head">
+          <button id="layers-toggle" type="button" aria-expanded="true" aria-controls="layers-body">
+            <span>Show on map</span><span id="layers-caret" aria-hidden="true">▾</span>
+          </button>
+          <button id="layers-clear" type="button" hidden></button>
+        </div>
         <div id="layers-body">
-          <div id="layers-list" role="group" aria-label="Show on map"></div>
-          <div id="nearest-section">
-            <h3>Closest elsewhere</h3>
-            <div id="nearest-list"></div>
-          </div>
+          <section class="layers-section">
+            <h3>Crafting</h3>
+            <div id="crafting-list"></div>
+          </section>
+          <section class="layers-section">
+            <h3>Wildlife &amp; foraging</h3>
+            <div id="layers-list"></div>
+          </section>
         </div>
       </aside>
       <div id="zoom-controls">
@@ -31009,7 +31013,6 @@ function _openRegion(region, target, tool, historyOp) {
   } else {
     regionHistory = [];
   }
-  hideRoutePopover();
   hideLegend();
   renderBackToOrigin();
 
@@ -31494,14 +31497,8 @@ function setToolFilter(tool) {
 
 // ── Region adjacency / nearest-tool lookup ────────────────────────────────
 // Adjacency comes from regions.json (manually seeded from the wiki's
-// `connections` infobox field per region). BFS gives hop counts AND the
-// shortest path from a chosen origin to every reachable region, so the
-// route popover can let the user step through the path one region at a time
-// instead of teleporting straight to the destination.
-function bfsPaths(fromId) {
-  return LDLogic.bfsPaths(fromId, REGIONS_BY_ID);
-}
-
+// `connections` infobox field per region). BFS gives hop counts and the
+// shortest path, which the world-map find mode draws as its route.
 function findNearestTool(fromRegionId, tool) {
   return LDLogic.findNearestTool(fromRegionId, tool, {
     placeTools:  PLACE_TOOLS,
@@ -31509,26 +31506,22 @@ function findNearestTool(fromRegionId, tool) {
   });
 }
 
-function pathSummary(path) {
-  return LDLogic.pathSummary(path, REGIONS_BY_ID);
-}
-
-// ── Layers panel ──────────────────────────────────────────────────────────
-// Floating panel over the map. "Show on map" rows toggle a layer that rings
-// every location of a resource (REGION_RESOURCES) or of a rare crafting tool
-// present in this region; "Nearest" lists rare tools found only elsewhere,
-// with hop counts. Common amenities (bed/stove/first_aid) are everywhere, so
-// only TOOLS_META entries flagged `nearby` get rows.
+// ── Layers panel ("Show on map") ──────────────────────────────────────────
+// Floating panel over the map. Each row is a checkbox that rings every
+// location of a resource (REGION_RESOURCES) or of a crafting tool present
+// in this region. Crafting tools missing from the region get a "Find on
+// map" row instead, which opens the world-map find mode below. Common
+// amenities (bed/stove/first_aid) are everywhere, so only TOOLS_META
+// entries flagged `nearby` are listed.
 const NEARBY_TOOLS = Object.entries(LDLogic.TOOLS_META)
   .filter(([, m]) => m.nearby)
   .map(([tag]) => tag);
 
 const layersPanel = document.getElementById('layers-panel');
 const layersToggle = document.getElementById('layers-toggle');
-const layersActiveCountEl = document.getElementById('layers-active-count');
+const layersClearBtn = document.getElementById('layers-clear');
+const craftingListEl = document.getElementById('crafting-list');
 const layersListEl = document.getElementById('layers-list');
-const nearestSection = document.getElementById('nearest-section');
-const nearestListEl = document.getElementById('nearest-list');
 const markersLayer = document.getElementById('markers-layer');
 let markerItems = [];  // [{ el, bbox }]
 
@@ -31549,6 +31542,13 @@ layersToggle.addEventListener('click', () => {
   const collapsed = !layersPanel.classList.contains('collapsed');
   setLayersCollapsed(collapsed);
   try { localStorage.setItem(LAYERS_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch {}
+});
+
+layersClearBtn.addEventListener('click', () => {
+  activeLayers.clear();
+  dropResourceHash();
+  updateLayerRows();
+  renderMarkers();
 });
 
 // The panel lives inside the map canvas; keep its clicks and scrolls from
@@ -31588,96 +31588,76 @@ function layerRow(tag, count) {
   btn.className = 'layer-row';
   btn.dataset.tag = tag;
   styleLayer(btn, tag);
-  const key = document.createElement('span');
-  key.className = 'layer-key';
-  if (!isResourceTag(tag)) key.textContent = TOOL_GLYPHS[tag] || '';
-  const label = document.createElement('span');
-  label.className = 'layer-label';
-  label.textContent = isResourceTag(tag) ? LDLogic.RESOURCES_META[tag].label : toolLabel(tag);
-  const countEl = document.createElement('span');
-  countEl.className = 'layer-count';
-  countEl.textContent = count;
-  btn.append(key, label, countEl);
+  btn.innerHTML = '<span class="layer-key" aria-hidden="true"></span>'
+                + '<span class="layer-label"></span><span class="layer-count"></span>';
+  btn.querySelector('.layer-label').textContent =
+    isResourceTag(tag) ? LDLogic.RESOURCES_META[tag].label : toolLabel(tag);
+  btn.querySelector('.layer-count').textContent = count;
   btn.addEventListener('click', () => toggleLayer(tag));
   return btn;
 }
 
+function findRow(region, tool) {
+  const nearest = findNearestTool(region.id, tool);
+  if (!nearest) return null;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'find-row tool-' + tool;
+  btn.dataset.tool = tool;
+  btn.innerHTML = '<span class="find-row-key" aria-hidden="true"></span>'
+                + '<span class="find-row-text"><span class="layer-label"></span>'
+                + '<span class="find-row-action">Find on map →</span></span>';
+  btn.querySelector('.layer-label').textContent = toolLabel(tool);
+  btn.title = `None in ${region.name}. Nearest: ${nearest.placeName}, `
+            + `${REGIONS_BY_ID[nearest.regionId].name}`;
+  btn.addEventListener('click', () => startWorldFind(tool, region));
+  return btn;
+}
+
 function renderLayersPanel(region) {
+  craftingListEl.innerHTML = '';
   layersListEl.innerHTML = '';
-  nearestListEl.innerHTML = '';
   const placeTools = Object.values(PLACE_TOOLS[region.id] || {});
-  // Nearest tools that point at the same place (e.g. ammo workbench and
-  // milling machine both at Last Resort Cannery) share one row.
-  const nearestRows = new Map();  // 'regionId|placeName' → row
-  const shown = [];
   for (const tool of NEARBY_TOOLS) {
-    if (placeTools.some(tags => tags.includes(tool))) {
-      if (layerHits(region.id, tool).length) shown.push(tool);
-      continue;
-    }
-    const nearest = findNearestTool(region.id, tool);
-    if (!nearest) continue;
-    const key = nearest.regionId + '|' + nearest.placeName;
-    const dup = nearestRows.get(key);
-    if (dup) {
-      dup.querySelector('.nearest-tools').textContent += ', ' + toolLabel(tool);
-      continue;
-    }
-    nearestRows.set(key, nearestRow(region, tool, nearest));
+    const row = placeTools.some(tags => tags.includes(tool))
+      ? (layerHits(region.id, tool).length ? layerRow(tool, layerHits(region.id, tool).length) : null)
+      : findRow(region, tool);
+    if (row) craftingListEl.appendChild(row);
   }
   for (const tag of Object.keys(LDLogic.RESOURCES_META)) {
-    if (layerHits(region.id, tag).length) shown.push(tag);
+    const n = layerHits(region.id, tag).length;
+    if (n) layersListEl.appendChild(layerRow(tag, n));
   }
-  for (const tag of shown) layersListEl.appendChild(layerRow(tag, layerHits(region.id, tag).length));
-  for (const row of nearestRows.values()) nearestListEl.appendChild(row);
-  nearestSection.hidden = !nearestRows.size;
+  craftingListEl.parentElement.hidden = !craftingListEl.children.length;
+  layersListEl.parentElement.hidden = !layersListEl.children.length;
   updateLayerRows();
 }
 
-function nearestRow(region, tool, nearest) {
-  const targetRegion = REGIONS_BY_ID[nearest.regionId];
-  const regionName = targetRegion ? targetRegion.name : nearest.regionId;
-  const row = document.createElement('button');
-  row.type = 'button';
-  row.className = 'nearest-row';
-  row.dataset.tool = tool;
-  row.innerHTML = `<span class="nearest-tools"></span>`
-                + `<span class="nearest-hops"></span>`
-                + `<span class="nearest-place"></span>`;
-  row.querySelector('.nearest-tools').textContent = toolLabel(tool);
-  row.querySelector('.nearest-hops').textContent = `${nearest.hops} hop${nearest.hops === 1 ? '' : 's'}`;
-  row.querySelector('.nearest-place').textContent = `${nearest.placeName} · ${regionName}`;
-  const summary = pathSummary(nearest.path);
-  row.title = `Nearest ${toolLabel(tool)}: ${nearest.placeName} in ${regionName}`
-            + (summary ? ` (${summary})` : '') + '\nClick to preview the route.';
-  // First click previews; the popover's Travel button commits.
-  row.addEventListener('click', e => {
-    e.stopPropagation();
-    showRoutePopover(row, region, tool, nearest);
-  });
-  return row;
+// A $resource: deep link has served its purpose once the user edits the
+// layers; drop it so a reload doesn't resurrect a layer they turned off.
+function dropResourceHash() {
+  if (currentRegion && parseHash()?.resource) {
+    history.replaceState(null, '', makeHash({ regionId: currentRegion.id }));
+  }
 }
 
 function toggleLayer(tag) {
   if (activeLayers.has(tag)) activeLayers.delete(tag);
   else activeLayers.add(tag);
-  // A $resource: deep link has served its purpose once the user edits the
-  // layers; drop it so a reload doesn't resurrect a layer they turned off.
-  if (currentRegion && parseHash()?.resource) {
-    history.replaceState(null, '', makeHash({ regionId: currentRegion.id }));
-  }
+  dropResourceHash();
   updateLayerRows();
   renderMarkers();
 }
 
 function updateLayerRows() {
   let shownActive = 0;
-  layersListEl.querySelectorAll('.layer-row').forEach(row => {
+  layersPanel.querySelectorAll('.layer-row').forEach(row => {
     const on = activeLayers.has(row.dataset.tag);
     row.setAttribute('aria-pressed', String(on));
     if (on) shownActive++;
   });
-  layersActiveCountEl.textContent = shownActive ? String(shownActive) : '';
+  layersClearBtn.hidden = !shownActive;
+  layersClearBtn.textContent = `Clear (${shownActive})`;
 }
 
 function renderMarkers() {
@@ -31711,151 +31691,71 @@ function positionMarkers() {
   }
 }
 
-// ── Route preview popover ─────────────────────────────────────────────────
-// Opened by the layers panel's nearest-tool rows. Lists each region in the path between
-// origin and destination so the user can step-into any region one hop at a
-// time, instead of teleporting straight to the destination and losing the
-// trail home. The Travel button commits to the destination directly.
-const routePopover = document.getElementById('route-popover');
-const routePopoverTitle = document.getElementById('route-popover-title');
-const routePopoverSteps = document.getElementById('route-popover-steps');
-const routePopoverTravel = document.getElementById('route-popover-travel');
-const routePopoverClose = document.getElementById('route-popover-close');
+// ── World-map find mode ───────────────────────────────────────────────────
+// "Find on map" for a crafting tool the open region lacks: back on the world
+// map, every region that has one lights up, the origin is marked, and a
+// dashed line traces the shortest route to the nearest. Opening a lit region
+// turns that tool's layer on. Ends with the banner's ✕ or Escape.
+const findBanner = document.getElementById('find-banner');
+const findTitle = document.getElementById('find-title');
+const findSub = document.getElementById('find-sub');
+const findRoute = document.getElementById('find-route');
+let findTool = null;
 
-let routePopoverState = null;  // { tool, origin, nearest } when open
-
-function hideRoutePopover() {
-  // If focus lives inside the popover (we move it there on open), return it
-  // to the row that opened it so keyboard users aren't dropped at <body>.
-  if (!routePopover.hidden
-      && routePopover.contains(document.activeElement)
-      && routePopoverState
-      && routePopoverState.anchorRow
-      && document.contains(routePopoverState.anchorRow)) {
-    routePopoverState.anchorRow.focus();
-  }
-  routePopover.hidden = true;
-  routePopoverState = null;
-  document.querySelectorAll('.nearest-row.expanded').forEach(p => p.classList.remove('expanded'));
-}
-
-function showRoutePopover(anchorRow, originRegion, tool, nearest) {
-  // Toggle: clicking the same row twice closes the popover.
-  if (routePopoverState
-      && routePopoverState.tool === tool
-      && routePopoverState.origin.id === originRegion.id) {
-    hideRoutePopover();
-    return;
-  }
-  routePopoverState = { tool, origin: originRegion, nearest, anchorRow };
-  document.querySelectorAll('.nearest-row.expanded').forEach(p => p.classList.remove('expanded'));
-  anchorRow.classList.add('expanded');
-
-  const targetRegion = REGIONS_BY_ID[nearest.regionId];
-  routePopoverTitle.innerHTML =
-      `<span class="tool-badge tool-${tool}">${TOOL_GLYPHS[tool] || ''}</span>`
-    + `<span>Route to ${toolLabel(tool)}</span>`;
-  routePopoverSteps.innerHTML = '';
-  // Each hop becomes a step. The origin step is a non-button "you are here"
-  // marker; intermediate + destination steps are buttons that open that
-  // region with the same tool filter, so the user can navigate one
-  // transition at a time.
-  nearest.path.forEach((regionId, i) => {
-    const stepRegion = REGIONS_BY_ID[regionId];
-    const li = document.createElement('li');
-    li.className = 'route-step';
-    if (i === 0) li.classList.add('route-step-origin');
-    if (i === nearest.path.length - 1) li.classList.add('route-step-dest');
-
-    const dot = document.createElement('span');
-    dot.className = 'route-step-dot';
-    dot.textContent = i === 0 ? '●' : (i === nearest.path.length - 1 ? '◉' : '○');
-    li.appendChild(dot);
-
-    const meta = document.createElement('div');
-    meta.className = 'route-step-meta';
-    const name = document.createElement('div');
-    name.className = 'route-step-name';
-    name.textContent = stepRegion ? stepRegion.name : regionId;
-    meta.appendChild(name);
-    if (i === 0) {
-      const note = document.createElement('div');
-      note.className = 'route-step-note';
-      note.textContent = 'you are here';
-      meta.appendChild(note);
-    } else if (i === nearest.path.length - 1) {
-      const note = document.createElement('div');
-      note.className = 'route-step-note';
-      note.textContent = nearest.placeName;
-      meta.appendChild(note);
-    }
-    li.appendChild(meta);
-
-    if (i > 0) {
-      const stepBtn = document.createElement('button');
-      stepBtn.className = 'route-step-btn';
-      stepBtn.textContent = i === nearest.path.length - 1 ? 'Open here' : 'Step here';
-      stepBtn.addEventListener('click', () => {
-        hideRoutePopover();
-        const isDest = i === nearest.path.length - 1;
-        const placeName = isDest ? nearest.placeName : null;
-        const box = placeName ? (PLACE_BOXES[regionId] || {})[placeName] : null;
-        navigateFromPill(originRegion, stepRegion,
-          box ? { name: placeName, bbox: box } : null, tool);
-      });
-      li.appendChild(stepBtn);
-    }
-    routePopoverSteps.appendChild(li);
+function startWorldFind(tool, origin) {
+  closeModal();
+  findTool = tool;
+  document.body.classList.add('finding');
+  const has = new Set(Object.entries(PLACE_TOOLS)
+    .filter(([, places]) => Object.values(places).some(t => t.includes(tool)))
+    .map(([rid]) => rid));
+  labelLayer.querySelectorAll('.region-btn').forEach(b => {
+    b.classList.toggle('find-has', has.has(b.dataset.regionId));
+    b.classList.toggle('find-here', b.dataset.regionId === origin.id);
+    b.classList.add('tool-' + tool);
   });
-
-  routePopoverTravel.textContent = `Travel to ${nearest.placeName}`;
-  routePopoverTravel.onclick = () => {
-    hideRoutePopover();
-    const box = (PLACE_BOXES[nearest.regionId] || {})[nearest.placeName];
-    navigateFromPill(originRegion, targetRegion,
-      box ? { name: nearest.placeName, bbox: box } : null, tool);
-  };
-
-  // Position. On phone-width the popover docks as a bottom sheet (CSS
-  // handles bottom/left/right); we clear inline anchors so they don't fight
-  // the stylesheet. matchMedia tracks the true layout viewport — using
-  // window.innerWidth here was wrong because content can inflate it.
-  if (matchMedia('(max-width: 640px)').matches) {
-    routePopover.style.top    = '';
-    routePopover.style.right  = '';
-    routePopover.style.left   = '';
-    routePopover.style.bottom = '';
-  } else {
-    // Beside the layers panel, top-aligned with the clicked row.
-    const rect = anchorRow.getBoundingClientRect();
-    routePopover.style.top    = rect.top + 'px';
-    routePopover.style.right  = '';
-    routePopover.style.left   = (layersPanel.getBoundingClientRect().right + 8) + 'px';
-    routePopover.style.bottom = '';
+  const nearest = findNearestTool(origin.id, tool);
+  const pts = nearest.path.map(id => REGIONS_BY_ID[id]).filter(r => r && r.pos);
+  findRoute.innerHTML = pts.length > 1
+    ? `<polyline points="${pts.map(r => r.pos.join(',')).join(' ')}" />`
+    : '';
+  // Phones open the world map as a cropped cover view; centre the route so
+  // "you are here" and the nearest region are both on screen.
+  if (pts.length) {
+    const w = mapContainer.offsetWidth * worldZoom, h = mapContainer.offsetHeight * worldZoom;
+    const ends = [pts[0], pts[pts.length - 1]];
+    worldPanX = window.innerWidth / 2 - (ends[0].pos[0] + ends[1].pos[0]) / 200 * w;
+    worldPanY = window.innerHeight / 2 - (ends[0].pos[1] + ends[1].pos[1]) / 200 * h;
+    applyWorldTransform();
   }
-  routePopover.hidden = false;
-  // Move focus into the dialog so keyboard/screen-reader users land on it
-  // instead of having to hunt; hideRoutePopover returns focus to the row.
-  routePopoverClose.focus();
+  const away = nearest.hops === 1 ? 'next region' : `${nearest.hops} regions away`;
+  findTitle.textContent = `${toolLabel(tool)}: ${has.size} regions have one`;
+  findSub.textContent = `Closest to ${origin.name}: ${nearest.placeName}, `
+    + `${REGIONS_BY_ID[nearest.regionId].name} (${away}). Click a highlighted region to open it.`;
+  findBanner.hidden = false;
 }
 
-routePopoverClose.addEventListener('click', hideRoutePopover);
-document.addEventListener('click', e => {
-  if (routePopover.hidden) return;
-  if (e.target.closest('#route-popover')) return;
-  if (e.target.closest('.nearest-row')) return;
-  hideRoutePopover();
-});
+function endWorldFind() {
+  if (!findTool) return;
+  const tool = findTool;
+  findTool = null;
+  document.body.classList.remove('finding');
+  findBanner.hidden = true;
+  findRoute.innerHTML = '';
+  labelLayer.querySelectorAll('.region-btn').forEach(b => {
+    b.classList.remove('find-has', 'find-here', 'tool-' + tool);
+  });
+}
+
+document.getElementById('find-close').addEventListener('click', endWorldFind);
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !routePopover.hidden) {
-    // stopImmediatePropagation, not stopPropagation: the modal-close ESC
-    // handler is registered on document too, and plain stopPropagation
-    // doesn't stop same-node listeners — ESC would close the popover AND
-    // the whole modal in one press.
-    e.stopImmediatePropagation();
-    hideRoutePopover();
-  }
+  if (e.key === 'Escape' && findTool && detailView.style.display !== 'flex') endWorldFind();
 });
+// Capture phase, so the layer is on before the label's own click opens
+// the region.
+labelLayer.addEventListener('click', e => {
+  if (findTool && e.target.closest('.region-btn.find-has')) activeLayers.add(findTool);
+}, true);
 
 // ── Legend popover ─────────────────────────────────────────────────────────
 // On-screen key for the tool-badge glyphs and layer colours, which
@@ -31902,9 +31802,8 @@ function hideLegend() {
 }
 
 function showLegend() {
-  hideRoutePopover();
-  // Same anchoring strategy as the route popover: pinned under the button
-  // on desktop, docked as a bottom sheet on phone-width (CSS overrides).
+  // Pinned under the button on desktop, docked as a bottom sheet on
+  // phone-width (CSS overrides).
   if (matchMedia('(max-width: 640px)').matches) {
     legendPopover.style.top   = '';
     legendPopover.style.right = '';
@@ -31930,7 +31829,10 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !legendPopover.hidden) {
-    e.stopImmediatePropagation();  // see the route-popover ESC note above
+    // stopImmediatePropagation, not stopPropagation: the modal-close ESC
+    // handler is registered on document too, and plain stopPropagation
+    // doesn't stop same-node listeners.
+    e.stopImmediatePropagation();
     hideLegend();
   }
 });
@@ -31949,8 +31851,8 @@ document.addEventListener('keydown', e => {
 }
 
 // ── Back-to-origin breadcrumb ─────────────────────────────────────────────
-// Tracks the chain of regions the user hopped through via nearest-tool rows, route
-// steps, and region-link overlays so they can step back through the whole
+// Tracks the chain of regions the user hopped through via the region picker
+// and region-link overlays so they can step back through the whole
 // path without using browser history. The stack is cleared on a fresh entry
 // (search, world-map click, direct hash) and on modal close.
 //

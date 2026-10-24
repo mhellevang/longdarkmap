@@ -697,17 +697,17 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   flex-wrap: wrap;
 }
 
-/* ── Layers panel (floating over the detail map) ────────────────────────── */
-/* "Show on map" rows are toggles: the key is a hollow ring in the layer
-   colour when off and filled when on, echoing the rings drawn on the map.
-   "Closest elsewhere" names rare crafting tools found only in other regions,
-   with the place, region and hop count. */
+/* ── Layers panel ("Show on map", floating over the detail map) ─────────── */
+/* Rows are checkboxes: an empty box in the layer colour when off, filled
+   with a ✓ when on. Crafting tools the region lacks get a dashed box and a
+   "Find on map" action instead. "Clear (n)" in the head turns everything
+   off, and stays visible while the panel is collapsed. */
 #layers-panel {
   position: absolute;
   top: 12px;
   left: 12px;
   z-index: 10;
-  width: 232px;
+  width: 240px;
   max-height: calc(100% - 24px);
   display: flex;
   flex-direction: column;
@@ -720,11 +720,17 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 }
 #layers-panel.collapsed { width: auto; }
 #layers-panel.collapsed #layers-body { display: none; }
-#layers-toggle {
+#layers-head {
   display: flex;
   align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+}
+#layers-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
   gap: 8px;
-  width: 100%;
   padding: 9px 12px;
   background: none;
   border: 0;
@@ -733,18 +739,10 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   font: 14px Georgia, serif;
   letter-spacing: 0.4px;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 #layers-toggle:hover { color: #fff; }
-#layers-active-count:not(:empty) {
-  min-width: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: rgba(110, 170, 230, 0.25);
-  color: #c9d8f0;
-  font: 11px/18px ui-monospace, Menlo, monospace;
-  text-align: center;
-}
 #layers-caret {
   margin-left: auto;
   color: #8bb8e8;
@@ -752,12 +750,37 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   transition: transform 0.15s;
 }
 #layers-panel.collapsed #layers-caret { transform: rotate(-90deg); }
+#layers-clear {
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid rgba(110, 170, 230, 0.35);
+  border-radius: 4px;
+  color: #8bb8e8;
+  font: 11px ui-monospace, Menlo, monospace;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#layers-clear:hover { background: rgba(110, 170, 230, 0.15); color: #e6edf3; }
+#layers-clear[hidden] { display: none; }
 #layers-body {
   overflow-y: auto;
-  padding: 4px 6px 8px;
+  padding: 0 6px 8px;
   border-top: 1px solid rgba(110, 170, 230, 0.14);
 }
-.layer-row {
+.layers-section + .layers-section {
+  margin-top: 4px;
+  border-top: 1px solid rgba(110, 170, 230, 0.14);
+}
+.layers-section[hidden] { display: none; }
+.layers-section h3 {
+  padding: 10px 8px 4px;
+  font: 10px ui-monospace, Menlo, monospace;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(139, 184, 232, 0.6);
+}
+.layer-row,
+.find-row {
   --c: var(--layer-color, var(--tool-color, #6eaae6));
   display: flex;
   align-items: center;
@@ -773,20 +796,40 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
-.layer-row:hover { background: rgba(110, 170, 230, 0.1); color: #e6edf3; }
-.layer-row[aria-pressed="true"] { color: #f0f6ff; }
-.layer-key {
-  width: 16px;
-  height: 16px;
+.layer-row:hover,
+.find-row:hover { background: rgba(110, 170, 230, 0.1); color: #e6edf3; }
+.layer-row[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  color: #f0f6ff;
+}
+.layer-key,
+.find-row-key {
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   border: 2px solid var(--c);
-  border-radius: 50%;
-  color: var(--c);
-  font: 700 8px/12px ui-monospace, Menlo, monospace;
+  border-radius: 4px;
+  color: #0b1018;
+  font: 700 11px/11px system-ui, sans-serif;
   text-align: center;
   transition: background 0.12s;
 }
-.layer-row[aria-pressed="true"] .layer-key { background: var(--c); color: #0b1018; }
+.layer-row[aria-pressed="true"] .layer-key { background: var(--c); }
+.layer-row[aria-pressed="true"] .layer-key::before { content: '✓'; }
+.find-row-key { border-style: dashed; opacity: 0.6; }
+.find-row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.find-row-action {
+  margin-top: 1px;
+  font: 11px ui-monospace, Menlo, monospace;
+  color: #8bb8e8;
+  white-space: nowrap;
+}
+.find-row:hover .find-row-action { color: #c9d8f0; }
 .layer-label {
   flex: 1;
   min-width: 0;
@@ -797,47 +840,6 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 .layer-count {
   font: 11px ui-monospace, Menlo, monospace;
   color: rgba(160, 175, 190, 0.7);
-}
-#nearest-section {
-  margin-top: 6px;
-  border-top: 1px solid rgba(110, 170, 230, 0.14);
-}
-#nearest-section h3 {
-  padding: 10px 8px 4px;
-  font: 10px ui-monospace, Menlo, monospace;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: rgba(139, 184, 232, 0.6);
-}
-.nearest-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: baseline;
-  column-gap: 10px;
-  row-gap: 1px;
-  width: 100%;
-  padding: 6px 8px;
-  background: none;
-  border: 0;
-  border-radius: 5px;
-  color: #c9d1d9;
-  font: 13px Georgia, serif;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.nearest-row:hover,
-.nearest-row.expanded { background: rgba(110, 170, 230, 0.1); }
-.nearest-tools { color: #e6edf3; }
-.nearest-hops {
-  font: 11px ui-monospace, Menlo, monospace;
-  color: rgba(160, 175, 190, 0.7);
-  white-space: nowrap;
-}
-.nearest-place {
-  grid-column: 1 / -1;
-  color: #9aa7b4;
-  font-size: 12px;
 }
 
 /* ── Layer markers (rings on the map) ───────────────────────────────────── */
@@ -969,136 +971,6 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   border-width: 1px;
   box-shadow: none;
   flex-shrink: 0;
-}
-
-/* ── Route preview popover ──────────────────────────────────────────────── */
-/* Anchored beside a clicked nearest-tool row; lists each region in the path so the
-   user can step through one transition at a time, instead of teleporting. */
-#route-popover {
-  position: fixed;
-  z-index: 30;
-  min-width: 280px;
-  max-width: 360px;
-  background: rgba(8, 12, 18, 0.97);
-  border: 1px solid rgba(110, 170, 230, 0.42);
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(4px);
-  padding: 12px 14px;
-  color: #c9d1d9;
-  font-size: 13px;
-}
-#route-popover[hidden] { display: none; }
-#route-popover-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(110, 170, 230, 0.18);
-  margin-bottom: 10px;
-}
-#route-popover-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  font-weight: 500;
-  color: #e6edf3;
-}
-#route-popover-title .tool-badge {
-  width: 16px;
-  height: 16px;
-  font-size: 10px;
-  line-height: 16px;
-  border-width: 1px;
-  box-shadow: none;
-}
-#route-popover-close {
-  background: none;
-  border: none;
-  color: rgba(180, 200, 220, 0.55);
-  font-size: 16px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-}
-#route-popover-close:hover { color: #f0f6ff; }
-#route-popover-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.route-step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  position: relative;
-}
-/* Connector line between steps. */
-.route-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 7px;
-  top: 26px;
-  width: 1px;
-  height: calc(100% - 14px);
-  background: rgba(110, 170, 230, 0.32);
-}
-.route-step-dot {
-  width: 14px;
-  text-align: center;
-  font-size: 12px;
-  line-height: 1;
-  color: #8bb8e8;
-  flex-shrink: 0;
-}
-.route-step-origin .route-step-dot { color: #b5e8a3; }
-.route-step-dest   .route-step-dot { color: #f5d36b; }
-.route-step-meta {
-  flex: 1;
-  min-width: 0;
-}
-.route-step-name {
-  color: #e6edf3;
-  font-weight: 500;
-}
-.route-step-note {
-  color: rgba(180, 200, 220, 0.55);
-  font-size: 11px;
-}
-.route-step-btn {
-  background: none;
-  border: 1px solid rgba(110, 170, 230, 0.32);
-  color: #8bb8e8;
-  padding: 3px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 11px;
-  flex-shrink: 0;
-  transition: background 0.12s, border-color 0.12s;
-}
-.route-step-btn:hover {
-  background: rgba(110, 170, 230, 0.18);
-  border-color: rgba(110, 170, 230, 0.72);
-  color: #f0f6ff;
-}
-#route-popover-travel {
-  margin-top: 12px;
-  width: 100%;
-  background: rgba(245, 211, 107, 0.16);
-  border: 1px solid rgba(245, 211, 107, 0.45);
-  color: #f5d36b;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  transition: background 0.12s, border-color 0.12s;
-}
-#route-popover-travel:hover {
-  background: rgba(245, 211, 107, 0.28);
-  border-color: rgba(245, 211, 107, 0.72);
 }
 
 /* ── Back-to-origin breadcrumb ──────────────────────────────────────────── */
@@ -1237,7 +1109,7 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
 
 /* ── Mobile / narrow viewport ────────────────────────────────────────────── */
 /* Phone-sized layout: stack the detail header into rows, turn the map-tab
-   row into a horizontally scrollable strip, dock the route popover
+   row into a horizontally scrollable strip, dock the legend popover
    as a bottom sheet, and grow tap targets to ~44px. The world map and detail
    map already pinch-zoom; this block fixes the chrome around them.
    The second condition (short + landscape) catches phones held sideways —
@@ -1323,7 +1195,7 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
     max-height: calc(100% - 84px);
   }
   #layers-toggle { padding: 10px 12px; }
-  .layer-row, .nearest-row { padding: 8px; }
+  .layer-row, .find-row { padding: 8px; }
   #back-btn {
     padding: 8px 12px;
     font-size: 16px;
@@ -1346,29 +1218,8 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
   #map-tabs::-webkit-scrollbar { display: none; }
   .tab-btn { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
 
-  /* Route popover: dock as a bottom sheet. The !important overrides override
-     the inline top/right that anchorRoutePopover() sets relative to a row —
-     on a phone-width viewport that anchor would push the popover off-screen. */
-  #route-popover {
-    top: auto !important;
-    right: 0 !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    max-width: none;
-    min-width: 0;
-    border-radius: 8px 8px 0 0;
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom)) 16px;
-    border-bottom: none;
-    /* dvh tracks the visible viewport (excludes iOS Safari's URL bar)
-       so the sheet's edges aren't tucked under browser chrome. */
-    max-height: 70dvh;
-    overflow-y: auto;
-  }
-  .route-step { padding: 10px 0; }
-  .route-step-btn { padding: 8px 12px; font-size: 13px; }
-  #route-popover-travel { padding: 12px; font-size: 14px; }
-
-  /* Legend popover: same bottom-sheet docking as the route popover. */
+  /* Legend popover: dock as a bottom sheet. The !important overrides beat
+     the inline top/right that showLegend() sets relative to the ? button. */
   #legend-popover {
     top: auto !important;
     right: 0 !important;
@@ -1409,3 +1260,89 @@ body.detail-open #offline-btn, body.detail-open #connections-btn { display: none
     max-width: 45%;
   }
 }
+
+/* ── World-map find mode ("Find on map" for a missing crafting tool) ────── */
+/* Lit regions get a glow in the tool's colour, the origin a green one with
+   a "You are here" tag. Everything is sized in container units (cqw) or em
+   so it scales with the printed region names: px would be blown up by the
+   world map's own zoom on phones, and the transparent button text alone is
+   smaller than the printed name. */
+#label-layer { container-type: inline-size; }
+.region-btn.find-has,
+.region-btn.find-here {
+  padding: 0.3cqw 0.55cqw;
+  border-radius: 0.35cqw;
+  font-size: 0.52cqw;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.region-btn.find-has {
+  --c: var(--tool-color, #f5996b);
+  box-shadow: 0 0 0 0.28em var(--c), 0 0 2.4em 0.5em var(--c);
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+}
+.region-btn.find-here {
+  box-shadow: 0 0 0 0.28em #7ee787, 0 0 2.2em 0.5em rgba(126, 231, 135, 0.7);
+  background: rgba(126, 231, 135, 0.15);
+}
+.region-btn.find-here::after {
+  content: 'You are here';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 0.7em);
+  padding: 0.2em 0.7em;
+  border-radius: 0.3em;
+  background: #7ee787;
+  color: #0b1018;
+  font: 600 0.6cqw / 1.3 system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+#find-route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+#find-route polyline {
+  fill: none;
+  stroke: #f5d36b;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8));
+}
+body.finding #search-wrap { display: none; }
+#find-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(520px, calc(100vw - 32px));
+  padding: 12px 40px 12px 16px;
+  background: rgba(8, 12, 18, 0.95);
+  border: 1px solid rgba(110, 170, 230, 0.42);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+}
+#find-banner[hidden] { display: none; }
+#find-title { color: #e6edf3; font-size: 16px; }
+#find-sub { margin-top: 4px; color: #9aa7b4; font-size: 13px; line-height: 1.4; }
+#find-close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: 0;
+  color: #8bb8e8;
+  font-size: 16px;
+  cursor: pointer;
+}
+#find-close:hover { color: #e6edf3; }
